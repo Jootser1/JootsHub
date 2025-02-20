@@ -1,0 +1,43 @@
+
+services:
+  frontend:
+    container_name: joots-frontend
+    build: ./joots-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./joots-frontend/.env
+    depends_on:
+      - backend
+    volumes:
+      - ./joots-frontend:/app
+      - /app/node_modules
+    command: npm run start
+
+  backend:
+    container_name: joots-backend
+    build: ./joots-backend
+    ports:
+      - "4000:3000"
+    env_file:
+      - ./joots-backend/.env
+    depends_on:
+      - database
+    volumes:
+      - ./joots-backend:/app
+      - /app/node_modules
+    command: npm run start:dev
+
+  database:
+    container_name: joots-db
+    image: postgres:15
+    restart: always
+    ports:
+      - "5432:5432"
+    env_file:
+      - ./joots-backend/.env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
