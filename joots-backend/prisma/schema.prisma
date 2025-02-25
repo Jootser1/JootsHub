@@ -17,9 +17,10 @@ datasource db {
 model User {
   id       String    @id @default(uuid())
   email    String    @unique
-  pseudo   String    @unique
-  messagesSent    Message[] @relation("Sender")
-  messagesReceived Message[] @relation("Receiver")
+  password String
+  username   String    @unique
+  //messagesSent    Message[] @relation("Sender")
+  //messagesReceived Message[] @relation("Receiver")
   createdAt DateTime @default(now())
 }
 
@@ -30,7 +31,7 @@ model Message {
   content   String
   createdAt DateTime @default(now())
 
-  sender   User @relation("Sender", fields: [senderId], references: [id])
-  receiver User @relation("Receiver", fields: [receiverId], references: [id])
+  //sender   User @relation("Sender", fields: [senderId], references: [id])
+  //receiver User @relation("Receiver", fields: [receiverId], references: [id])
 }
 

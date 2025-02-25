@@ -9,22 +9,21 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UserService = void 0;
+exports.UsersService = void 0;
 const common_1 = require("@nestjs/common");
-const logger_service_1 = require("../logger/logger.service");
-let UserService = class UserService {
-    logger;
-    constructor(logger) {
-        this.logger = logger;
+const prisma_service_1 = require("../../prisma/prisma.service");
+let UsersService = class UsersService {
+    prisma;
+    constructor(prisma) {
+        this.prisma = prisma;
     }
-    getUser(id) {
-        this.logger.log(`Fetching user with ID: ${id}`);
-        return { id, name: 'John Doe' };
+    async getAllUsers() {
+        return this.prisma.user.findMany();
     }
 };
-exports.UserService = UserService;
-exports.UserService = UserService = __decorate([
+exports.UsersService = UsersService;
+exports.UsersService = UsersService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [logger_service_1.AppLogger])
-], UserService);
-//# sourceMappingURL=user.service.js.map
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+], UsersService);
+//# sourceMappingURL=users.service.js.map
