@@ -9,4 +9,7 @@ export declare class UsersController {
         username: string;
         createdAt: Date;
     }[]>;
+    getUsersCount(): Promise<{
+        totalUsers: number;
+    }>;
 }

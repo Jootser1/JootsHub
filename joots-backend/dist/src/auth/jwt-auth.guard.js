@@ -9,24 +9,34 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersService = void 0;
+exports.JwtAuthGuard = void 0;
 const common_1 = require("@nestjs/common");
-const prisma_service_1 = require("../../prisma/prisma.service");
-let UsersService = class UsersService {
-    prisma;
-    constructor(prisma) {
-        this.prisma = prisma;
+const jwt_1 = require("@nestjs/jwt");
+let JwtAuthGuard = class JwtAuthGuard {
+    jwtService;
+    constructor(jwtService) {
+        this.jwtService = jwtService;
     }
-    async getAllUsers() {
-        return this.prisma.user.findMany();
-    }
-    async getUsersCount() {
-        return this.prisma.user.count();
+    canActivate(context) {
+        const request = context.switchToHttp().getRequest();
+        const authHeader = request.headers['authorization'];
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return false;
+        }
+        try {
+            const token = authHeader.split(' ')[1];
+            const decoded = this.jwtService.verify(token);
+            request.user = decoded;
+            return true;
+        }
+        catch {
+            return false;
+        }
     }
 };
-exports.UsersService = UsersService;
-exports.UsersService = UsersService = __decorate([
+exports.JwtAuthGuard = JwtAuthGuard;
+exports.JwtAuthGuard = JwtAuthGuard = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
-], UsersService);
-//# sourceMappingURL=users.service.js.map
+    __metadata("design:paramtypes", [jwt_1.JwtService])
+], JwtAuthGuard);
+//# sourceMappingURL=jwt-auth.guard.js.map

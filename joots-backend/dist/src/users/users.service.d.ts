@@ -9,4 +9,5 @@ export declare class UsersService {
         username: string;
         createdAt: Date;
     }[]>;
+    getUsersCount(): Promise<number>;
 }
