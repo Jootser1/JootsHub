@@ -4,8 +4,9 @@ export declare class AuthService {
     private readonly prisma;
     private readonly jwtService;
     constructor(prisma: PrismaService, jwtService: JwtService);
-    register(email: string, password: string, username: string): Promise<{
+    register(email: string, password: string): Promise<{
         id: string;
+        userNumber: number;
         email: string;
         password: string;
         username: string;
@@ -15,6 +16,7 @@ export declare class AuthService {
         access_token: string;
         user: {
             id: string;
+            userNumber: number;
             email: string;
             password: string;
             username: string;

@@ -9,9 +9,8 @@ export class AuthController {
   async register(
     @Body('email') email: string,
     @Body('password') password: string,
-    @Body('username') username: string,
   ) {
-    return this.authService.register(email, password, username);
+    return this.authService.register(email, password);
   }
 
   @Post('login')

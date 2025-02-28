@@ -2,8 +2,9 @@ import { AuthService } from './auth.service';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
-    register(email: string, password: string, username: string): Promise<{
+    register(email: string, password: string): Promise<{
         id: string;
+        userNumber: number;
         email: string;
         password: string;
         username: string;
@@ -13,6 +14,7 @@ export declare class AuthController {
         access_token: string;
         user: {
             id: string;
+            userNumber: number;
             email: string;
             password: string;
             username: string;

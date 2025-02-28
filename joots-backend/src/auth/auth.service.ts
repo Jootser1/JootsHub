@@ -10,11 +10,21 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
-  async register(email: string, password: string, username: string) {
+  async register(email: string, password: string) {
     if (!password) throw new Error('Password is required'); // 🔥 Ajoute une vérification
     const hashedPassword = await bcrypt.hash(password, 10);
-    return this.prisma.user.create({
-      data: { email, password: hashedPassword, username },
+
+    const newUser = await this.prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        username: '', // Temporary username, will be updated later
+      },
+    });
+    const username = `Jooster${newUser.userNumber}`;
+    return this.prisma.user.update({
+      where: { id: newUser.id },
+      data: { username },
     });
   }
 
