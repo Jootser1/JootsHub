@@ -12,4 +12,11 @@ export class UsersService {
   async getUsersCount() {
     return this.prisma.user.count();
   }
+
+  async getOnlineUsers() {
+    return this.prisma.user.findMany({
+      where: { isOnline: true },
+      select: { id: true, username: true },
+    });
+  }
 }

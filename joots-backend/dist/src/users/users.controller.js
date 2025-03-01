@@ -25,6 +25,9 @@ let UsersController = class UsersController {
         const count = await this.usersService.getUsersCount();
         return { totalUsers: count };
     }
+    async getOnlineUsers() {
+        return await this.usersService.getOnlineUsers();
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -40,6 +43,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getUsersCount", null);
+__decorate([
+    (0, common_1.Get)('online'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getOnlineUsers", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

@@ -8,9 +8,14 @@ export declare class UsersController {
         email: string;
         password: string;
         username: string;
+        isOnline: boolean;
         createdAt: Date;
     }[]>;
     getUsersCount(): Promise<{
         totalUsers: number;
     }>;
+    getOnlineUsers(): Promise<{
+        id: string;
+        username: string;
+    }[]>;
 }

@@ -47,8 +47,20 @@ let AuthService = class AuthService {
         if (!passwordValid) {
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        console.log('Login user', user);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { isOnline: true },
+        });
         const token = this.jwtService.sign({ userId: user.id });
         return { access_token: token, user };
+    }
+    async logout(userId) {
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { isOnline: false },
+        });
+        return { message: 'User logged out successfully' };
     }
 };
 exports.AuthService = AuthService;

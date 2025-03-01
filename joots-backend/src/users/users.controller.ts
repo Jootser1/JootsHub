@@ -17,4 +17,9 @@ export class UsersController {
     const count = await this.usersService.getUsersCount();
     return { totalUsers: count };
   }
+
+  @Get('online')
+  async getOnlineUsers() {
+    return await this.usersService.getOnlineUsers();
+  }
 }

@@ -8,7 +8,12 @@ export declare class UsersService {
         email: string;
         password: string;
         username: string;
+        isOnline: boolean;
         createdAt: Date;
     }[]>;
     getUsersCount(): Promise<number>;
+    getOnlineUsers(): Promise<{
+        id: string;
+        username: string;
+    }[]>;
 }

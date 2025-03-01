@@ -38,8 +38,21 @@ export class AuthService {
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+    console.log('Login user', user);
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { isOnline: true },
+    });
 
     const token = this.jwtService.sign({ userId: user.id });
     return { access_token: token, user };
+  }
+
+  async logout(userId: string): Promise<{ message: string }> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isOnline: false },
+    });
+    return { message: 'User logged out successfully' };
   }
 }

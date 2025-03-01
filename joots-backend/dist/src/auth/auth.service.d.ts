@@ -10,6 +10,7 @@ export declare class AuthService {
         email: string;
         password: string;
         username: string;
+        isOnline: boolean;
         createdAt: Date;
     }>;
     login(email: string, password: string): Promise<{
@@ -20,7 +21,11 @@ export declare class AuthService {
             email: string;
             password: string;
             username: string;
+            isOnline: boolean;
             createdAt: Date;
         };
+    }>;
+    logout(userId: string): Promise<{
+        message: string;
     }>;
 }

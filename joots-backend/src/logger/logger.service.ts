@@ -2,6 +2,8 @@ import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
 
+console.log('Current working directory:', process.cwd());
+
 @Injectable()
 export class AppLogger implements LoggerService {
   private logger: winston.Logger;

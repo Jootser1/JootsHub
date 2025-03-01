@@ -13,6 +13,7 @@ exports.AppLogger = void 0;
 const common_1 = require("@nestjs/common");
 const winston = require("winston");
 require("winston-daily-rotate-file");
+console.log('Current working directory:', process.cwd());
 let AppLogger = class AppLogger {
     logger;
     constructor() {

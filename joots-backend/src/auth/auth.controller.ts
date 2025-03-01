@@ -20,4 +20,9 @@ export class AuthController {
   ) {
     return this.authService.login(email, password);
   }
+
+  @Post('logout')
+  async logout(@Body('userId') userId: string): Promise<{ message: string }> {
+    return await this.authService.logout(userId);
+  }
 }
