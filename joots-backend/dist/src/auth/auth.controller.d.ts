@@ -1,4 +1,5 @@
 import { AuthService } from './auth.service';
+import { LoginDto } from './dto/login.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -11,8 +12,8 @@ export declare class AuthController {
         isOnline: boolean;
         createdAt: Date;
     }>;
-    login(email: string, password: string): Promise<{
-        access_token: string;
+    login(loginDto: LoginDto): Promise<{
+        success: boolean;
         user: {
             id: string;
             userNumber: number;
@@ -22,6 +23,7 @@ export declare class AuthController {
             isOnline: boolean;
             createdAt: Date;
         };
+        access_token: string;
     }>;
     logout(userId: string): Promise<{
         message: string;

@@ -1,4 +1,5 @@
 import { PrismaService } from '../../prisma/prisma.service';
+import { User } from '@prisma/client';
 export declare class UsersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
@@ -11,6 +12,7 @@ export declare class UsersService {
         isOnline: boolean;
         createdAt: Date;
     }[]>;
+    findById(id: string): Promise<User>;
     getUsersCount(): Promise<number>;
     getOnlineUsers(): Promise<{
         id: string;

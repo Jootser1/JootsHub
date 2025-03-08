@@ -20,6 +20,13 @@ let UsersService = class UsersService {
     async getAllUsers() {
         return this.prisma.user.findMany();
     }
+    async findById(id) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        }
+        return user;
+    }
     async getUsersCount() {
         return this.prisma.user.count();
     }

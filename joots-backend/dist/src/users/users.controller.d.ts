@@ -18,4 +18,7 @@ export declare class UsersController {
         id: string;
         username: string;
     }[]>;
+    getUser(id: string): Promise<{
+        pseudo: string;
+    }>;
 }

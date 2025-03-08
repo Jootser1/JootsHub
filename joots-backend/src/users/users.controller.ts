@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common'; // ✅ Add `UseGuards`
+import { Controller, Get, UseGuards, Param } from '@nestjs/common'; // ✅ Add `UseGuards`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -13,13 +13,22 @@ export class UsersController {
   }
 
   @Get('count')
+  @UseGuards(JwtAuthGuard)
   async getUsersCount() {
     const count = await this.usersService.getUsersCount();
     return { totalUsers: count };
   }
 
   @Get('online')
+  @UseGuards(JwtAuthGuard)
   async getOnlineUsers() {
     return await this.usersService.getOnlineUsers();
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getUser(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    return { pseudo: user.username };
   }
 }
