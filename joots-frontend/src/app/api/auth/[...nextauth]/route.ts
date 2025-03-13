@@ -38,13 +38,15 @@ const authOptions = {
     async jwt({ token, user}: { token: any, user?: any}) {
       if (user) {
         token.id = user.id;
-        token.accessToken = user.token;;
+        token.accessToken = user.token;
       }
       return token;
     },
     async session({ session, token }: { session: any, token: any }) {
       session.user.id = token.id;
       session.accessToken = token.accessToken;
+      console.log("coucou route.ts");
+      console.log("session", session);
       return session;
     },
   },

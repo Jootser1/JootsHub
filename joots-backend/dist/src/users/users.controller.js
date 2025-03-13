@@ -33,7 +33,11 @@ let UsersController = class UsersController {
     }
     async getUser(id) {
         const user = await this.usersService.findById(id);
-        return { pseudo: user.username };
+        return {
+            id: user.id,
+            email: user.email,
+            username: user.username,
+        };
     }
 };
 exports.UsersController = UsersController;

@@ -1,6 +1,7 @@
 import { Controller, Get, UseGuards, Param } from '@nestjs/common'; // ✅ Add `UseGuards`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { access } from 'fs';
 
 @Controller('users') // 👈 Route de base : /users
 export class UsersController {
@@ -29,6 +30,10 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getUser(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
-    return { pseudo: user.username };
+    return {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+    };
   }
 }

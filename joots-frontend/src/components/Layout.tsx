@@ -1,58 +1,88 @@
 "use client";
-import { useSession, signOut } from "next-auth/react";
+
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/app/store/store";
+import { setUser, logout } from "@/app/store/userSlice";
+import axiosInstance from "@/app/api/axiosInstance";
 
-import Link from "next/link";
-
-import { ReactNode } from "react";
-
-export default function Layout({ children }: { children: ReactNode }) {
+export default function Layout({ children }) {
   const { data: session, status } = useSession();
-  const [username, setUsername] = useState("Utilisateur");
+  const dispatch = useDispatch();
+  const user = useSelector((state: RootState) => state.user);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (session?.user?.id) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${session.user.id}`, {
-        headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-      },
-    })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.pseudo) {
-            setUsername(data.pseudo);
-          }
-        })
-        .catch((err) => console.error("Erreur lors du chargement du pseudo :", err));
-    }
-  }, [session?.user?.id, session?.accessToken]);
+    
+    async function fetchUserData() {
+      if (status === "authenticated" && session?.user) {
+        try {
+          const response = await axiosInstance.get(`/users/${session.user.id}`, {
+            headers: {
+              Authorization: `Bearer ${session.accessToken}`
+            }
+          });
 
+          dispatch(setUser({
+            id: response.data.id,
+            username: response.data.username, // Stocke bien le username
+            email: response.data.email,
+            accessToken: session.accessToken,
+          }));
+
+          // Stocke le token dans localStorage pour l'utiliser plus tard
+          if (typeof window !== "undefined") {
+            localStorage.setItem("accessToken", session.accessToken);
+          }
+        } catch (error) {
+          console.error("Erreur fetch utilisateur :", error);
+        } finally {
+          setLoading(false);
+        }
+      } else if (status === "unauthenticated") {
+        dispatch(logout());
+
+        // Supprime le token à la déconnexion
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+        }
+
+        setLoading(false);
+      }
+    }
+
+    fetchUserData();
+  }, [status, session, dispatch]);
 
   return (
     <div className="flex flex-col h-screen">
-      {/* Barre de navigation */}
       <nav className="bg-purple-600 text-white p-4 flex justify-between items-center">
         <h1 className="text-xl font-bold">JOOTS</h1>
-        {status === "authenticated" ? (
+        {loading ? (
+          <span>Chargement...</span>
+        ) : user.id ? (
           <div className="flex items-center space-x-4">
-            <span>Bienvenue {username} 👋</span>
+            <span>Bienvenue, {user.username} 👋</span>
             <button
-              onClick={() => signOut()}
+              onClick={() => {
+                dispatch(logout());
+                if (typeof window !== "undefined") {
+                  localStorage.removeItem("accessToken");
+                }
+              }}
               className="bg-red-500 px-3 py-1 rounded"
             >
               Déconnexion
             </button>
           </div>
         ) : (
-          <Link href="/login">
-            <button className="bg-white text-purple-600 px-3 py-1 rounded">
-              Connexion
-            </button>
-          </Link>
+          <a href="/login" className="bg-white text-purple-600 px-3 py-1 rounded">
+            Connexion
+          </a>
         )}
       </nav>
 
-      {/* Contenu de la page */}
       <main className="flex-1 p-4">{children}</main>
     </div>
   );
