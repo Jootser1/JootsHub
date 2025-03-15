@@ -7,13 +7,6 @@ import LandingCard from "@/components/LandingCard";
 
 export default function HubPage() {
   const { status } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login"); // 🔥 Redirection après le rendu initial
-    }
-  }, [status, router]);
 
   if (status === "loading") {
     return <p>Chargement...</p>; // 🔥 Évite de rendre la page tant que la session charge

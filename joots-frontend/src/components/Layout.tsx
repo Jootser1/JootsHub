@@ -1,19 +1,24 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 import { setUser, logout } from "@/app/store/userSlice";
 import axiosInstance from "@/app/api/axiosInstance";
+import { useRouter } from "next/navigation";
 
-export default function Layout({ children }) {
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const router = useRouter();
   const { data: session, status } = useSession();
   const dispatch = useDispatch();
   const user = useSelector((state: RootState) => state.user);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
     
     async function fetchUserData() {
       if (status === "authenticated" && session?.user) {
@@ -31,10 +36,6 @@ export default function Layout({ children }) {
             accessToken: session.accessToken,
           }));
 
-          // Stocke le token dans localStorage pour l'utiliser plus tard
-          if (typeof window !== "undefined") {
-            localStorage.setItem("accessToken", session.accessToken);
-          }
         } catch (error) {
           console.error("Erreur fetch utilisateur :", error);
         } finally {
@@ -42,12 +43,6 @@ export default function Layout({ children }) {
         }
       } else if (status === "unauthenticated") {
         dispatch(logout());
-
-        // Supprime le token à la déconnexion
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("accessToken");
-        }
-
         setLoading(false);
       }
     }
@@ -67,9 +62,7 @@ export default function Layout({ children }) {
             <button
               onClick={() => {
                 dispatch(logout());
-                if (typeof window !== "undefined") {
-                  localStorage.removeItem("accessToken");
-                }
+                signOut();
               }}
               className="bg-red-500 px-3 py-1 rounded"
             >
