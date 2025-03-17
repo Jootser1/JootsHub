@@ -17,21 +17,24 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_1 = require("redis");
+const jwt = require("jsonwebtoken");
 let UserGateway = class UserGateway {
     prisma;
     server;
-    redisClient = (0, redis_1.createClient)({ url: 'redis://localhost:6379' });
+    redisClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL });
     constructor(prisma) {
         this.prisma = prisma;
         this.redisClient.connect().catch(console.error);
     }
     async handleConnection(client) {
-        console.log(`Client connecté: ${client.id}`);
-        const userId = client.handshake.query.userId;
-        if (userId) {
-            await this.redisClient.sAdd('onlineUsers', userId);
+        const userToken = client.handshake.auth.token;
+        const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
+        const username = decoded.username;
+        console.log("username dans user gateway", username);
+        if (username) {
+            await this.redisClient.sAdd('onlineUsers', username);
             await this.prisma.user.update({
-                where: { id: userId },
+                where: { username: username },
                 data: { isOnline: true },
             });
             await this.broadcastUsers();

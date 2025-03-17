@@ -10,12 +10,13 @@ exports.GatewayModule = void 0;
 const common_1 = require("@nestjs/common");
 const user_gateway_1 = require("./user.gateway");
 const prisma_service_1 = require("../../prisma/prisma.service");
+const icebreaker_gateway_1 = require("./icebreaker.gateway");
 let GatewayModule = class GatewayModule {
 };
 exports.GatewayModule = GatewayModule;
 exports.GatewayModule = GatewayModule = __decorate([
     (0, common_1.Module)({
-        providers: [user_gateway_1.UserGateway, prisma_service_1.PrismaService],
+        providers: [user_gateway_1.UserGateway, icebreaker_gateway_1.IcebreakerGateway, prisma_service_1.PrismaService],
         exports: [user_gateway_1.UserGateway],
     })
 ], GatewayModule);

@@ -6,6 +6,7 @@ interface UserState {
   username: string;
   email: string | null;
   accessToken: string | null;
+  refreshToken: string | null;
 }
 
 const initialState: UserState = {
@@ -13,6 +14,7 @@ const initialState: UserState = {
   username: "Invité",
   email: null,
   accessToken: null,
+  refreshToken: null,
 };
 
 const userSlice = createSlice({
@@ -24,18 +26,24 @@ const userSlice = createSlice({
       state.username = action.payload.username;
       state.email = action.payload.email;
       state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
+    },
+    updateTokens: (state, action: PayloadAction<{ accessToken: string; refreshToken: string }>) => {
+      state.accessToken = action.payload.accessToken;
+      state.refreshToken = action.payload.refreshToken;
     },
     logout: (state) => {
       state.id = null;
       state.username = "Invité";
       state.email = null;
       state.accessToken = null;
+      state.refreshToken = null;
     },
   },
 });
 
 // Actions Redux
-export const { setUser, logout } = userSlice.actions;
+export const { setUser, updateTokens, logout } = userSlice.actions;
 
 // Reducer Redux
 export default userSlice.reducer;

@@ -34,6 +34,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             username: response.data.username, // Stocke bien le username
             email: response.data.email,
             accessToken: session.accessToken,
+            refreshToken: response.data.refresh_token,
           }));
 
         } catch (error) {

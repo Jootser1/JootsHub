@@ -10,25 +10,29 @@ import {
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { createClient } from 'redis';
+import * as jwt from "jsonwebtoken";
+
 
 @WebSocketGateway(4001,{ cors: { origin: '*' } })
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
-  private redisClient = createClient({ url: 'redis://localhost:6379' });
+  private redisClient = createClient({ url: process.env.REDIS_URL });  // Connect to Redis
 
   constructor(private prisma: PrismaService) {
     this.redisClient.connect().catch(console.error);
   }
 
   async handleConnection(client: Socket) {
-    console.log(`Client connecté: ${client.id}`);
-    const userId = client.handshake.query.userId as string;
+    const userToken = client.handshake.auth.token as string;
+    const decoded: any = jwt.verify(userToken, process.env.JWT_SECRET as string);
+    const username = decoded.username;
+    console.log("username dans user gateway", username);
 
-    if (userId) {
-      await this.redisClient.sAdd('onlineUsers', userId);
+    if (username) {
+      await this.redisClient.sAdd('onlineUsers', username);
       await this.prisma.user.update({
-        where: { id: userId },
+        where: { username: username },
         data: { isOnline: true },
       });
       await this.broadcastUsers();
