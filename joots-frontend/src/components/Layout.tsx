@@ -7,6 +7,7 @@ import { RootState } from "@/app/store/store";
 import { setUser, logout } from "@/app/store/userSlice";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
+import useSocket from "@/hooks/useSocket";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -15,6 +16,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const user = useSelector((state: RootState) => state.user);
   const [loading, setLoading] = useState(true);
 
+  useSocket();
+
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
@@ -22,6 +25,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     
     async function fetchUserData() {
       if (status === "authenticated" && session?.user) {
+        
         try {
           const response = await axiosInstance.get(`/users/${session.user.id}`, {
             headers: {

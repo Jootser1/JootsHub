@@ -27,38 +27,53 @@ let UserGateway = class UserGateway {
         this.redisClient.connect().catch(console.error);
     }
     async handleConnection(client) {
-        const userToken = client.handshake.auth.token;
-        const decoded = jwt.verify(userToken, process.env.JWT_SECRET);
-        const username = decoded.username;
-        console.log("username dans user gateway", username);
-        if (username) {
-            await this.redisClient.sAdd('onlineUsers', username);
+        try {
+            const { token } = client.handshake.auth;
+            console.log("token dans user gateway", token);
+            if (!token)
+                throw new Error("Token manquant");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const username = decoded.username;
+            console.log("username dans user gateway", username);
+            await this.redisClient.sAdd('online_users', username);
             await this.prisma.user.update({
-                where: { username: username },
+                where: { username },
                 data: { isOnline: true },
             });
-            await this.broadcastUsers();
+            this.server.emit('user_connected', username);
+            const users = await this.redisClient.sMembers('online_users');
+            client.emit('users_list', users);
+        }
+        catch (error) {
+            console.error('Erreur de connexion:', error);
+            client.disconnect();
         }
     }
     async handleDisconnect(client) {
-        console.log(`Client déconnecté: ${client.id}`);
-        const userId = client.handshake.query.userId;
-        if (userId) {
-            await this.redisClient.sRem('onlineUsers', userId);
+        try {
+            const { token } = client.handshake.auth;
+            if (!token)
+                return;
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const username = decoded.username;
+            await this.redisClient.sRem('online_users', username);
             await this.prisma.user.update({
-                where: { id: userId },
+                where: { username },
                 data: { isOnline: false },
             });
-            await this.broadcastUsers();
+            this.server.emit('user_disconnected', username);
+        }
+        catch (error) {
+            console.error('Erreur de déconnexion:', error);
         }
     }
-    async broadcastUsers() {
-        const users = await this.redisClient.sMembers('onlineUsers');
-        this.server.emit('activeUsers', users);
+    async broadcastUsersList() {
+        const users = await this.redisClient.sMembers('online_users');
+        this.server.emit('users_list', users);
     }
     async handleSetUsername(username, client) {
         client.data.username = username;
-        await this.broadcastUsers();
+        await this.broadcastUsersList();
     }
 };
 exports.UserGateway = UserGateway;

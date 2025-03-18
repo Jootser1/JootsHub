@@ -5,44 +5,43 @@ import io from "socket.io-client";
 import { useSelector } from "react-redux";
 import { RootState } from "@/app/store/store";
 
-const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_URL
+const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
 
-export default function ConnectedUsersList() {
+export default function OnlineUsersList() {
   const user = useSelector((state: RootState) => state.user);
-  console.log("user dans connected users list", user);
-  const [users, setUsers] = useState<string[]>([]);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user?.accessToken) return;
 
     const socket = io(SOCKET_SERVER_URL, {
       auth: { token: user.accessToken },
+      transports: ['websocket']
     });
 
-    socket.on("users_connected", (userList: string[]) => {
-      console.log("userList dans connected users list", userList);
-        setUsers(userList);
+    socket.on("connect_error", (error) => {
+      console.error("Erreur de connexion socket:", error);
     });
 
-    socket.on("user_connected", (newUser: string) => {
-      setUsers((prevUsers) => [...prevUsers, newUser]);
+    socket.on("users_list", setOnlineUsers);
+    socket.on("user_connected", (newUser) => {
+      setOnlineUsers(prev => [...new Set([...prev, newUser])]);
     });
-
-    socket.on("user_disconnected", (disconnectedUser: string) => {
-      setUsers((prevUsers) => prevUsers.filter((u) => u !== disconnectedUser));
+    socket.on("user_disconnected", (disconnectedUser) => {
+      setOnlineUsers(prev => prev.filter(u => u !== disconnectedUser));
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [user]);
+  }, [user?.accessToken]);
 
   return (
     <div className="p-4 bg-gray-800 rounded-lg text-white">
       <h2 className="text-xl font-bold mb-2">Utilisateurs connectés</h2>
-      {users.length > 0 ? (
+      {onlineUsers.length > 0 ? (
         <ul className="list-disc pl-5">
-          {users.map((u, index) => (
+          {onlineUsers.map((u, index) => (
             <li key={index} className="py-1">{u}</li>
           ))}
         </ul>
@@ -51,4 +50,4 @@ export default function ConnectedUsersList() {
       )}
     </div>
   );
-}
+} 
