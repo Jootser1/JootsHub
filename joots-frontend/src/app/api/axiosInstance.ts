@@ -1,6 +1,5 @@
 import axios from "axios";
-import { store } from "@/app/store/store";
-import { updateTokens } from '../store/userSlice';
+import { useStore } from "@/app/store/store";
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -27,8 +26,7 @@ const processQueue = (error: any = null) => {
 axiosInstance.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const state = store.getState(); // Récupère l'état Redux
-      const accessToken = state.user.accessToken;
+      const accessToken = useStore.getState().user.accessToken;
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -55,8 +53,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const state = store.getState();
-      const refreshToken = state.user.refreshToken;
+      const refreshToken = useStore.getState().user.refreshToken;
 
       if (!refreshToken) {
         processQueue(new Error('No refresh token'));
@@ -69,7 +66,10 @@ axiosInstance.interceptors.response.use(
         });
 
         const { access_token, refresh_token } = response.data;
-        store.dispatch(updateTokens({ accessToken: access_token, refreshToken: refresh_token }));
+        useStore.getState().updateTokens({ 
+          accessToken: access_token, 
+          refreshToken: refresh_token 
+        });
 
         processQueue();
         return axiosInstance(originalRequest);

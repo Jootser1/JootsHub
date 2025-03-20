@@ -2,13 +2,12 @@
 
 import { useEffect, useState, useRef } from "react";
 import io, { Socket } from "socket.io-client";
-import { useSelector } from "react-redux";
-import { RootState } from "@/app/store/store";
+import { useStore } from "@/app/store/store";
 
 const SOCKET_SERVER_URL = process.env.NEXT_PUBLIC_SOCKET_URL;
 
 export default function OnlineUsersList() {
-  const user = useSelector((state: RootState) => state.user);
+  const user = useStore((state) => state.user);
   const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
   const socketRef = useRef<Socket | null>(null);
 

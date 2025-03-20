@@ -2,9 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/app/store/store";
-import { setUser, logout } from "@/app/store/userSlice";
+import { useStore } from "@/app/store/store";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
 import useSocket from "@/hooks/useSocket";
@@ -12,8 +10,7 @@ import useSocket from "@/hooks/useSocket";
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const dispatch = useDispatch();
-  const user = useSelector((state: RootState) => state.user);
+  const { user, setUser, logout } = useStore();
   const [loading, setLoading] = useState(true);
 
   useSocket();
@@ -25,7 +22,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     
     async function fetchUserData() {
       if (status === "authenticated" && session?.user) {
-        
         try {
           const response = await axiosInstance.get(`/users/${session.user.id}`, {
             headers: {
@@ -33,13 +29,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             }
           });
 
-          dispatch(setUser({
+          setUser({
             id: response.data.id,
-            username: response.data.username, // Stocke bien le username
+            username: response.data.username,
             email: response.data.email,
             accessToken: session.accessToken,
             refreshToken: response.data.refresh_token,
-          }));
+          });
 
         } catch (error) {
           console.error("Erreur fetch utilisateur :", error);
@@ -47,13 +43,13 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           setLoading(false);
         }
       } else if (status === "unauthenticated") {
-        dispatch(logout());
+        logout();
         setLoading(false);
       }
     }
 
     fetchUserData();
-  }, [status, session, dispatch]);
+  }, [status, session, setUser, logout]);
 
   return (
     <div className="flex flex-col h-screen">
@@ -66,7 +62,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <span>Bienvenue, {user.username} 👋</span>
             <button
               onClick={() => {
-                dispatch(logout());
+                logout();
                 signOut();
               }}
               className="bg-red-500 px-3 py-1 rounded"

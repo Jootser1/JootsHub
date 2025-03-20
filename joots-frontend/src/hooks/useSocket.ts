@@ -1,12 +1,11 @@
 import io from 'socket.io-client';
-import { useSelector } from 'react-redux';
+import { useStore } from '@/app/store/store';
 import { useEffect } from 'react';
-import { RootState } from '../app/store/store';
 
 const useSocket = () => {
-  const user = useSelector((state: RootState) => state.user);
+  const user = useStore((state) => state.user);
+  
   useEffect(() => {
-    
     if (!user?.accessToken) return;
 
     const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, {
