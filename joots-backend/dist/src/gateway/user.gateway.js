@@ -17,45 +17,63 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_1 = require("redis");
+const jwt = require("jsonwebtoken");
 let UserGateway = class UserGateway {
     prisma;
     server;
-    redisClient = (0, redis_1.createClient)({ url: 'redis://localhost:6379' });
+    redisClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL });
     constructor(prisma) {
         this.prisma = prisma;
         this.redisClient.connect().catch(console.error);
     }
     async handleConnection(client) {
-        console.log(`Client connecté: ${client.id}`);
-        const userId = client.handshake.query.userId;
-        if (userId) {
-            await this.redisClient.sAdd('onlineUsers', userId);
+        try {
+            const { token } = client.handshake.auth;
+            console.log("token dans user gateway", token);
+            if (!token)
+                throw new Error("Token manquant");
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const username = decoded.username;
+            console.log("username dans user gateway", username);
+            await this.redisClient.sAdd('online_users', username);
             await this.prisma.user.update({
-                where: { id: userId },
+                where: { username },
                 data: { isOnline: true },
             });
-            await this.broadcastUsers();
+            this.server.emit('user_connected', username);
+            const users = await this.redisClient.sMembers('online_users');
+            client.emit('users_list', users);
+        }
+        catch (error) {
+            console.error('Erreur de connexion:', error);
+            client.disconnect();
         }
     }
     async handleDisconnect(client) {
-        console.log(`Client déconnecté: ${client.id}`);
-        const userId = client.handshake.query.userId;
-        if (userId) {
-            await this.redisClient.sRem('onlineUsers', userId);
+        try {
+            const { token } = client.handshake.auth;
+            if (!token)
+                return;
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const username = decoded.username;
+            await this.redisClient.sRem('online_users', username);
             await this.prisma.user.update({
-                where: { id: userId },
+                where: { username },
                 data: { isOnline: false },
             });
-            await this.broadcastUsers();
+            this.server.emit('user_disconnected', username);
+        }
+        catch (error) {
+            console.error('Erreur de déconnexion:', error);
         }
     }
-    async broadcastUsers() {
-        const users = await this.redisClient.sMembers('onlineUsers');
-        this.server.emit('activeUsers', users);
+    async broadcastUsersList() {
+        const users = await this.redisClient.sMembers('online_users');
+        this.server.emit('users_list', users);
     }
     async handleSetUsername(username, client) {
         client.data.username = username;
-        await this.broadcastUsers();
+        await this.broadcastUsersList();
     }
 };
 exports.UserGateway = UserGateway;

@@ -45,8 +45,6 @@ const authOptions = {
     async session({ session, token }: { session: any, token: any }) {
       session.user.id = token.id;
       session.accessToken = token.accessToken;
-      console.log("coucou route.ts");
-      console.log("session", session);
       return session;
     },
   },

@@ -8,6 +8,6 @@ export declare class UserGateway implements OnGatewayConnection, OnGatewayDiscon
     constructor(prisma: PrismaService);
     handleConnection(client: Socket): Promise<void>;
     handleDisconnect(client: Socket): Promise<void>;
-    private broadcastUsers;
+    private broadcastUsersList;
     handleSetUsername(username: string, client: Socket): Promise<void>;
 }

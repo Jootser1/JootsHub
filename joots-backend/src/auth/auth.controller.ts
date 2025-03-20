@@ -1,6 +1,7 @@
-import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -31,8 +32,14 @@ export class AuthController {
     }
   }
 
+  @Post('refresh')
+  async refreshToken(@Body() body: { refresh_token: string }) {
+    return this.authService.refreshToken(body.refresh_token);
+  }
+
   @Post('logout')
-  async logout(@Body('userId') userId: string): Promise<{ message: string }> {
-    return await this.authService.logout(userId);
+  @UseGuards(AuthGuard('jwt'))
+  async logout(@Body() body: { userId: string }) {
+    return this.authService.logout(body.userId);
   }
 }

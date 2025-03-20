@@ -16,6 +16,7 @@ exports.AuthController = void 0;
 const common_1 = require("@nestjs/common");
 const auth_service_1 = require("./auth.service");
 const login_dto_1 = require("./dto/login.dto");
+const passport_1 = require("@nestjs/passport");
 let AuthController = class AuthController {
     authService;
     constructor(authService) {
@@ -37,8 +38,11 @@ let AuthController = class AuthController {
             throw new common_1.BadRequestException('Invalid credentials');
         }
     }
-    async logout(userId) {
-        return await this.authService.logout(userId);
+    async refreshToken(body) {
+        return this.authService.refreshToken(body.refresh_token);
+    }
+    async logout(body) {
+        return this.authService.logout(body.userId);
     }
 };
 exports.AuthController = AuthController;
@@ -58,10 +62,18 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "login", null);
 __decorate([
-    (0, common_1.Post)('logout'),
-    __param(0, (0, common_1.Body)('userId')),
+    (0, common_1.Post)('refresh'),
+    __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], AuthController.prototype, "refreshToken", null);
+__decorate([
+    (0, common_1.Post)('logout'),
+    (0, common_1.UseGuards)((0, passport_1.AuthGuard)('jwt')),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "logout", null);
 exports.AuthController = AuthController = __decorate([

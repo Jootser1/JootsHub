@@ -25,7 +25,15 @@ export declare class AuthController {
         };
         access_token: string;
     }>;
-    logout(userId: string): Promise<{
+    refreshToken(body: {
+        refresh_token: string;
+    }): Promise<{
+        access_token: string;
+        refresh_token: string;
+    }>;
+    logout(body: {
+        userId: string;
+    }): Promise<{
         message: string;
     }>;
 }

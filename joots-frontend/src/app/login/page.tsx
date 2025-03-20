@@ -50,6 +50,7 @@ export default function LoginPage() {
           <button type="submit" className="w-full bg-purple-600 text-white p-2 rounded">
             Se connecter
           </button>
+          {error && <p className="text-red-500 text-sm mt-2">{error}</p>}
         </form>
       </div>
     </div>

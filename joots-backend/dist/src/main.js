@@ -10,6 +10,7 @@ async function bootstrap() {
         credentials: true,
     });
     await app.listen(process.env.PORT || 4000);
+    console.log(`Application is running on: ${await app.getUrl()}`);
 }
 bootstrap().catch((err) => console.error(err));
 //# sourceMappingURL=main.js.map
