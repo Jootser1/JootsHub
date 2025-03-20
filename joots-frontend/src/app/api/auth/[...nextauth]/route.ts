@@ -1,6 +1,20 @@
-import NextAuth from "next-auth";
+import NextAuth, { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import axios from "axios";
+import { JWT } from 'next-auth/jwt'
+import { User as NextAuthUser } from 'next-auth'
+
+interface User extends NextAuthUser {
+  id: string
+  token?: string
+}
+
+interface CustomSession extends Session {
+  user: {
+    id: string
+  } & Session['user']
+  accessToken: string
+}
 
 const authOptions = {
   providers: [
@@ -35,16 +49,16 @@ const authOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user}: { token: any, user?: any}) {
+    async jwt({ token, user }: { token: JWT, user?: User }) {
       if (user) {
         token.id = user.id;
         token.accessToken = user.token;
       }
       return token;
     },
-    async session({ session, token }: { session: any, token: any }) {
-      session.user.id = token.id;
-      session.accessToken = token.accessToken;
+    async session({ session, token }: { session: CustomSession, token: JWT }) {
+      session.user.id = token.id as string;
+      session.accessToken = token.accessToken as string;
       return session;
     },
   },

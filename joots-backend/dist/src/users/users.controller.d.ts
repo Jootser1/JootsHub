@@ -9,6 +9,7 @@ export declare class UsersController {
         password: string;
         username: string;
         isOnline: boolean;
+        avatar: string | null;
         createdAt: Date;
     }[]>;
     getUsersCount(): Promise<{

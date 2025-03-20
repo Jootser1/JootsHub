@@ -10,6 +10,7 @@ export declare class AuthController {
         password: string;
         username: string;
         isOnline: boolean;
+        avatar: string | null;
         createdAt: Date;
     }>;
     login(loginDto: LoginDto): Promise<{
@@ -21,6 +22,7 @@ export declare class AuthController {
             password: string;
             username: string;
             isOnline: boolean;
+            avatar: string | null;
             createdAt: Date;
         };
         access_token: string;

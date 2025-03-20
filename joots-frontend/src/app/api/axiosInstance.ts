@@ -1,5 +1,9 @@
-import axios from "axios";
+import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
 import { useStore } from "@/app/store/store";
+
+interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
+  _retry?: boolean;
+}
 
 const axiosInstance = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
@@ -8,10 +12,15 @@ const axiosInstance = axios.create({
   },
 });
 
-let isRefreshing = false;
-let failedQueue: any[] = [];
+interface QueueItem {
+  resolve: (value?: unknown) => void
+  reject: (reason?: Error) => void
+}
 
-const processQueue = (error: any = null) => {
+let isRefreshing = false;
+let failedQueue: QueueItem[] = [];
+
+const processQueue = (error: Error | null = null) => {
   failedQueue.forEach(prom => {
     if (error) {
       prom.reject(error);
@@ -38,10 +47,10 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response) => response,
-  async (error) => {
-    const originalRequest = error.config;
+  async (error: AxiosError) => {
+    const originalRequest = error.config as CustomAxiosRequestConfig;
 
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest?._retry) {
       if (isRefreshing) {
         return new Promise((resolve, reject) => {
           failedQueue.push({ resolve, reject });
@@ -74,7 +83,7 @@ axiosInstance.interceptors.response.use(
         processQueue();
         return axiosInstance(originalRequest);
       } catch (refreshError) {
-        processQueue(refreshError);
+        processQueue(refreshError as Error);
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

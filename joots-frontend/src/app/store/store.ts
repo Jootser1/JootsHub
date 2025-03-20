@@ -7,6 +7,7 @@ interface User {
   email: string | null
   accessToken: string | null
   refreshToken: string | null
+  avatar?: string
 }
 
 interface UserStore {
@@ -22,6 +23,7 @@ const initialState: User = {
   email: null,
   accessToken: null,
   refreshToken: null,
+  avatar: undefined
 }
 
 export const useStore = create<UserStore>()(

@@ -10,6 +10,7 @@ export declare class UsersService {
         password: string;
         username: string;
         isOnline: boolean;
+        avatar: string | null;
         createdAt: Date;
     }[]>;
     findById(id: string): Promise<User>;

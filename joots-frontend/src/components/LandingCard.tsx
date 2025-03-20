@@ -1,6 +1,15 @@
 import Link from 'next/link';
+import { ReactNode } from 'react';
 
-export default function LandingCard({ title, description, icon, link, color }) {
+interface LandingCardProps {
+  title: string;
+  description: string;
+  icon: ReactNode;
+  link: string;
+  color: string;
+}
+
+export default function LandingCard({ title, description, icon, link, color }: LandingCardProps) {
   return (
     <div className="flex flex-col items-center justify-center bg-white p-6 rounded-xl shadow-lg w-80">
       <h2 className="text-xl font-bold mb-2">{title}</h2>

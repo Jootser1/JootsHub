@@ -6,6 +6,10 @@ import { useStore } from "@/app/store/store";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
 import useSocket from "@/hooks/useSocket";
+import { JootsLogo } from "@/components/joots-logo"
+import Link from "next/link"
+import Image from "next/image"
+
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -49,17 +53,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     }
 
     fetchUserData();
-  }, [status, session, setUser, logout]);
+  }, [status, session, setUser, logout, router]);
 
   return (
     <div className="flex flex-col h-screen">
-      <nav className="bg-purple-600 text-white p-4 flex justify-between items-center">
-        <h1 className="text-xl font-bold">JOOTS</h1>
-        {loading ? (
-          <span>Chargement...</span>
-        ) : user.id ? (
-          <div className="flex items-center space-x-4">
-            <span>Bienvenue, {user.username} 👋</span>
+
+    <header className="p-4 flex items-center justify-between border-b">
+        <JootsLogo className="w-24 h-auto" />
+        <Link href="/profile">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 h-8 rounded-full overflow-hidden">
+              <Image 
+                src={user.avatar || "/placeholder.svg"} 
+                alt={user.username}
+                width={32}
+                height={32}
+              />
+            </div>
+            <span className="font-medium">{user.username}</span>
             <button
               onClick={() => {
                 logout();
@@ -70,14 +81,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               Déconnexion
             </button>
           </div>
-        ) : (
-          <a href="/login" className="bg-white text-purple-600 px-3 py-1 rounded">
-            Connexion
-          </a>
-        )}
-      </nav>
-
-      <main className="flex-1 p-4">{children}</main>
+        </Link>
+      </header>
+      <main className="flex min-h-screen flex-col">{children}</main>
     </div>
   );
 }
