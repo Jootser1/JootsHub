@@ -6,10 +6,8 @@ import { useStore } from "@/app/store/store";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
 import useSocket from "@/hooks/useSocket";
-import { JootsLogo } from "@/components/joots-logo"
-import Link from "next/link"
-import Image from "next/image"
-
+import { Header } from "./Header"
+import { BottomBar } from "./BottomBar"
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -56,34 +54,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   }, [status, session, setUser, logout, router]);
 
   return (
-    <div className="flex flex-col h-screen">
-
-    <header className="p-4 flex items-center justify-between border-b">
-        <JootsLogo className="w-24 h-auto" />
-        <Link href="/profile">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 rounded-full overflow-hidden">
-              <Image 
-                src={user.avatar || "/placeholder.svg"} 
-                alt={user.username}
-                width={32}
-                height={32}
-              />
-            </div>
-            <span className="font-medium">{user.username}</span>
-            <button
-              onClick={() => {
-                logout();
-                signOut();
-              }}
-              className="bg-red-500 px-3 py-1 rounded"
-            >
-              Déconnexion
-            </button>
-          </div>
-        </Link>
-      </header>
-      <main className="flex min-h-screen flex-col">{children}</main>
+    <div className="h-screen flex flex-col overflow-hidden">
+      <Header />
+      <main className="flex-1 overflow-y-auto">{children}</main>
+      <BottomBar experience="hub" />
     </div>
   );
 }
