@@ -11,10 +11,12 @@ interface User {
 }
 
 interface UserStore {
-  user: User
-  setUser: (userData: User) => void
+  user: User | null
+  setUser: (user: User) => void
   updateTokens: (tokens: { accessToken: string; refreshToken: string }) => void
   logout: () => void
+  mobileMenuOpen: boolean
+  setMobileMenuOpen: (open: boolean) => void
 }
 
 const initialState: User = {
@@ -29,16 +31,17 @@ const initialState: User = {
 export const useStore = create<UserStore>()(
   persist(
     (set) => ({
-      user: initialState,
-      setUser: (userData) => set({ user: userData }),
+      user: null,
+      setUser: (user) => set({ user }),
       updateTokens: (tokens) => set((state) => ({
-        user: {
+        user: state.user ? {
           ...state.user,
-          accessToken: tokens.accessToken,
-          refreshToken: tokens.refreshToken,
-        }
+          ...tokens
+        } : null
       })),
-      logout: () => set({ user: initialState })
+      logout: () => set({ user: null }),
+      mobileMenuOpen: false,
+      setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
     }),
     {
       name: 'user-storage',

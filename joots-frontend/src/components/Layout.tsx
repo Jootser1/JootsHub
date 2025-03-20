@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import useSocket from "@/hooks/useSocket";
 import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"
+import MobileMenu from "./mobile-menu"
 
 export default function Layout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -58,6 +59,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <Header />
       <main className="flex-1 overflow-y-auto">{children}</main>
       <BottomBar experience="hub" />
+      <MobileMenu />
     </div>
   );
 }
