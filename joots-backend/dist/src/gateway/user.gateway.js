@@ -22,9 +22,35 @@ let UserGateway = class UserGateway {
     prisma;
     server;
     redisClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL });
+    connectedClients = new Map();
     constructor(prisma) {
         this.prisma = prisma;
         this.redisClient.connect().catch(console.error);
+        const cleanupInterval = parseInt(process.env.SOCKET_CLEANUP_INTERVAL || '30000');
+        setInterval(() => this.checkActiveConnections(), cleanupInterval);
+    }
+    async checkActiveConnections() {
+        try {
+            const onlineUsers = await this.redisClient.sMembers('online_users');
+            const currentConnectedUsers = Array.from(this.connectedClients.keys());
+            const disconnectedUsers = onlineUsers.filter(user => !currentConnectedUsers.includes(user));
+            for (const username of disconnectedUsers) {
+                console.log(`[Cleanup] Utilisateur ${username} détecté comme déconnecté`);
+                await this.redisClient.sRem('online_users', username);
+                await this.prisma.user.update({
+                    where: { username },
+                    data: { isOnline: false },
+                });
+                this.server.emit('user_disconnected', username);
+            }
+            if (disconnectedUsers.length > 0) {
+                const updatedUsers = await this.redisClient.sMembers('online_users');
+                this.server.emit('users_list', updatedUsers);
+            }
+        }
+        catch (error) {
+            console.error('Erreur lors de la vérification des connexions:', error);
+        }
     }
     async handleConnection(client) {
         try {
@@ -33,6 +59,7 @@ let UserGateway = class UserGateway {
                 throw new Error("Token manquant");
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const username = decoded.username;
+            this.connectedClients.set(username, client);
             await this.redisClient.sAdd('online_users', username);
             await this.prisma.user.update({
                 where: { username },
@@ -54,6 +81,7 @@ let UserGateway = class UserGateway {
                 return;
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const username = decoded.username;
+            this.connectedClients.delete(username);
             await this.redisClient.sRem('online_users', username);
             await this.prisma.user.update({
                 where: { username },
@@ -90,13 +118,17 @@ __decorate([
 exports.UserGateway = UserGateway = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
-            origin: '*',
+            origin: process.env.NODE_ENV === 'production'
+                ? 'https://joots.app'
+                : 'http://localhost:3000',
             methods: ['GET', 'POST'],
             credentials: true,
             allowedHeaders: ['authorization', 'content-type']
         },
         namespace: 'users',
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || '60000'),
+        pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL || '25000'),
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], UserGateway);

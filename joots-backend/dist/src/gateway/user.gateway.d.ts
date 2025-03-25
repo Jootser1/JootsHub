@@ -5,7 +5,9 @@ export declare class UserGateway implements OnGatewayConnection, OnGatewayDiscon
     private prisma;
     server: Server;
     private redisClient;
+    private connectedClients;
     constructor(prisma: PrismaService);
+    private checkActiveConnections;
     handleConnection(client: Socket): Promise<void>;
     handleDisconnect(client: Socket): Promise<void>;
     private broadcastUsersList;

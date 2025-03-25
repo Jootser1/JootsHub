@@ -4,12 +4,13 @@ import { AppModule } from './app.module';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: '*', //'http://localhost:3000', // 👈 Autorise le frontend
+    origin: process.env.NODE_ENV === 'production' 
+      ? 'https://joots.app' // URL de production
+      : 'http://localhost:3000', // URL de développement
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true, // 👈 Si tu utilises des cookies ou l'authentification
+    credentials: true,
   });
   await app.listen(process.env.PORT || 4000);
   console.log(`Application is running on: ${await app.getUrl()}`);
-
 }
 bootstrap().catch((err) => console.error(err));
