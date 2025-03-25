@@ -88,7 +88,16 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserGateway.prototype, "handleSetUsername", null);
 exports.UserGateway = UserGateway = __decorate([
-    (0, websockets_1.WebSocketGateway)(4001, { cors: { origin: '*' } }),
+    (0, websockets_1.WebSocketGateway)({
+        cors: {
+            origin: '*',
+            methods: ['GET', 'POST'],
+            credentials: true,
+            allowedHeaders: ['authorization', 'content-type']
+        },
+        namespace: 'users',
+        transports: ['websocket', 'polling']
+    }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], UserGateway);
 //# sourceMappingURL=user.gateway.js.map

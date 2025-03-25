@@ -8,7 +8,7 @@ const useSocket = () => {
   useEffect(() => {
     if (!user?.accessToken) return;
 
-    const socket = io(process.env.NEXT_PUBLIC_SOCKET_URL as string, {
+    const socket = io(`${process.env.NEXT_PUBLIC_SOCKET_URL}/users`, {
       auth: { token: user.accessToken }
     });
 

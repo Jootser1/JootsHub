@@ -13,7 +13,16 @@ import { createClient } from 'redis';
 import * as jwt from "jsonwebtoken";
 
 
-@WebSocketGateway(4001,{ cors: { origin: '*' } })
+@WebSocketGateway({
+  cors: { 
+    origin: '*',
+    methods: ['GET', 'POST'],
+    credentials: true,
+    allowedHeaders: ['authorization', 'content-type']
+  },
+  namespace: 'users',
+  transports: ['websocket', 'polling']
+})
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;

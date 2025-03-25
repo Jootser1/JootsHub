@@ -8,6 +8,7 @@ import { ChevronLeft, Search, Home, User, Plus } from "lucide-react"
 import { IcebreakerLogo } from "@/components/icebreaker-logo"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
+import OnlineUsersList from "@/components/icebreaker/OnlineUsersList"
 
 // Types pour les conversations
 interface Conversation {
@@ -102,6 +103,11 @@ export default function IcebreakerHome() {
             <Button variant="ghost" size="icon" className="rounded-full">
               <Search className="h-5 w-5" />
             </Button>
+          </div>
+
+          {/* Online Users List */}
+          <div className="p-4">
+            <OnlineUsersList />
           </div>
 
           {/* Conversations list */}
