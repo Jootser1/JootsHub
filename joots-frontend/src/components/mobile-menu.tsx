@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import { useStore } from "@/app/store/store"
 import { signOut } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 import axiosInstance from "@/app/api/axiosInstance"
 
 export default function MobileMenu() {
@@ -93,10 +94,14 @@ export default function MobileMenu() {
               <Switch
                 checked={user?.isAvailableForChat ?? true}
                 onCheckedChange={handleChatPreferenceChange}
-                className="data-[state=checked]:bg-blue-600"
+                className="data-[state=checked]:bg-[#E59C45] data-[state=unchecked]:bg-input"
               />
             </div>
           </div>
+          <div className="flex items-center space-x-2">
+      <Switch id="airplane-mode" />
+      <Label htmlFor="airplane-mode">Airplane Mode</Label>
+    </div>
 
           {/* Pass standard */}
           <Link href="/pass" className="flex items-center bg-gray-100 rounded-full py-3 px-4 mb-8">
