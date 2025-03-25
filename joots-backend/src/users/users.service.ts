@@ -1,6 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { User } from '@prisma/client'; // Modèle User
+import { Prisma } from '@prisma/client';
+
+type UserWithAuth = Prisma.UserGetPayload<{ include: { auth: true } }>
 
 @Injectable()
 export class UsersService {
@@ -10,14 +12,17 @@ export class UsersService {
     return this.prisma.user.findMany();
   }
 
-  async findById(id: string): Promise<User> {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+  async findById(id: string): Promise<UserWithAuth> {
+    const user = await this.prisma.user.findUnique({ 
+      where: { id },
+      include: { auth: true }
+    });
 
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
 
-    return user;
+    return user as UserWithAuth;
   }
 
   async getUsersCount() {

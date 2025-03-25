@@ -12,12 +12,12 @@ export class AuthService {
 
   private generateTokens(user: any) {
     const accessToken = this.jwtService.sign(
-      { email: user.email, username: user.username },
+      { userId: user.id, username: user.username },
       { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_EXPIRATION }
     );
     
     const refreshToken = this.jwtService.sign(
-      { email: user.email, username: user.username },
+      { userId: user.id, username: user.username },
       { secret: process.env.JWT_REFRESH_SECRET, expiresIn: process.env.JWT_REFRESH_EXPIRATION }
     );
 
@@ -25,58 +25,87 @@ export class AuthService {
   }
 
   async register(email: string, password: string) {
-    if (!password) throw new Error('Password is required'); // 🔥 Ajoute une vérification
+    if (!password) throw new Error('Password is required');
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const newUser = await this.prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        username: '', // Temporary username, will be updated later
-      },
+    // Créer l'utilisateur et l'authentification en une seule transaction
+    const result = await this.prisma.$transaction(async (prisma) => {
+      // Créer l'utilisateur avec un username temporaire
+      const user = await prisma.user.create({
+        data: {
+          username: '', // Sera mis à jour après
+          auth: {
+            create: {
+              email,
+              password: hashedPassword,
+            },
+          },
+        },
+      });
+
+      // Mettre à jour le username avec le numéro d'utilisateur
+      const username = `Jooster${user.userNumber}`;
+      return prisma.user.update({
+        where: { id: user.id },
+        data: { username },
+      });
     });
-    const username = `Jooster${newUser.userNumber}`;
-    return this.prisma.user.update({
-      where: { id: newUser.id },
-      data: { username },
-    });
+
+    const tokens = this.generateTokens(result);
+    await this.updateTokens(result.id, tokens);
+
+    return result;
   }
 
   async login(email: string, password: string) {
-    
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user) {
+    console.log(this.prisma)
+    const auth = await this.prisma.auth.findUnique({
+      where: { email },
+      include: { user: true },
+    });
+
+    if (!auth) {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const passwordValid = await bcrypt.compare(password, user.password);
+    const passwordValid = await bcrypt.compare(password, auth.password);
     if (!passwordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    console.log('Login user', user);
+
     await this.prisma.user.update({
-      where: { id: user.id },
+      where: { id: auth.userId },
       data: { isOnline: true },
     });
 
-    const tokens = this.generateTokens(user);
+    const tokens = this.generateTokens(auth.user);
+    await this.updateTokens(auth.userId, tokens);
+
     return { 
       access_token: tokens.accessToken, 
       refresh_token: tokens.refreshToken,
-      user 
+      user: {
+        ...auth.user,
+        email: auth.email
+      }
     };
   }
 
   async refreshToken(refreshToken: string) {
     try {
       const decoded = this.jwtService.verify(refreshToken, { secret: process.env.JWT_REFRESH_SECRET });
-      const user = await this.prisma.user.findUnique({ where: { email: decoded.email } });
+      const auth = await this.prisma.auth.findUnique({
+        where: { userId: decoded.userId },
+        include: { user: true },
+      });
       
-      if (!user) {
+      if (!auth) {
         throw new UnauthorizedException('User not found');
       }
 
-      const tokens = this.generateTokens(user);
+      const tokens = this.generateTokens(auth.user);
+      await this.updateTokens(auth.userId, tokens);
+
       return { 
         access_token: tokens.accessToken, 
         refresh_token: tokens.refreshToken 
@@ -92,5 +121,15 @@ export class AuthService {
       data: { isOnline: false },
     });
     return { message: 'User logged out successfully' };
+  }
+
+  private async updateTokens(userId: string, tokens: { accessToken: string; refreshToken: string }) {
+    await this.prisma.auth.update({
+      where: { userId },
+      data: { 
+        accessToken: tokens.accessToken,
+        refreshToken: tokens.refreshToken,
+      },
+    });
   }
 }

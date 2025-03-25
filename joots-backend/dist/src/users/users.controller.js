@@ -33,9 +33,12 @@ let UsersController = class UsersController {
     }
     async getUser(id) {
         const user = await this.usersService.findById(id);
+        if (!user.auth) {
+            throw new common_1.NotFoundException('Données d\'authentification non trouvées');
+        }
         return {
             id: user.id,
-            email: user.email,
+            email: user.auth.email,
             username: user.username,
         };
     }

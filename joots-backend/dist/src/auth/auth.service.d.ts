@@ -7,26 +7,29 @@ export declare class AuthService {
     private generateTokens;
     register(email: string, password: string): Promise<{
         id: string;
+        avatar: string | null;
+        bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
-        email: string;
-        password: string;
         username: string;
         isOnline: boolean;
-        avatar: string | null;
-        createdAt: Date;
+        isAvailableForChat: boolean;
     }>;
     login(email: string, password: string): Promise<{
         access_token: string;
         refresh_token: string;
         user: {
-            id: string;
-            userNumber: number;
             email: string;
-            password: string;
+            id: string;
+            avatar: string | null;
+            bio: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            userNumber: number;
             username: string;
             isOnline: boolean;
-            avatar: string | null;
-            createdAt: Date;
+            isAvailableForChat: boolean;
         };
     }>;
     refreshToken(refreshToken: string): Promise<{
@@ -36,4 +39,5 @@ export declare class AuthService {
     logout(userId: string): Promise<{
         message: string;
     }>;
+    private updateTokens;
 }

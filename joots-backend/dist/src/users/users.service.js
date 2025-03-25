@@ -21,7 +21,10 @@ let UsersService = class UsersService {
         return this.prisma.user.findMany();
     }
     async findById(id) {
-        const user = await this.prisma.user.findUnique({ where: { id } });
+        const user = await this.prisma.user.findUnique({
+            where: { id },
+            include: { auth: true }
+        });
         if (!user) {
             throw new common_1.NotFoundException('Utilisateur non trouvé');
         }

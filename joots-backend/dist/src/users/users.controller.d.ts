@@ -4,13 +4,14 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     getUsers(): Promise<{
         id: string;
+        avatar: string | null;
+        bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
-        email: string;
-        password: string;
         username: string;
         isOnline: boolean;
-        avatar: string | null;
-        createdAt: Date;
+        isAvailableForChat: boolean;
     }[]>;
     getUsersCount(): Promise<{
         totalUsers: number;

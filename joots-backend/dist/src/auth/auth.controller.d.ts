@@ -5,25 +5,28 @@ export declare class AuthController {
     constructor(authService: AuthService);
     register(email: string, password: string): Promise<{
         id: string;
+        avatar: string | null;
+        bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
-        email: string;
-        password: string;
         username: string;
         isOnline: boolean;
-        avatar: string | null;
-        createdAt: Date;
+        isAvailableForChat: boolean;
     }>;
     login(loginDto: LoginDto): Promise<{
         success: boolean;
         user: {
-            id: string;
-            userNumber: number;
             email: string;
-            password: string;
+            id: string;
+            avatar: string | null;
+            bio: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            userNumber: number;
             username: string;
             isOnline: boolean;
-            avatar: string | null;
-            createdAt: Date;
+            isAvailableForChat: boolean;
         };
         access_token: string;
     }>;

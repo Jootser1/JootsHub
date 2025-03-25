@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param } from '@nestjs/common'; // ✅ Add `UseGuards`
+import { Controller, Get, UseGuards, Param, NotFoundException } from '@nestjs/common'; // ✅ Add `UseGuards` and `NotFoundException`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { access } from 'fs';
@@ -30,9 +30,12 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getUser(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
+    if (!user.auth) {
+      throw new NotFoundException('Données d\'authentification non trouvées');
+    }
     return {
       id: user.id,
-      email: user.email,
+      email: user.auth.email,
       username: user.username,
     };
   }

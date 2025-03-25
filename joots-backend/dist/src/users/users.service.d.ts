@@ -1,22 +1,29 @@
 import { PrismaService } from '../../prisma/prisma.service';
-import { User } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+type UserWithAuth = Prisma.UserGetPayload<{
+    include: {
+        auth: true;
+    };
+}>;
 export declare class UsersService {
     private readonly prisma;
     constructor(prisma: PrismaService);
     getAllUsers(): Promise<{
         id: string;
+        avatar: string | null;
+        bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
-        email: string;
-        password: string;
         username: string;
         isOnline: boolean;
-        avatar: string | null;
-        createdAt: Date;
+        isAvailableForChat: boolean;
     }[]>;
-    findById(id: string): Promise<User>;
+    findById(id: string): Promise<UserWithAuth>;
     getUsersCount(): Promise<number>;
     getOnlineUsers(): Promise<{
         id: string;
         username: string;
     }[]>;
 }
+export {};
