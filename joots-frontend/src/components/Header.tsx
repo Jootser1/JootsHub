@@ -13,24 +13,7 @@ export function Header() {
       <JootsLogo className="w-24 h-auto" />
       <Link href="/profile">
         <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 rounded-full overflow-hidden">
-            <Image 
-              src={user?.avatar || "/placeholder.svg"} 
-              alt={user?.username || ""}
-              width={32}
-              height={32}
-            />
-          </div>
-          <span className="font-medium">{user?.username}</span>
-          <button
-            onClick={() => {
-              logout();
-              signOut();
-            }}
-            className="bg-red-500 px-3 py-1 rounded text-white"
-          >
-            Déconnexion
-          </button>
+          <span className="font-medium">{user?.username || "Non connecté"}</span>
         </div>
       </Link>
     </header>

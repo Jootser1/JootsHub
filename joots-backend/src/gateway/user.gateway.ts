@@ -26,13 +26,11 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     try {
       const { token } = client.handshake.auth;
-      console.log("token dans user gateway", token);
       if (!token) throw new Error("Token manquant");
 
       // Vérifier et décoder le JWT
       const decoded: any = jwt.verify(token, process.env.JWT_SECRET as string);
       const username = decoded.username;
-      console.log("username dans user gateway", username);
       // Stocker dans Redis et mettre à jour Prisma
       await this.redisClient.sAdd('online_users', username);
       await this.prisma.user.update({

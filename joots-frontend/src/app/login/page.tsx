@@ -33,6 +33,8 @@ export default function LoginPage() {
         <form onSubmit={handleSubmit}>
           <input 
             type="email" 
+            id="email"
+            name="email"
             placeholder="Email / ID Jootser" 
             value={email} 
             onChange={(e) => setEmail(e.target.value)}
@@ -41,6 +43,8 @@ export default function LoginPage() {
           />
           <input 
             type="password" 
+            id="password"
+            name="password"
             placeholder="Password" 
             value={password} 
             onChange={(e) => setPassword(e.target.value)}

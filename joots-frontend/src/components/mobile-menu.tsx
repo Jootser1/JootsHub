@@ -1,14 +1,27 @@
 "use client"
 
 import type React from "react"
-
 import { ShoppingBag, Package, Mail, Gift, HelpCircle, Settings, ChevronRight, Copy } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { useStore } from "@/app/store/store"
+import { signOut } from "next-auth/react"
 
 export default function MobileMenu() {
-  const { mobileMenuOpen, setMobileMenuOpen, user } = useStore()
+  const router = useRouter()
+  const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useStore()
+
+  const handleLogout = async () => {
+    try {
+      setMobileMenuOpen(false)
+      await signOut({ redirect: false })
+      logout()
+      router.push("/login")
+    } catch (error) {
+      console.error("Erreur lors de la déconnexion:", error)
+    }
+  }
 
   const copyClientId = () => {
     navigator.clipboard.writeText(user?.id || "")
@@ -68,7 +81,7 @@ export default function MobileMenu() {
             <MenuItem href="/actualites" icon={<Mail />} label="Actualités" hasNotification />
             <MenuItem href="/cadeaux" icon={<Gift />} label="Cadeaux" hasNotification />
             <MenuItem href="/astuces" icon={<HelpCircle />} label="Astuces" />
-            <MenuItem href="/autres" icon={<Settings />} label="Autres" />
+            <MenuItem onClick={handleLogout} icon={<Settings />} label="Se Déconnecter" />
           </div>
         </div>
       </div>
@@ -76,21 +89,37 @@ export default function MobileMenu() {
   )
 }
 
+
 interface MenuItemProps {
-  href: string
+  href?: string
+  onClick?: () => void
   icon: React.ReactNode
   label: string
   hasNotification?: boolean
 }
 
-function MenuItem({ href, icon, label, hasNotification = false }: MenuItemProps) {
-  return (
-    <Link href={href} className="flex items-center text-gray-600 hover:text-gray-900">
+function MenuItem({ href, onClick, icon, label, hasNotification = false }: MenuItemProps) {
+  const content = (
+    <>
       <div className="relative w-8 h-8 mr-3 text-gray-500">
         {icon}
         {hasNotification && <span className="absolute -top-1 -right-1 bg-red-500 w-2.5 h-2.5 rounded-full" />}
       </div>
       <span className="text-lg">{label}</span>
+    </>
+  )
+
+  if (onClick) {
+    return (
+      <button onClick={onClick} className="flex items-center text-gray-600 hover:text-gray-900 w-full">
+        {content}
+      </button>
+    )
+  }
+
+  return (
+    <Link href={href || "/"} className="flex items-center text-gray-600 hover:text-gray-900">
+      {content}
     </Link>
   )
 }

@@ -29,12 +29,10 @@ let UserGateway = class UserGateway {
     async handleConnection(client) {
         try {
             const { token } = client.handshake.auth;
-            console.log("token dans user gateway", token);
             if (!token)
                 throw new Error("Token manquant");
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             const username = decoded.username;
-            console.log("username dans user gateway", username);
             await this.redisClient.sAdd('online_users', username);
             await this.prisma.user.update({
                 where: { username },

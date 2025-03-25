@@ -35,7 +35,7 @@ const processQueue = (error: Error | null = null) => {
 axiosInstance.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const accessToken = useStore.getState().user.accessToken;
+      const accessToken = useStore.getState().user?.accessToken ?? null;
       if (accessToken) {
         config.headers.Authorization = `Bearer ${accessToken}`;
       }
@@ -62,7 +62,7 @@ axiosInstance.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const refreshToken = useStore.getState().user.refreshToken;
+      const refreshToken = useStore.getState().user?.refreshToken;
 
       if (!refreshToken) {
         processQueue(new Error('No refresh token'));

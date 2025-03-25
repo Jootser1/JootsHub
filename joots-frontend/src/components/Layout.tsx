@@ -10,7 +10,13 @@ import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"
 import MobileMenu from "./mobile-menu"
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function Layout({ 
+  children,
+  experience = "hub"
+}: { 
+  children: React.ReactNode
+  experience?: "hub" | "icebreaker" | "socioscopy" | "revelio"
+}) {
   const router = useRouter();
   const { data: session, status } = useSession();
   const { user, setUser, logout } = useStore();
@@ -58,7 +64,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     <div className="h-screen flex flex-col overflow-hidden">
       <Header />
       <main className="flex-1 overflow-y-auto">{children}</main>
-      <BottomBar experience="hub" />
+      <BottomBar experience={experience} />
       <MobileMenu />
     </div>
   );
