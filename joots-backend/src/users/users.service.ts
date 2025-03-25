@@ -35,4 +35,17 @@ export class UsersService {
       select: { id: true, username: true },
     });
   }
+
+  async updateChatPreference(userId: string, isAvailableForChat: boolean) {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isAvailableForChat },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Utilisateur non trouvé');
+    }
+
+    return user;
+  }
 }

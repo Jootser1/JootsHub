@@ -25,4 +25,15 @@ export declare class UsersController {
         email: string;
         username: string;
     }>;
+    updateChatPreference(id: string, isAvailableForChat: boolean): Promise<{
+        id: string;
+        avatar: string | null;
+        bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        userNumber: number;
+        username: string;
+        isOnline: boolean;
+        isAvailableForChat: boolean;
+    }>;
 }

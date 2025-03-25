@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards, Param, NotFoundException } from '@nestjs/common'; // ✅ Add `UseGuards` and `NotFoundException`
+import { Controller, Get, UseGuards, Param, NotFoundException, Patch, Body } from '@nestjs/common'; // ✅ Add `UseGuards`, `NotFoundException`, `Patch`, and `Body`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { access } from 'fs';
@@ -38,5 +38,14 @@ export class UsersController {
       email: user.auth.email,
       username: user.username,
     };
+  }
+
+  @Patch(':id/chat-preference')
+  @UseGuards(JwtAuthGuard)
+  async updateChatPreference(
+    @Param('id') id: string,
+    @Body('isAvailableForChat') isAvailableForChat: boolean,
+  ) {
+    return this.usersService.updateChatPreference(id, isAvailableForChat);
   }
 }

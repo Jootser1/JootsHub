@@ -39,6 +39,16 @@ let UsersService = class UsersService {
             select: { id: true, username: true },
         });
     }
+    async updateChatPreference(userId, isAvailableForChat) {
+        const user = await this.prisma.user.update({
+            where: { id: userId },
+            data: { isAvailableForChat },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        }
+        return user;
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

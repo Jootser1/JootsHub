@@ -8,6 +8,7 @@ interface User {
   accessToken: string | null
   refreshToken: string | null
   avatar?: string
+  isAvailableForChat?: boolean
 }
 
 interface UserStore {

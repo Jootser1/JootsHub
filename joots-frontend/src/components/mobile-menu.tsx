@@ -1,12 +1,14 @@
 "use client"
 
 import type React from "react"
-import { ShoppingBag, Package, Mail, Gift, HelpCircle, Settings, ChevronRight, Copy } from "lucide-react"
+import { ShoppingBag, Package, Mail, Gift, HelpCircle, Settings, ChevronRight, Copy, MessageSquare } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useStore } from "@/app/store/store"
 import { signOut } from "next-auth/react"
+import { Switch } from "@/components/ui/switch"
+import axiosInstance from "@/app/api/axiosInstance"
 
 export default function MobileMenu() {
   const router = useRouter()
@@ -27,6 +29,21 @@ export default function MobileMenu() {
     navigator.clipboard.writeText(user?.id || "")
     // Vous pourriez ajouter une notification de succès ici
   }
+
+  const handleChatPreferenceChange = async (checked: boolean) => {
+    try {
+      await axiosInstance.patch(`/users/${user?.id}/chat-preference`, {
+        isAvailableForChat: checked
+      });
+
+      // Mettre à jour le store avec la nouvelle préférence
+      useStore.setState((state) => ({
+        user: state.user ? { ...state.user, isAvailableForChat: checked } : null
+      }));
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour de la préférence:', error);
+    }
+  };
 
   return (
     <>
@@ -65,6 +82,21 @@ export default function MobileMenu() {
             <span className="text-gray-800 font-medium flex-1">{user?.username || "Non connecté"}</span>
             <ChevronRight className="h-5 w-5 text-gray-400" />
           </Link>
+
+          {/* Préférence de chat */}
+          <div className="mb-8 p-4 bg-gray-100 rounded-2xl">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <MessageSquare className="h-5 w-5 text-gray-500 mr-2" />
+                <span className="text-gray-700 font-medium">Accepter les invitations d'inconnus</span>
+              </div>
+              <Switch
+                checked={user?.isAvailableForChat ?? true}
+                onCheckedChange={handleChatPreferenceChange}
+                className="data-[state=checked]:bg-blue-600"
+              />
+            </div>
+          </div>
 
           {/* Pass standard */}
           <Link href="/pass" className="flex items-center bg-gray-100 rounded-full py-3 px-4 mb-8">
