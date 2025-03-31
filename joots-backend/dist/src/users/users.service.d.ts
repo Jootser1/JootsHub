@@ -36,5 +36,10 @@ export declare class UsersService {
         isOnline: boolean;
         isAvailableForChat: boolean;
     }>;
+    getRandomAvailableUser(currentUserId: string): Promise<{
+        id: string;
+        avatar: string | null;
+        username: string;
+    }>;
 }
 export {};

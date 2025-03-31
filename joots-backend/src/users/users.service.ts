@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
 
+
 type UserWithAuth = Prisma.UserGetPayload<{ include: { auth: true } }>
 
 @Injectable()
@@ -16,8 +17,8 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ 
       where: { id },
       include: { auth: true }
-    });
-
+  });
+    console.log('findById user:', user);
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
@@ -40,12 +41,57 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { isAvailableForChat },
-    });
+  });
 
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
-    }
+  }
 
     return user;
+  }
+
+  async getRandomAvailableUser(currentUserId: string) {
+    // Récupérer les IDs des utilisateurs avec qui nous avons déjà une conversation
+    const existingConversations = await this.prisma.conversation.findMany({
+      where: {
+        OR: [
+          { initiatorId: currentUserId },
+          { receiverId: currentUserId }
+        ]
+      },
+      select: {
+        initiatorId: true,
+        receiverId: true
+      }
+    });
+  
+    // Créer un Set des IDs des utilisateurs avec qui nous avons déjà parlé
+    const existingUserIds = new Set(
+      existingConversations.flatMap(conv => [conv.initiatorId, conv.receiverId])
+    );
+  
+    const availableUsers = await this.prisma.user.findMany({
+      where: {
+        AND: [
+          { isOnline: true },
+          { isAvailableForChat: true },
+          { id: { not: currentUserId } }, // Exclure l'utilisateur actuel
+          { id: { notIn: Array.from(existingUserIds) } } // Exclure les utilisateurs avec qui nous avons déjà parlé
+        ]
+      },
+      select: {
+        id: true,
+        username: true,
+        avatar: true
+      }
+    });
+  
+    if (availableUsers.length === 0) {
+      throw new NotFoundException('Aucun utilisateur disponible pour le chat');
+    }
+  
+    // Sélectionner un utilisateur aléatoire
+    const randomIndex = Math.floor(Math.random() * availableUsers.length);
+    return availableUsers[randomIndex];
   }
 }

@@ -1,7 +1,7 @@
 import { Controller, Get, UseGuards, Param, NotFoundException, Patch, Body } from '@nestjs/common'; // ✅ Add `UseGuards`, `NotFoundException`, `Patch`, and `Body`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { access } from 'fs';
+import { CurrentUser } from '../auth/current-user.decorator';
 
 @Controller('users') // 👈 Route de base : /users
 export class UsersController {
@@ -30,6 +30,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getUser(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
+    console.log('getUser user:', user);
     if (!user.auth) {
       throw new NotFoundException('Données d\'authentification non trouvées');
     }
@@ -37,6 +38,9 @@ export class UsersController {
       id: user.id,
       email: user.auth.email,
       username: user.username,
+      avatar: user.avatar || null,
+      isAvailableForChat: user.isAvailableForChat || false,
+      isOnline: user.isOnline || false
     };
   }
 
@@ -47,5 +51,11 @@ export class UsersController {
     @Body('isAvailableForChat') isAvailableForChat: boolean,
   ) {
     return this.usersService.updateChatPreference(id, isAvailableForChat);
+  }
+
+  @Get('random/available')
+  @UseGuards(JwtAuthGuard)
+  async getRandomAvailableUser(@CurrentUser() user: any) {
+    return this.usersService.getRandomAvailableUser(user.id);
   }
 }

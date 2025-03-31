@@ -21,11 +21,6 @@ let AuthService = class AuthService {
         this.prisma = prisma;
         this.jwtService = jwtService;
     }
-    generateTokens(user) {
-        const accessToken = this.jwtService.sign({ userId: user.id, username: user.username }, { secret: process.env.JWT_SECRET, expiresIn: process.env.JWT_EXPIRATION });
-        const refreshToken = this.jwtService.sign({ userId: user.id, username: user.username }, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: process.env.JWT_REFRESH_EXPIRATION });
-        return { accessToken, refreshToken };
-    }
     async register(email, password) {
         if (!password)
             throw new Error('Password is required');
@@ -48,74 +43,49 @@ let AuthService = class AuthService {
                 data: { username },
             });
         });
-        const tokens = this.generateTokens(result);
-        await this.updateTokens(result.id, tokens);
         return result;
     }
     async login(email, password) {
-        console.log(this.prisma);
+        console.log('Recherche de l\'utilisateur avec l\'email:', email);
         const auth = await this.prisma.auth.findUnique({
             where: { email },
             include: { user: true },
         });
         if (!auth) {
+            console.log('Utilisateur non trouvé');
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        console.log('Vérification du mot de passe');
         const passwordValid = await bcrypt.compare(password, auth.password);
         if (!passwordValid) {
+            console.log('Mot de passe invalide');
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
+        console.log('Mise à jour du statut en ligne');
         await this.prisma.user.update({
             where: { id: auth.userId },
             data: { isOnline: true },
         });
-        const tokens = this.generateTokens(auth.user);
-        await this.updateTokens(auth.userId, tokens);
+        const payload = {
+            sub: auth.userId,
+            email: auth.email,
+            username: auth.user.username
+        };
+        const access_token = this.jwtService.sign(payload);
         return {
-            access_token: tokens.accessToken,
-            refresh_token: tokens.refreshToken,
             user: {
                 ...auth.user,
                 email: auth.email
-            }
+            },
+            access_token
         };
-    }
-    async refreshToken(refreshToken) {
-        try {
-            const decoded = this.jwtService.verify(refreshToken, { secret: process.env.JWT_REFRESH_SECRET });
-            const auth = await this.prisma.auth.findUnique({
-                where: { userId: decoded.userId },
-                include: { user: true },
-            });
-            if (!auth) {
-                throw new common_1.UnauthorizedException('User not found');
-            }
-            const tokens = this.generateTokens(auth.user);
-            await this.updateTokens(auth.userId, tokens);
-            return {
-                access_token: tokens.accessToken,
-                refresh_token: tokens.refreshToken
-            };
-        }
-        catch (error) {
-            throw new common_1.UnauthorizedException('Invalid refresh token');
-        }
     }
     async logout(userId) {
         await this.prisma.user.update({
             where: { id: userId },
             data: { isOnline: false },
         });
-        return { message: 'User logged out successfully' };
-    }
-    async updateTokens(userId, tokens) {
-        await this.prisma.auth.update({
-            where: { userId },
-            data: {
-                accessToken: tokens.accessToken,
-                refreshToken: tokens.refreshToken,
-            },
-        });
+        return { message: 'Logged out successfully' };
     }
 };
 exports.AuthService = AuthService;

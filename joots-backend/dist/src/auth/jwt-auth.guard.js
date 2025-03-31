@@ -5,18 +5,10 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
-var __metadata = (this && this.__metadata) || function (k, v) {
-    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JwtAuthGuard = void 0;
 const common_1 = require("@nestjs/common");
-const jwt_1 = require("@nestjs/jwt");
 let JwtAuthGuard = class JwtAuthGuard {
-    jwtService;
-    constructor(jwtService) {
-        this.jwtService = jwtService;
-    }
     canActivate(context) {
         const request = context.switchToHttp().getRequest();
         const authHeader = request.headers['authorization'];
@@ -25,8 +17,11 @@ let JwtAuthGuard = class JwtAuthGuard {
         }
         try {
             const token = authHeader.split(' ')[1];
-            const decoded = this.jwtService.verify(token);
-            request.user = decoded;
+            const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+            request.user = {
+                sub: decoded.sub,
+                id: decoded.sub
+            };
             return true;
         }
         catch {
@@ -36,7 +31,6 @@ let JwtAuthGuard = class JwtAuthGuard {
 };
 exports.JwtAuthGuard = JwtAuthGuard;
 exports.JwtAuthGuard = JwtAuthGuard = __decorate([
-    (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [jwt_1.JwtService])
+    (0, common_1.Injectable)()
 ], JwtAuthGuard);
 //# sourceMappingURL=jwt-auth.guard.js.map

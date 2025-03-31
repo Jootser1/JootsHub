@@ -16,13 +16,25 @@ const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const prisma_module_1 = require("../prisma/prisma.module");
 const logger_module_1 = require("./logger/logger.module");
-const gateway_module_1 = require("./gateway/gateway.module");
+const gateways_module_1 = require("./gateways/gateways.module");
+const config_1 = require("@nestjs/config");
+const conversations_module_1 = require("./conversations/conversations.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [users_module_1.UsersModule, auth_module_1.AuthModule, prisma_module_1.PrismaModule, logger_module_1.LoggerModule, gateway_module_1.GatewayModule],
+        imports: [
+            config_1.ConfigModule.forRoot({
+                isGlobal: true,
+            }),
+            users_module_1.UsersModule,
+            auth_module_1.AuthModule,
+            prisma_module_1.PrismaModule,
+            logger_module_1.LoggerModule,
+            gateways_module_1.GatewaysModule,
+            conversations_module_1.ConversationsModule
+        ],
         controllers: [app_controller_1.AppController, users_controller_1.UsersController],
         providers: [app_service_1.AppService, users_service_1.UsersService],
     })

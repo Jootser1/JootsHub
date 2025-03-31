@@ -16,6 +16,7 @@ exports.UsersController = void 0;
 const common_1 = require("@nestjs/common");
 const users_service_1 = require("./users.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const current_user_decorator_1 = require("../auth/current-user.decorator");
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {
@@ -33,6 +34,7 @@ let UsersController = class UsersController {
     }
     async getUser(id) {
         const user = await this.usersService.findById(id);
+        console.log('getUser user:', user);
         if (!user.auth) {
             throw new common_1.NotFoundException('Données d\'authentification non trouvées');
         }
@@ -40,10 +42,16 @@ let UsersController = class UsersController {
             id: user.id,
             email: user.auth.email,
             username: user.username,
+            avatar: user.avatar || null,
+            isAvailableForChat: user.isAvailableForChat || false,
+            isOnline: user.isOnline || false
         };
     }
     async updateChatPreference(id, isAvailableForChat) {
         return this.usersService.updateChatPreference(id, isAvailableForChat);
+    }
+    async getRandomAvailableUser(user) {
+        return this.usersService.getRandomAvailableUser(user.id);
     }
 };
 exports.UsersController = UsersController;
@@ -85,6 +93,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Boolean]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "updateChatPreference", null);
+__decorate([
+    (0, common_1.Get)('random/available'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "getRandomAvailableUser", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

@@ -6,17 +6,21 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GatewayModule = void 0;
+exports.GatewaysModule = void 0;
 const common_1 = require("@nestjs/common");
 const user_gateway_1 = require("./user.gateway");
+const chat_gateway_1 = require("./chat.gateway");
 const prisma_service_1 = require("../../prisma/prisma.service");
-let GatewayModule = class GatewayModule {
+const redis_module_1 = require("../redis/redis.module");
+const redis_service_1 = require("../redis/redis.service");
+let GatewaysModule = class GatewaysModule {
 };
-exports.GatewayModule = GatewayModule;
-exports.GatewayModule = GatewayModule = __decorate([
+exports.GatewaysModule = GatewaysModule;
+exports.GatewaysModule = GatewaysModule = __decorate([
     (0, common_1.Module)({
-        providers: [user_gateway_1.UserGateway, prisma_service_1.PrismaService],
-        exports: [user_gateway_1.UserGateway],
+        imports: [redis_module_1.RedisModule],
+        providers: [user_gateway_1.UserGateway, chat_gateway_1.ChatGateway, prisma_service_1.PrismaService, redis_service_1.RedisService],
+        exports: [user_gateway_1.UserGateway, chat_gateway_1.ChatGateway],
     })
-], GatewayModule);
-//# sourceMappingURL=gateway.module.js.map
+], GatewaysModule);
+//# sourceMappingURL=gateways.module.js.map

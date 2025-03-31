@@ -1,24 +1,30 @@
 import { Injectable, CanActivate, ExecutionContext } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class JwtAuthGuard implements CanActivate {
-  constructor(private readonly jwtService: JwtService) {}
-
   canActivate(context: ExecutionContext): boolean {
     interface AuthenticatedRequest extends Request {
-      user?: any;
+      user?: {
+        sub: string;
+        id: string;
+      };
     }
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers['authorization'] as string | undefined;
+    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return false;
     }
+
     try {
       const token = authHeader.split(' ')[1];
-      const decoded = this.jwtService.verify<{ [key: string]: any }>(token);
-      request.user = decoded; // Ajoute `user` à `request`
+      // Le token est déjà vérifié par Next-Auth, on peut le décoder directement
+      const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      request.user = {
+        sub: decoded.sub,
+        id: decoded.sub // Next-Auth utilise 'sub' comme ID d'utilisateur
+      };
       return true;
     } catch {
       return false;

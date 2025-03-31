@@ -1,13 +1,10 @@
 import { Module } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UsersController } from './users.controller';
-import { PrismaModule } from '../../prisma/prisma.module'; // 👈 Ajoute ça !
-import { JwtModule } from '@nestjs/jwt';
-
-
+import { PrismaModule } from '../../prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule, JwtModule.register({})],
+  imports: [PrismaModule],
   controllers: [UsersController],
   providers: [UsersService],
 })

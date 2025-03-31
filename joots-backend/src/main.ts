@@ -10,6 +10,10 @@ async function bootstrap() {
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
+  
+  // Configuration WebSocket
+  app.enableShutdownHooks();
+  
   await app.listen(process.env.PORT || 4000);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }

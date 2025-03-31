@@ -1,92 +1,49 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from "axios";
-import { useStore } from "@/app/store/store";
+import { getSession } from "next-auth/react";
 
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean;
 }
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-interface QueueItem {
-  resolve: (value?: unknown) => void
-  reject: (reason?: Error) => void
-}
-
-let isRefreshing = false;
-let failedQueue: QueueItem[] = [];
-
-const processQueue = (error: Error | null = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve();
-    }
-  });
-  failedQueue = [];
-};
-
-// Intercepteur pour ajouter dynamiquement le token avant chaque requête
+// Intercepteur pour ajouter le token de session Next-Auth
 axiosInstance.interceptors.request.use(
-  (config) => {
-    if (typeof window !== "undefined") {
-      const accessToken = useStore.getState().user?.accessToken ?? null;
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
+  async (config) => {
+    const session = await getSession();
+    console.log('axiosInstance session:', session);
+    if (session?.accessToken) {
+      config.headers.Authorization = `Bearer ${session.accessToken}`;
     }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
+// Intercepteur pour gérer le refresh token via Next-Auth
 axiosInstance.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
     const originalRequest = error.config as CustomAxiosRequestConfig;
 
     if (error.response?.status === 401 && !originalRequest?._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then(() => axiosInstance(originalRequest))
-          .catch(err => Promise.reject(err));
-      }
-
       originalRequest._retry = true;
-      isRefreshing = true;
-
-      const refreshToken = useStore.getState().user?.refreshToken;
-
-      if (!refreshToken) {
-        processQueue(new Error('No refresh token'));
-        return Promise.reject(error);
-      }
-
+      
       try {
-        const response = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/refresh`, {
-          refresh_token: refreshToken,
-        });
-
-        const { access_token, refresh_token } = response.data;
-        useStore.getState().updateTokens({ 
-          accessToken: access_token, 
-          refreshToken: refresh_token 
-        });
-
-        processQueue();
-        return axiosInstance(originalRequest);
+        // Next-Auth gère automatiquement le refresh token
+        const session = await getSession();
+        if (session?.accessToken) {
+          originalRequest.headers.Authorization = `Bearer ${session.accessToken}`;
+          return axiosInstance(originalRequest);
+        }
       } catch (refreshError) {
-        processQueue(refreshError as Error);
+        // En cas d'échec du refresh, Next-Auth redirigera vers la page de login
         return Promise.reject(refreshError);
-      } finally {
-        isRefreshing = false;
       }
     }
 

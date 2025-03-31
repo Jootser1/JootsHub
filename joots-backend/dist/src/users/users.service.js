@@ -25,6 +25,7 @@ let UsersService = class UsersService {
             where: { id },
             include: { auth: true }
         });
+        console.log('findById user:', user);
         if (!user) {
             throw new common_1.NotFoundException('Utilisateur non trouvé');
         }
@@ -48,6 +49,41 @@ let UsersService = class UsersService {
             throw new common_1.NotFoundException('Utilisateur non trouvé');
         }
         return user;
+    }
+    async getRandomAvailableUser(currentUserId) {
+        const existingConversations = await this.prisma.conversation.findMany({
+            where: {
+                OR: [
+                    { initiatorId: currentUserId },
+                    { receiverId: currentUserId }
+                ]
+            },
+            select: {
+                initiatorId: true,
+                receiverId: true
+            }
+        });
+        const existingUserIds = new Set(existingConversations.flatMap(conv => [conv.initiatorId, conv.receiverId]));
+        const availableUsers = await this.prisma.user.findMany({
+            where: {
+                AND: [
+                    { isOnline: true },
+                    { isAvailableForChat: true },
+                    { id: { not: currentUserId } },
+                    { id: { notIn: Array.from(existingUserIds) } }
+                ]
+            },
+            select: {
+                id: true,
+                username: true,
+                avatar: true
+            }
+        });
+        if (availableUsers.length === 0) {
+            throw new common_1.NotFoundException('Aucun utilisateur disponible pour le chat');
+        }
+        const randomIndex = Math.floor(Math.random() * availableUsers.length);
+        return availableUsers[randomIndex];
     }
 };
 exports.UsersService = UsersService;

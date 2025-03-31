@@ -1,7 +1,6 @@
-import { Controller, Post, Body, BadRequestException, UseGuards } from '@nestjs/common';
+import { Controller, Post, Body, BadRequestException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { AuthGuard } from '@nestjs/passport';
 
 @Controller('auth')
 export class AuthController {
@@ -17,28 +16,25 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
+    console.log('Tentative de connexion avec:', { email: loginDto.email });
     try {
       const result = await this.authService.login(
         loginDto.email,
         loginDto.password
       );
+      console.log('Connexion réussie pour:', loginDto.email);
       return {
         success: true,
         user: result.user,
-        access_token: result.access_token,
+        access_token: result.access_token
       };
-    } catch {
-      throw new BadRequestException('Invalid credentials');
+    } catch (error) {
+      console.error('Erreur de connexion:', error);
+      throw new BadRequestException(error.message || 'Invalid credentials');
     }
   }
 
-  @Post('refresh')
-  async refreshToken(@Body() body: { refresh_token: string }) {
-    return this.authService.refreshToken(body.refresh_token);
-  }
-
   @Post('logout')
-  @UseGuards(AuthGuard('jwt'))
   async logout(@Body() body: { userId: string }) {
     return this.authService.logout(body.userId);
   }
