@@ -5,12 +5,20 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
     else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
     return c > 3 && r && Object.defineProperty(target, key, r), r;
 };
+var __metadata = (this && this.__metadata) || function (k, v) {
+    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.HeartbeatService = void 0;
 const common_1 = require("@nestjs/common");
+const redis_service_1 = require("../../redis/redis.service");
 let HeartbeatService = class HeartbeatService {
+    redisService;
     heartbeatIntervals = new Map();
     logger = new common_1.Logger('HeartbeatService');
+    constructor(redisService) {
+        this.redisService = redisService;
+    }
     getUserInfo(client) {
         const userId = client.data?.userId || 'unknown';
         const username = client.data?.username || 'unknown';
@@ -62,10 +70,20 @@ let HeartbeatService = class HeartbeatService {
             this.logger.debug(`Heartbeat timeout reset for client ${client.id} ${userInfo}`);
         }
     }
-    handlePong(client) {
+    async handlePong(client) {
         this.resetHeartbeatTimeout(client);
         const userInfo = this.getUserInfo(client);
         this.logger.debug(`Pong received from client ${client.id} ${userInfo}`);
+        const userId = client.data?.userId;
+        if (userId) {
+            try {
+                await this.redisService.refreshUserStatus(userId);
+                this.logger.debug(`Status TTL refreshed for user ${userId}`);
+            }
+            catch (error) {
+                this.logger.error(`Error refreshing user status TTL: ${error.message}`);
+            }
+        }
     }
     cleanupAllHeartbeats() {
         for (const [clientId, intervals] of this.heartbeatIntervals.entries()) {
@@ -78,6 +96,7 @@ let HeartbeatService = class HeartbeatService {
 };
 exports.HeartbeatService = HeartbeatService;
 exports.HeartbeatService = HeartbeatService = __decorate([
-    (0, common_1.Injectable)()
+    (0, common_1.Injectable)(),
+    __metadata("design:paramtypes", [redis_service_1.RedisService])
 ], HeartbeatService);
 //# sourceMappingURL=heartbeat.service.js.map

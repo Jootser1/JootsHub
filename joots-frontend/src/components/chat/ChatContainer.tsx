@@ -21,7 +21,8 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   const { 
     isConnected, 
     sendMessage, 
-    sendTypingStatus
+    sendTypingStatus,
+    messages
   } = useChatSocket(conversationId);
   const { isReady, currentQuestion, handleReady, handleResponse } = useIcebreaker(conversationId);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -87,7 +88,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         isOnline={otherUser.isOnline}
       />
       <ChatMessages 
-        messages={conversation.messages}
+        messages={messages}
         currentUserId={session.user.id}
         isConnected={isConnected}
       />

@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Socket } from 'socket.io';
+import { RedisService } from '../../redis/redis.service';
 
 interface HeartbeatIntervals {
   pingInterval: NodeJS.Timeout;
@@ -10,6 +11,8 @@ interface HeartbeatIntervals {
 export class HeartbeatService {
   private readonly heartbeatIntervals = new Map<string, HeartbeatIntervals>();
   private readonly logger = new Logger('HeartbeatService');
+
+  constructor(private readonly redisService: RedisService) {}
 
   private getUserInfo(client: Socket): string {
     const userId = client.data?.userId || 'unknown';
@@ -75,10 +78,22 @@ export class HeartbeatService {
     }
   }
 
-  handlePong(client: Socket) {
+  async handlePong(client: Socket) {
     this.resetHeartbeatTimeout(client);
     const userInfo = this.getUserInfo(client);
     this.logger.debug(`Pong received from client ${client.id} ${userInfo}`);
+    
+    // À chaque pong, rafraîchir le TTL du statut utilisateur dans Redis
+    const userId = client.data?.userId;
+    if (userId) {
+      try {
+        // Rafraîchir le TTL - étend la durée de vie du statut en ligne
+        await this.redisService.refreshUserStatus(userId);
+        this.logger.debug(`Status TTL refreshed for user ${userId}`);
+      } catch (error) {
+        this.logger.error(`Error refreshing user status TTL: ${error.message}`);
+      }
+    }
   }
 
   // Méthode utilitaire pour nettoyer toutes les connexions

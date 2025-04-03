@@ -59,7 +59,7 @@ export const useOnlineStatus = () => {
     };
     
     // S'abonner à l'événement de changement de statut
-    socket.on('userStatusChange', handleUserStatusChange);
+    const unsubscribe = socket.onUserStatusChange(handleUserStatusChange);
     
     // Émettre un ping pour signaler la présence et vérifier la connexion
     if (socket.connected) {
@@ -68,7 +68,7 @@ export const useOnlineStatus = () => {
 
     return () => {
       logger.debug('Nettoyage des écouteurs d\'événements useOnlineStatus');
-      socket.off('userStatusChange', handleUserStatusChange);
+      unsubscribe();
     };
   }, [socket, session?.user?.id, setParticipantOnlineStatus, updateUserStatus]);
 

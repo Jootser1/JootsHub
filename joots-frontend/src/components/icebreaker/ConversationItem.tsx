@@ -60,10 +60,17 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
             <h3 className="font-medium truncate">{otherUser.username}</h3>
             {lastMessage && (
               <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                {formatDistanceToNow(new Date(lastMessage.timestamp), { 
-                  addSuffix: true,
-                  locale: fr 
-                })}
+                {formatDistanceToNow(
+                  typeof lastMessage.timestamp === 'string' 
+                    ? new Date(lastMessage.timestamp) 
+                    : lastMessage.timestamp instanceof Date 
+                      ? lastMessage.timestamp 
+                      : new Date(), 
+                  { 
+                    addSuffix: true,
+                    locale: fr 
+                  }
+                )}
               </span>
             )}
           </div>

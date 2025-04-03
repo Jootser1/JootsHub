@@ -8,277 +8,201 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { PrismaService } from '../../prisma/prisma.service';
-import { createClient } from 'redis';
-import { RedisService } from '../redis/redis.service';
 import { Logger } from '@nestjs/common';
-import { HeartbeatService } from './services/heartbeat.service';
+import { PrismaService } from '../../prisma/prisma.service';
+import { RedisService } from '../redis/redis.service';
 
 @WebSocketGateway({
-  cors: { 
+  cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://joots.app' // URL de production
-      : 'http://localhost:3000', // URL de développement
-    methods: ['GET', 'POST'],
-    credentials: true,
-    allowedHeaders: ['authorization', 'content-type']
+      ? 'https://joots.app' 
+      : 'http://localhost:3000',
+    credentials: true
   },
-  namespace: 'users',
-  transports: ['websocket', 'polling'],
-  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || '60000'),
-  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL || '25000'),
-  connectTimeout: 10000
+  namespace: 'users'
 })
-
 export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
-  private redisClient = createClient({ url: process.env.REDIS_URL });
-  private connectedClients = new Map<string, Socket>();
-  private userSockets = new Map<string, string>();
-
+  
   private readonly logger = new Logger(UserGateway.name);
-
+  private connectedUsers = new Map<string, Set<string>>();
+  
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redisService: RedisService,
-    private readonly heartbeatService: HeartbeatService,
-  ) {
-    this.redisClient.connect().catch(console.error);
-    // Vérification périodique des connexions actives
-    const cleanupInterval = parseInt(process.env.SOCKET_CLEANUP_INTERVAL || '30000');
-    setInterval(() => this.checkActiveConnections(), cleanupInterval);
-  }
-
-  private async checkActiveConnections() {
-    try {
-      const onlineUsers = await this.redisClient.sMembers('online_users');
-      const currentConnectedUsers = Array.from(this.connectedClients.keys());
-
-      // Trouver les utilisateurs qui sont dans Redis mais pas dans les connexions actives
-      const disconnectedUsers = onlineUsers.filter(userId => !currentConnectedUsers.includes(userId));
-
-      // Mettre à jour Redis et Prisma pour les utilisateurs déconnectés
-      for (const userId of disconnectedUsers) {
-        await this.redisClient.sRem('online_users', userId);
+    private readonly redis: RedisService
+  ) {}
+  
+  // Middleware d'authentification
+  afterInit(server: Server) {
+    server.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token;
+        const userId = socket.handshake.auth.userId;
         
-        try {
-          await this.prisma.user.update({
-            where: { id: userId },
-            data: { isOnline: false }
-          });
-        } catch (error) {
-          if (error.code === 'P2025') {
-            this.logger.warn(`Utilisateur ${userId} non trouvé dans la base de données`);
-          } else {
-            throw error;
-          }
+        if (!token || !userId) {
+          return next(new Error('Authentification requise'));
         }
+        
+        // Extraire le userId du token
+        const validUserId = this.extractUserIdFromToken(token);
+        
+        if (!validUserId || validUserId !== userId) {
+          return next(new Error('Token invalide'));
+        }
+        
+        // Ajouter l'ID utilisateur au socket
+        socket.data.userId = userId;
+        next();
+      } catch (error) {
+        next(new Error('Erreur d\'authentification'));
       }
-
-      // Si des utilisateurs ont été déconnectés, diffuser la nouvelle liste
-      if (disconnectedUsers.length > 0) {
-        const updatedUsers = await this.redisClient.sMembers('online_users');
-        this.server.emit('users_list', updatedUsers);
-      }
+    });
+  }
+  
+  // Décodage simple du token
+  private extractUserIdFromToken(token: string): string | null {
+    try {
+      const tokenParts = token.split('.');
+      if (tokenParts.length !== 3) return null;
+      
+      const payload = JSON.parse(
+        Buffer.from(tokenParts[1], 'base64').toString()
+      );
+      
+      return payload.sub;
     } catch (error) {
-      this.logger.error('Erreur lors de la vérification des connexions:', error);
+      return null;
     }
   }
-
-  private getUserInfo(client: Socket): string {
-    const userId = client.data?.userId || 'unknown';
-    const username = client.data?.username || 'unknown';
-    return `[User: ${username} (${userId})]`;
-  }
-
+  
+  // Gestion de la connexion
   async handleConnection(client: Socket) {
+    const userId = client.data.userId;
+    
+    if (!userId) {
+      this.logger.warn(`Connexion rejetée sans ID utilisateur: ${client.id}`);
+      client.disconnect();
+      return;
+    }
+    
+    // Enregistrer le client
+    if (!this.connectedUsers.has(userId)) {
+      this.connectedUsers.set(userId, new Set());
+    }
+    this.connectedUsers.get(userId)?.add(client.id);
+    
+    // Mettre à jour Redis et la base de données
+    await this.redis.sadd('online_users', userId);
+    await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+    
     try {
-      const token = client.handshake.auth.token;
-      if (!token) {
-        this.logger.warn(`Tentative de connexion sans token - client ${client.id}`);
-        client.disconnect();
-        return;
-      }
-
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { isOnline: true }
+      });
+      
+      // Notifier les autres clients
+      this.server.emit('userStatusChange', {
+        userId,
+        isOnline: true,
+        timestamp: new Date().toISOString()
+      });
+      
+      this.logger.log(`Utilisateur connecté: ${userId} (socket: ${client.id})`);
+    } catch (error) {
+      this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
+    }
+  }
+  
+  // Gestion de la déconnexion
+  async handleDisconnect(client: Socket) {
+    const userId = client.data.userId;
+    
+    if (!userId) {
+      this.logger.warn(`Déconnexion d'un client non identifié: ${client.id}`);
+      return;
+    }
+    
+    // Retirer le client de la liste
+    this.connectedUsers.get(userId)?.delete(client.id);
+    
+    // Si c'était le dernier socket, marquer l'utilisateur comme hors ligne
+    if (this.connectedUsers.get(userId)?.size === 0) {
+      this.connectedUsers.delete(userId);
+      
+      // Mettre à jour Redis et la base de données
+      await this.redis.srem('online_users', userId);
+      await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+      
       try {
-        // Le token est déjà vérifié par Next-Auth, on peut le décoder directement
-        const tokenParts = token.split('.');
-        if (tokenParts.length !== 3) {
-          this.logger.error(`Format de token invalide - nombre de parties: ${tokenParts.length}`);
-          client.disconnect();
-          return;
-        }
-
-        const base64Payload = tokenParts[1];
-        const decodedString = Buffer.from(base64Payload, 'base64').toString();
-        const decoded = JSON.parse(decodedString);
-
-        // Vérification explicite de la présence des champs requis
-        if (!decoded.sub) {
-          this.logger.error('Token invalide: champ "sub" manquant');
-          client.disconnect();
-          return;
-        }
-
-        // Utilisation explicite du champ sub comme userId (standard Next-Auth)
-        const userId = decoded.sub;
-        const username = decoded.username; // Optionnel, peut être utile plus tard      
-
-        // Vérification de l'expiration
-        const now = Math.floor(Date.now() / 1000);
-        if (decoded.exp && decoded.exp < now) {
-          this.logger.warn('Token expiré');
-          client.disconnect();
-          return;
-        }
-
-        // Vérifier si l'utilisateur a déjà une connexion active
-        const existingSocketId = this.userSockets.get(userId);
-        if (existingSocketId) {
-          const existingSocket = this.connectedClients.get(existingSocketId);
-          if (existingSocket?.connected) {
-            this.logger.warn(`Utilisateur ${username} (${userId}) déjà connecté, déconnexion de l'ancienne session`);
-            existingSocket.disconnect();
-          }
-        }
-
-        client.data.userId = userId;
-        if (username) {
-          client.data.username = username;
-        }
-        await this.redisService.set(`user:${userId}:socket`, client.id);
-
-        this.logger.log(`Client ${client.id} ${this.getUserInfo(client)} connecté`);
-        
-        // Stocker les informations de connexion
-        this.connectedClients.set(client.id, client);
-        this.userSockets.set(userId, client.id);
-
-        // Ajouter l'utilisateur à la liste des utilisateurs en ligne
-        await this.redisService.sadd('online_users', userId);
-        this.heartbeatService.startHeartbeat(client);
-
-        // Récupérer les informations de l'utilisateur pour l'événement
-        const user = await this.prisma.user.findUnique({
+        await this.prisma.user.update({
           where: { id: userId },
-          select: { username: true, avatar: true }
+          data: { isOnline: false }
         });
-
-        // Émettre l'événement de connexion avec plus de détails
+        
+        // Notifier les autres clients
         this.server.emit('userStatusChange', {
           userId,
-          isOnline: true,
-          timestamp: new Date().toISOString(),
-          username: user?.username,
-          avatar: user?.avatar,
-          eventType: 'connection'
+          isOnline: false,
+          timestamp: new Date().toISOString()
         });
-
-        // Notifier uniquement l'utilisateur connecté
-        client.emit('connectionSuccess', {
-          message: 'Connexion réussie',
-          userId,
-          socketId: client.id
-        });
-
+        
+        this.logger.log(`Utilisateur déconnecté: ${userId}`);
       } catch (error) {
-        this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
-        client.emit('connectionError', {
-          message: 'Erreur lors de la connexion',
-          details: error.message
-        });
-        client.disconnect();
+        this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
       }
-    } catch (error) {
-      this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
-      client.emit('connectionError', {
-        message: 'Erreur lors de la connexion',
-        details: error.message
-      });
-      client.disconnect();
+    } else {
+      this.logger.debug(`Socket ${client.id} déconnecté, mais l'utilisateur ${userId} a encore d'autres connexions actives`);
     }
   }
-
-  async handleDisconnect(client: Socket) {
-    try {
-      const userId = client.data?.userId;
-      const userInfo = this.getUserInfo(client);
-      
-      this.logger.warn(`Déconnexion du client ${client.id} ${userInfo}`);
-
-      if (!userId) {
-        this.logger.warn(`Déconnexion d'un client non identifié: ${client.id}`);
-        return;
-      }
-
-      // Vérifier si c'est bien le dernier socket de l'utilisateur
-      const currentSocketId = this.userSockets.get(userId);
-      if (currentSocketId !== client.id) {
-        this.logger.debug(`Socket ${client.id} n'est pas le dernier socket actif pour l'utilisateur ${userId}`);
-        return;
-      }
-
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { username: true, avatar: true }
-      });
-
-      // Retirer l'utilisateur de la liste des utilisateurs en ligne
-      await this.redisService.srem('online_users', userId);
-      await this.redisService.del(`user:${userId}:socket`);
-
-      this.connectedClients.delete(client.id);
-      this.userSockets.delete(userId);
-
-      const disconnectEvent = {
-        userId,
-        isOnline: false,
-        timestamp: new Date().toISOString(),
-        username: user?.username,
-        avatar: user?.avatar,
-        eventType: 'disconnection',
-        reason: client.disconnected ? 'client_disconnected' : 'unknown'
-      };
-
-      this.logger.debug('Émission de l\'événement de déconnexion:', disconnectEvent.username);
-      this.server.emit('userStatusChange', disconnectEvent);
-
-      this.heartbeatService.stopHeartbeat(client);
-
-    } catch (error) {
-      this.logger.error(`Erreur lors de la déconnexion du client ${client.id}:`, error);
-      this.server.emit('userStatusChange', {
-        userId: client.data?.userId,
-        isOnline: false,
-        timestamp: new Date().toISOString(),
-        eventType: 'disconnection',
-        error: true
-      });
-    }
-  }
-
-  @SubscribeMessage('pong')
-  handlePong(@ConnectedSocket() client: Socket) {
-    this.heartbeatService.handlePong(client);
-  }
-
-  // Méthode utilitaire pour diffuser la liste des utilisateurs
-  private async broadcastUsersList() {
-    const users = await this.redisClient.sMembers('online_users');
-    this.server.emit('users_list', users);
-  }
-
-  @SubscribeMessage('setUsername')
-  async handleSetUsername(
-    @MessageBody() username: string,
+  
+  // Mise à jour manuelle du statut
+  @SubscribeMessage('updateUserStatus')
+  async handleUpdateUserStatus(
     @ConnectedSocket() client: Socket,
+    @MessageBody() data: { isOnline: boolean }
   ) {
-    client.data.username = username;
-    await this.broadcastUsersList();
+    const userId = client.data.userId;
+    
+    if (!userId) {
+      return { success: false, error: 'Non authentifié' };
+    }
+    
+    const isOnline = data.isOnline;
+    
+    try {
+      if (isOnline) {
+        await this.redis.sadd('online_users', userId);
+      } else {
+        await this.redis.srem('online_users', userId);
+      }
+      
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { isOnline }
+      });
+      
+      this.server.emit('userStatusChange', {
+        userId,
+        isOnline,
+        timestamp: new Date().toISOString()
+      });
+      
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
-
-  emitNewConversation(conversation: any, userId: string, receiverId: string) {
-    this.server.to([userId, receiverId]).emit('newConversation', conversation);
+  
+  // Ping-pong pour maintenir la connexion
+  @SubscribeMessage('pong')
+  handlePong(client: Socket) {
+    const userId = client.data.userId;
+    
+    if (userId) {
+      this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+    }
   }
 }

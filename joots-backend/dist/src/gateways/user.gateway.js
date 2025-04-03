@@ -16,208 +16,145 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserGateway = void 0;
 const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
-const prisma_service_1 = require("../../prisma/prisma.service");
-const redis_1 = require("redis");
-const redis_service_1 = require("../redis/redis.service");
 const common_1 = require("@nestjs/common");
-const heartbeat_service_1 = require("./services/heartbeat.service");
+const prisma_service_1 = require("../../prisma/prisma.service");
+const redis_service_1 = require("../redis/redis.service");
 let UserGateway = UserGateway_1 = class UserGateway {
     prisma;
-    redisService;
-    heartbeatService;
+    redis;
     server;
-    redisClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL });
-    connectedClients = new Map();
-    userSockets = new Map();
     logger = new common_1.Logger(UserGateway_1.name);
-    constructor(prisma, redisService, heartbeatService) {
+    connectedUsers = new Map();
+    constructor(prisma, redis) {
         this.prisma = prisma;
-        this.redisService = redisService;
-        this.heartbeatService = heartbeatService;
-        this.redisClient.connect().catch(console.error);
-        const cleanupInterval = parseInt(process.env.SOCKET_CLEANUP_INTERVAL || '30000');
-        setInterval(() => this.checkActiveConnections(), cleanupInterval);
+        this.redis = redis;
     }
-    async checkActiveConnections() {
-        try {
-            const onlineUsers = await this.redisClient.sMembers('online_users');
-            const currentConnectedUsers = Array.from(this.connectedClients.keys());
-            const disconnectedUsers = onlineUsers.filter(userId => !currentConnectedUsers.includes(userId));
-            for (const userId of disconnectedUsers) {
-                await this.redisClient.sRem('online_users', userId);
-                try {
-                    await this.prisma.user.update({
-                        where: { id: userId },
-                        data: { isOnline: false }
-                    });
-                }
-                catch (error) {
-                    if (error.code === 'P2025') {
-                        this.logger.warn(`Utilisateur ${userId} non trouvé dans la base de données`);
-                    }
-                    else {
-                        throw error;
-                    }
-                }
-            }
-            if (disconnectedUsers.length > 0) {
-                const updatedUsers = await this.redisClient.sMembers('online_users');
-                this.server.emit('users_list', updatedUsers);
-            }
-        }
-        catch (error) {
-            this.logger.error('Erreur lors de la vérification des connexions:', error);
-        }
-    }
-    getUserInfo(client) {
-        const userId = client.data?.userId || 'unknown';
-        const username = client.data?.username || 'unknown';
-        return `[User: ${username} (${userId})]`;
-    }
-    async handleConnection(client) {
-        try {
-            const token = client.handshake.auth.token;
-            if (!token) {
-                this.logger.warn(`Tentative de connexion sans token - client ${client.id}`);
-                client.disconnect();
-                return;
-            }
+    afterInit(server) {
+        server.use(async (socket, next) => {
             try {
-                const tokenParts = token.split('.');
-                if (tokenParts.length !== 3) {
-                    this.logger.error(`Format de token invalide - nombre de parties: ${tokenParts.length}`);
-                    client.disconnect();
-                    return;
+                const token = socket.handshake.auth.token;
+                const userId = socket.handshake.auth.userId;
+                if (!token || !userId) {
+                    return next(new Error('Authentification requise'));
                 }
-                const base64Payload = tokenParts[1];
-                const decodedString = Buffer.from(base64Payload, 'base64').toString();
-                const decoded = JSON.parse(decodedString);
-                if (!decoded.sub) {
-                    this.logger.error('Token invalide: champ "sub" manquant');
-                    client.disconnect();
-                    return;
+                const validUserId = this.extractUserIdFromToken(token);
+                if (!validUserId || validUserId !== userId) {
+                    return next(new Error('Token invalide'));
                 }
-                const userId = decoded.sub;
-                const username = decoded.username;
-                const now = Math.floor(Date.now() / 1000);
-                if (decoded.exp && decoded.exp < now) {
-                    this.logger.warn('Token expiré');
-                    client.disconnect();
-                    return;
-                }
-                const existingSocketId = this.userSockets.get(userId);
-                if (existingSocketId) {
-                    const existingSocket = this.connectedClients.get(existingSocketId);
-                    if (existingSocket?.connected) {
-                        this.logger.warn(`Utilisateur ${username} (${userId}) déjà connecté, déconnexion de l'ancienne session`);
-                        existingSocket.disconnect();
-                    }
-                }
-                client.data.userId = userId;
-                if (username) {
-                    client.data.username = username;
-                }
-                await this.redisService.set(`user:${userId}:socket`, client.id);
-                this.logger.log(`Client ${client.id} ${this.getUserInfo(client)} connecté`);
-                this.connectedClients.set(client.id, client);
-                this.userSockets.set(userId, client.id);
-                await this.redisService.sadd('online_users', userId);
-                this.heartbeatService.startHeartbeat(client);
-                const user = await this.prisma.user.findUnique({
-                    where: { id: userId },
-                    select: { username: true, avatar: true }
-                });
-                this.server.emit('userStatusChange', {
-                    userId,
-                    isOnline: true,
-                    timestamp: new Date().toISOString(),
-                    username: user?.username,
-                    avatar: user?.avatar,
-                    eventType: 'connection'
-                });
-                client.emit('connectionSuccess', {
-                    message: 'Connexion réussie',
-                    userId,
-                    socketId: client.id
-                });
+                socket.data.userId = userId;
+                next();
             }
             catch (error) {
-                this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
-                client.emit('connectionError', {
-                    message: 'Erreur lors de la connexion',
-                    details: error.message
-                });
-                client.disconnect();
+                next(new Error('Erreur d\'authentification'));
             }
+        });
+    }
+    extractUserIdFromToken(token) {
+        try {
+            const tokenParts = token.split('.');
+            if (tokenParts.length !== 3)
+                return null;
+            const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+            return payload.sub;
         }
         catch (error) {
-            this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
-            client.emit('connectionError', {
-                message: 'Erreur lors de la connexion',
-                details: error.message
-            });
+            return null;
+        }
+    }
+    async handleConnection(client) {
+        const userId = client.data.userId;
+        if (!userId) {
+            this.logger.warn(`Connexion rejetée sans ID utilisateur: ${client.id}`);
             client.disconnect();
+            return;
+        }
+        if (!this.connectedUsers.has(userId)) {
+            this.connectedUsers.set(userId, new Set());
+        }
+        this.connectedUsers.get(userId)?.add(client.id);
+        await this.redis.sadd('online_users', userId);
+        await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+        try {
+            await this.prisma.user.update({
+                where: { id: userId },
+                data: { isOnline: true }
+            });
+            this.server.emit('userStatusChange', {
+                userId,
+                isOnline: true,
+                timestamp: new Date().toISOString()
+            });
+            this.logger.log(`Utilisateur connecté: ${userId} (socket: ${client.id})`);
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
         }
     }
     async handleDisconnect(client) {
+        const userId = client.data.userId;
+        if (!userId) {
+            this.logger.warn(`Déconnexion d'un client non identifié: ${client.id}`);
+            return;
+        }
+        this.connectedUsers.get(userId)?.delete(client.id);
+        if (this.connectedUsers.get(userId)?.size === 0) {
+            this.connectedUsers.delete(userId);
+            await this.redis.srem('online_users', userId);
+            await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+            try {
+                await this.prisma.user.update({
+                    where: { id: userId },
+                    data: { isOnline: false }
+                });
+                this.server.emit('userStatusChange', {
+                    userId,
+                    isOnline: false,
+                    timestamp: new Date().toISOString()
+                });
+                this.logger.log(`Utilisateur déconnecté: ${userId}`);
+            }
+            catch (error) {
+                this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
+            }
+        }
+        else {
+            this.logger.debug(`Socket ${client.id} déconnecté, mais l'utilisateur ${userId} a encore d'autres connexions actives`);
+        }
+    }
+    async handleUpdateUserStatus(client, data) {
+        const userId = client.data.userId;
+        if (!userId) {
+            return { success: false, error: 'Non authentifié' };
+        }
+        const isOnline = data.isOnline;
         try {
-            const userId = client.data?.userId;
-            const userInfo = this.getUserInfo(client);
-            this.logger.warn(`Déconnexion du client ${client.id} ${userInfo}`);
-            if (!userId) {
-                this.logger.warn(`Déconnexion d'un client non identifié: ${client.id}`);
-                return;
+            if (isOnline) {
+                await this.redis.sadd('online_users', userId);
             }
-            const currentSocketId = this.userSockets.get(userId);
-            if (currentSocketId !== client.id) {
-                this.logger.debug(`Socket ${client.id} n'est pas le dernier socket actif pour l'utilisateur ${userId}`);
-                return;
+            else {
+                await this.redis.srem('online_users', userId);
             }
-            const user = await this.prisma.user.findUnique({
+            await this.prisma.user.update({
                 where: { id: userId },
-                select: { username: true, avatar: true }
+                data: { isOnline }
             });
-            await this.redisService.srem('online_users', userId);
-            await this.redisService.del(`user:${userId}:socket`);
-            this.connectedClients.delete(client.id);
-            this.userSockets.delete(userId);
-            const disconnectEvent = {
+            this.server.emit('userStatusChange', {
                 userId,
-                isOnline: false,
-                timestamp: new Date().toISOString(),
-                username: user?.username,
-                avatar: user?.avatar,
-                eventType: 'disconnection',
-                reason: client.disconnected ? 'client_disconnected' : 'unknown'
-            };
-            this.logger.debug('Émission de l\'événement de déconnexion:', disconnectEvent.username);
-            this.server.emit('userStatusChange', disconnectEvent);
-            this.heartbeatService.stopHeartbeat(client);
+                isOnline,
+                timestamp: new Date().toISOString()
+            });
+            return { success: true };
         }
         catch (error) {
-            this.logger.error(`Erreur lors de la déconnexion du client ${client.id}:`, error);
-            this.server.emit('userStatusChange', {
-                userId: client.data?.userId,
-                isOnline: false,
-                timestamp: new Date().toISOString(),
-                eventType: 'disconnection',
-                error: true
-            });
+            this.logger.error(`Erreur lors de la mise à jour du statut: ${error.message}`);
+            return { success: false, error: error.message };
         }
     }
     handlePong(client) {
-        this.heartbeatService.handlePong(client);
-    }
-    async broadcastUsersList() {
-        const users = await this.redisClient.sMembers('online_users');
-        this.server.emit('users_list', users);
-    }
-    async handleSetUsername(username, client) {
-        client.data.username = username;
-        await this.broadcastUsersList();
-    }
-    emitNewConversation(conversation, userId, receiverId) {
-        this.server.to([userId, receiverId]).emit('newConversation', conversation);
+        const userId = client.data.userId;
+        if (userId) {
+            this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+        }
     }
 };
 exports.UserGateway = UserGateway;
@@ -226,38 +163,30 @@ __decorate([
     __metadata("design:type", socket_io_1.Server)
 ], UserGateway.prototype, "server", void 0);
 __decorate([
-    (0, websockets_1.SubscribeMessage)('pong'),
+    (0, websockets_1.SubscribeMessage)('updateUserStatus'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", Promise)
+], UserGateway.prototype, "handleUpdateUserStatus", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('pong'),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
 ], UserGateway.prototype, "handlePong", null);
-__decorate([
-    (0, websockets_1.SubscribeMessage)('setUsername'),
-    __param(0, (0, websockets_1.MessageBody)()),
-    __param(1, (0, websockets_1.ConnectedSocket)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, socket_io_1.Socket]),
-    __metadata("design:returntype", Promise)
-], UserGateway.prototype, "handleSetUsername", null);
 exports.UserGateway = UserGateway = UserGateway_1 = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {
             origin: process.env.NODE_ENV === 'production'
                 ? 'https://joots.app'
                 : 'http://localhost:3000',
-            methods: ['GET', 'POST'],
-            credentials: true,
-            allowedHeaders: ['authorization', 'content-type']
+            credentials: true
         },
-        namespace: 'users',
-        transports: ['websocket', 'polling'],
-        pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || '60000'),
-        pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL || '25000'),
-        connectTimeout: 10000
+        namespace: 'users'
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService,
-        heartbeat_service_1.HeartbeatService])
+        redis_service_1.RedisService])
 ], UserGateway);
 //# sourceMappingURL=user.gateway.js.map

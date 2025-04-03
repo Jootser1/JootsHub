@@ -25,7 +25,6 @@ let AuthController = class AuthController {
         return this.authService.register(email, password);
     }
     async login(loginDto) {
-        console.log('Tentative de connexion avec:', { email: loginDto.email });
         try {
             const result = await this.authService.login(loginDto.email, loginDto.password);
             console.log('Connexion réussie pour:', loginDto.email);

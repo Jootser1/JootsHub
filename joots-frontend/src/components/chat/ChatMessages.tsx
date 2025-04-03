@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Message } from '@/types/chat';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { ensureDate } from '@/utils/dateUtils';
 
 interface ChatMessagesProps {
   messages: Message[];
@@ -32,7 +33,7 @@ export const ChatMessages = ({ messages, currentUserId, isConnected }: ChatMessa
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
         const isCurrentUser = message.senderId === currentUserId;
-        const timeAgo = formatDistanceToNow(message.timestamp, { addSuffix: true, locale: fr });
+        const timeAgo = formatDistanceToNow(ensureDate(message.timestamp), { addSuffix: true, locale: fr });
 
         return (
           <div

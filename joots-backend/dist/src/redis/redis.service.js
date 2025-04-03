@@ -29,6 +29,9 @@ let RedisService = class RedisService {
     async smembers(key) {
         return this.redis.smembers(key);
     }
+    async sismember(key, member) {
+        return this.redis.sismember(key, member);
+    }
     async get(key) {
         return this.redis.get(key);
     }
@@ -40,6 +43,32 @@ let RedisService = class RedisService {
     }
     async del(key) {
         return this.redis.del(key);
+    }
+    async setUserOnline(userId, ttl = 300) {
+        await this.sadd('online_users', userId);
+        const userStatusKey = `user:${userId}:status`;
+        await this.set(userStatusKey, 'online', ttl);
+        const lastActivityKey = `user:${userId}:last_activity`;
+        await this.set(lastActivityKey, Date.now().toString());
+        return true;
+    }
+    async setUserOffline(userId) {
+        await this.srem('online_users', userId);
+        const userStatusKey = `user:${userId}:status`;
+        await this.del(userStatusKey);
+        return true;
+    }
+    async refreshUserStatus(userId, ttl = 300) {
+        const userStatusKey = `user:${userId}:status`;
+        await this.set(userStatusKey, 'online', ttl);
+        const lastActivityKey = `user:${userId}:last_activity`;
+        await this.set(lastActivityKey, Date.now().toString());
+        return true;
+    }
+    async getUserLastActivity(userId) {
+        const lastActivityKey = `user:${userId}:last_activity`;
+        const timestamp = await this.get(lastActivityKey);
+        return timestamp ? parseInt(timestamp) : null;
     }
 };
 exports.RedisService = RedisService;

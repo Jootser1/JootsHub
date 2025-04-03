@@ -37,7 +37,7 @@ let AuthService = class AuthService {
                     },
                 },
             });
-            const username = `Jooster${user.userNumber}`;
+            const username = `Jootser${user.userNumber}`;
             return prisma.user.update({
                 where: { id: user.id },
                 data: { username },
@@ -46,7 +46,6 @@ let AuthService = class AuthService {
         return result;
     }
     async login(email, password) {
-        console.log('Recherche de l\'utilisateur avec l\'email:', email);
         const auth = await this.prisma.auth.findUnique({
             where: { email },
             include: { user: true },
@@ -55,13 +54,12 @@ let AuthService = class AuthService {
             console.log('Utilisateur non trouvé');
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        console.log('Vérification du mot de passe');
         const passwordValid = await bcrypt.compare(password, auth.password);
         if (!passwordValid) {
             console.log('Mot de passe invalide');
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        console.log('Mise à jour du statut en ligne');
+        console.log('[AuthService] Mise à jour du statut en ligne');
         await this.prisma.user.update({
             where: { id: auth.userId },
             data: { isOnline: true },
