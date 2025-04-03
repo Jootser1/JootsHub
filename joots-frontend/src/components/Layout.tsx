@@ -2,13 +2,14 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useStore } from "@/app/store/store";
+import { useUserStore } from "@/stores/userStore";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
 import { useSocket } from "@/hooks/useSocket";
 import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"
 import MobileMenu from "./mobile-menu"
+import { logger } from '@/utils/logger';
 
 export default function Layout({ 
   children,
@@ -19,7 +20,7 @@ export default function Layout({
 }) {
   const router = useRouter();
   const { data: session, status } = useSession();
-  const { user, setUser, logout } = useStore();
+  const { user, setUser, logout } = useUserStore();
   const [loading, setLoading] = useState(true);
   const socket = useSocket();
 
@@ -29,38 +30,35 @@ export default function Layout({
       return;
     }
     
-    async function fetchUserData() {
+    const fetchUserData = async () => {
       if (status === "authenticated" && session?.user?.id) {
         try {
-          console.log('fetchUserData session:', session);
+          logger.debug('fetchUserData session dans Layout:', session);
           const response = await axiosInstance.get(`/users/${session.user.id}`);
-          console.log('fetchUserData response:', response.data);
+          logger.debug('fetchUserData response dans Layout:', response.data);
           
           setUser({
             id: response.data.id,
             username: response.data.username,
-            email: response.data.email,
             avatar: response.data.avatar,
+            bio: response.data.bio,
             isOnline: true,
             isAvailableForChat: response.data.isAvailableForChat,
           });
 
         } catch (error) {
-          console.error("Erreur fetch utilisateur :", error);
+          logger.error("Erreur fetch utilisateur dans Layout:", error);
           if ((error as any)?.response?.status === 401 || (error as any)?.response?.status === 403) {
             signOut({ redirect: true, callbackUrl: "/login" });
           }
         } finally {
           setLoading(false);
         }
-      } else if (status === "unauthenticated") {
-        logout();
-        setLoading(false);
       }
-    }
+    };
 
     fetchUserData();
-  }, [status, session, setUser, logout, router]);
+  }, [status, session?.user?.id, setUser, router]);
 
   if (loading) {
     return (

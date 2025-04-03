@@ -14,27 +14,26 @@ export declare class ConversationsController {
             createdAt: Date;
             senderId: string;
             content: string;
+            editedAt: Date | null;
             isRead: boolean;
+            isDeleted: boolean;
             conversationId: string;
         }[];
-        initiator: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
-        receiver: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
+        participants: ({
+            user: {
+                id: string;
+                avatar: string | null;
+                username: string;
+                isOnline: boolean;
+            };
+        } & {
+            userId: string;
+            conversationId: string;
+        })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        initiatorId: string;
-        receiverId: string;
     })[]>;
     findOne(id: string, req: AuthenticatedRequest): Promise<{
         messages: {
@@ -42,49 +41,45 @@ export declare class ConversationsController {
             createdAt: Date;
             senderId: string;
             content: string;
+            editedAt: Date | null;
             isRead: boolean;
+            isDeleted: boolean;
             conversationId: string;
         }[];
-        initiator: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
-        receiver: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
+        participants: ({
+            user: {
+                id: string;
+                avatar: string | null;
+                username: string;
+                isOnline: boolean;
+            };
+        } & {
+            userId: string;
+            conversationId: string;
+        })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        initiatorId: string;
-        receiverId: string;
     }>;
     create(body: {
         receiverId: string;
     }, req: AuthenticatedRequest): Promise<{
-        initiator: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
-        receiver: {
-            id: string;
-            avatar: string | null;
-            username: string;
-            isOnline: boolean;
-        };
+        participants: ({
+            user: {
+                id: string;
+                avatar: string | null;
+                username: string;
+                isOnline: boolean;
+            };
+        } & {
+            userId: string;
+            conversationId: string;
+        })[];
     } & {
         id: string;
         createdAt: Date;
         updatedAt: Date;
-        initiatorId: string;
-        receiverId: string;
     }>;
 }
 export {};

@@ -6,7 +6,7 @@ interface StatusProps {
 export const ConversationStatus = ({ isOnline, className = '' }: StatusProps) => {
   return (
     <div 
-      className={`w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-green-500' : 'bg-gray-400'} ${className}`}
+      className={`w-2.5 h-2.5  ${isOnline ? 'rounded-full bg-green-500' : ' squared-full bg-transparent'} ${className}`}
       role="status"
       aria-label={isOnline ? 'En ligne' : 'Hors ligne'}
     />

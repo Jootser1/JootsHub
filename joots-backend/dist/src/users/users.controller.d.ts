@@ -4,10 +4,10 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     getUsers(): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         avatar: string | null;
         bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
         username: string;
         isOnline: boolean;
@@ -30,10 +30,10 @@ export declare class UsersController {
     }>;
     updateChatPreference(id: string, isAvailableForChat: boolean): Promise<{
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
         avatar: string | null;
         bio: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         userNumber: number;
         username: string;
         isOnline: boolean;

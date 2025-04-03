@@ -8,30 +8,45 @@ import {
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { HeartbeatService } from './services/heartbeat.service';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
-  cors: {
+  cors: { 
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://joots.app'
-      : 'http://localhost:3000',
+      ? 'https://joots.app' // URL de production
+      : 'http://localhost:3000', // URL de développement
+    methods: ['GET', 'POST'],
     credentials: true,
+    allowedHeaders: ['authorization', 'content-type']
   },
+  namespace: 'chat',
+  transports: ['websocket', 'polling'],
+  pingTimeout: parseInt(process.env.SOCKET_PING_TIMEOUT || '60000'),
+  pingInterval: parseInt(process.env.SOCKET_PING_INTERVAL || '25000'),
+  connectTimeout: 10000
 })
+
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
+  private readonly logger = new Logger(ChatGateway.name);
+  private heartbeatIntervals = new Map<string, NodeJS.Timeout>();
 
   constructor(
-    private prisma: PrismaService,
-    private redis: RedisService,
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    private readonly heartbeatService: HeartbeatService,
   ) {}
 
   async handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
+    this.heartbeatService.startHeartbeat(client);
   }
 
   handleDisconnect(client: Socket) {
     console.log(`Client disconnected: ${client.id}`);
+    this.heartbeatService.stopHeartbeat(client);
   }
 
   @SubscribeMessage('joinConversation')
@@ -80,5 +95,10 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(conversationId).emit('newMessage', message);
 
     return message;
+  }
+
+  @SubscribeMessage('pong')
+  handlePong(client: Socket) {
+    this.heartbeatService.handlePong(client);
   }
 } 

@@ -30,7 +30,6 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async getUser(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
-    console.log('getUser user:', user);
     if (!user.auth) {
       throw new NotFoundException('Données d\'authentification non trouvées');
     }

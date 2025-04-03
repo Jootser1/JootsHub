@@ -20,18 +20,20 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_1 = require("redis");
 const redis_service_1 = require("../redis/redis.service");
 const common_1 = require("@nestjs/common");
+const heartbeat_service_1 = require("./services/heartbeat.service");
 let UserGateway = UserGateway_1 = class UserGateway {
     prisma;
     redisService;
+    heartbeatService;
     server;
     redisClient = (0, redis_1.createClient)({ url: process.env.REDIS_URL });
     connectedClients = new Map();
     userSockets = new Map();
-    heartbeatIntervals = new Map();
     logger = new common_1.Logger(UserGateway_1.name);
-    constructor(prisma, redisService) {
+    constructor(prisma, redisService, heartbeatService) {
         this.prisma = prisma;
         this.redisService = redisService;
+        this.heartbeatService = heartbeatService;
         this.redisClient.connect().catch(console.error);
         const cleanupInterval = parseInt(process.env.SOCKET_CLEANUP_INTERVAL || '30000');
         setInterval(() => this.checkActiveConnections(), cleanupInterval);
@@ -40,15 +42,23 @@ let UserGateway = UserGateway_1 = class UserGateway {
         try {
             const onlineUsers = await this.redisClient.sMembers('online_users');
             const currentConnectedUsers = Array.from(this.connectedClients.keys());
-            const disconnectedUsers = onlineUsers.filter(user => !currentConnectedUsers.includes(user));
-            for (const username of disconnectedUsers) {
-                console.log(`[Cleanup] Utilisateur ${username} détecté comme déconnecté`);
-                await this.redisClient.sRem('online_users', username);
-                await this.prisma.user.update({
-                    where: { username },
-                    data: { isOnline: false },
-                });
-                this.server.emit('user_disconnected', username);
+            const disconnectedUsers = onlineUsers.filter(userId => !currentConnectedUsers.includes(userId));
+            for (const userId of disconnectedUsers) {
+                await this.redisClient.sRem('online_users', userId);
+                try {
+                    await this.prisma.user.update({
+                        where: { id: userId },
+                        data: { isOnline: false }
+                    });
+                }
+                catch (error) {
+                    if (error.code === 'P2025') {
+                        this.logger.warn(`Utilisateur ${userId} non trouvé dans la base de données`);
+                    }
+                    else {
+                        throw error;
+                    }
+                }
             }
             if (disconnectedUsers.length > 0) {
                 const updatedUsers = await this.redisClient.sMembers('online_users');
@@ -56,80 +66,147 @@ let UserGateway = UserGateway_1 = class UserGateway {
             }
         }
         catch (error) {
-            console.error('Erreur lors de la vérification des connexions:', error);
+            this.logger.error('Erreur lors de la vérification des connexions:', error);
         }
+    }
+    getUserInfo(client) {
+        const userId = client.data?.userId || 'unknown';
+        const username = client.data?.username || 'unknown';
+        return `[User: ${username} (${userId})]`;
     }
     async handleConnection(client) {
         try {
             const token = client.handshake.auth.token;
             if (!token) {
+                this.logger.warn(`Tentative de connexion sans token - client ${client.id}`);
                 client.disconnect();
                 return;
             }
-            const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
-            const userId = decoded.userId;
-            if (!userId) {
-                client.disconnect();
-                return;
+            try {
+                const tokenParts = token.split('.');
+                if (tokenParts.length !== 3) {
+                    this.logger.error(`Format de token invalide - nombre de parties: ${tokenParts.length}`);
+                    client.disconnect();
+                    return;
+                }
+                const base64Payload = tokenParts[1];
+                const decodedString = Buffer.from(base64Payload, 'base64').toString();
+                const decoded = JSON.parse(decodedString);
+                if (!decoded.sub) {
+                    this.logger.error('Token invalide: champ "sub" manquant');
+                    client.disconnect();
+                    return;
+                }
+                const userId = decoded.sub;
+                const username = decoded.username;
+                const now = Math.floor(Date.now() / 1000);
+                if (decoded.exp && decoded.exp < now) {
+                    this.logger.warn('Token expiré');
+                    client.disconnect();
+                    return;
+                }
+                const existingSocketId = this.userSockets.get(userId);
+                if (existingSocketId) {
+                    const existingSocket = this.connectedClients.get(existingSocketId);
+                    if (existingSocket?.connected) {
+                        this.logger.warn(`Utilisateur ${username} (${userId}) déjà connecté, déconnexion de l'ancienne session`);
+                        existingSocket.disconnect();
+                    }
+                }
+                client.data.userId = userId;
+                if (username) {
+                    client.data.username = username;
+                }
+                await this.redisService.set(`user:${userId}:socket`, client.id);
+                this.logger.log(`Client ${client.id} ${this.getUserInfo(client)} connecté`);
+                this.connectedClients.set(client.id, client);
+                this.userSockets.set(userId, client.id);
+                await this.redisService.sadd('online_users', userId);
+                this.heartbeatService.startHeartbeat(client);
+                const user = await this.prisma.user.findUnique({
+                    where: { id: userId },
+                    select: { username: true, avatar: true }
+                });
+                this.server.emit('userStatusChange', {
+                    userId,
+                    isOnline: true,
+                    timestamp: new Date().toISOString(),
+                    username: user?.username,
+                    avatar: user?.avatar,
+                    eventType: 'connection'
+                });
+                client.emit('connectionSuccess', {
+                    message: 'Connexion réussie',
+                    userId,
+                    socketId: client.id
+                });
             }
-            client.data.userId = userId;
-            await this.redisService.set(`user:${userId}:socket`, client.id);
-            this.logger.log(`Client ${client.id} connected as user ${userId}`);
-            this.connectedClients.set(client.id, client);
-            this.userSockets.set(userId, client.id);
-            await this.redisService.sadd('online_users', userId);
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: { isOnline: true }
-            });
-            this.startHeartbeat(client.id);
-            this.server.emit('userStatusChange', { userId, isOnline: true });
+            catch (error) {
+                this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
+                client.emit('connectionError', {
+                    message: 'Erreur lors de la connexion',
+                    details: error.message
+                });
+                client.disconnect();
+            }
         }
         catch (error) {
-            this.logger.error(`Connection error for client ${client.id}:`, error);
+            this.logger.error(`Erreur de connexion pour le client ${client.id}:`, error);
+            client.emit('connectionError', {
+                message: 'Erreur lors de la connexion',
+                details: error.message
+            });
             client.disconnect();
         }
     }
     async handleDisconnect(client) {
         try {
-            const userId = client.data.userId;
-            if (!userId)
+            const userId = client.data?.userId;
+            const userInfo = this.getUserInfo(client);
+            this.logger.warn(`Déconnexion du client ${client.id} ${userInfo}`);
+            if (!userId) {
+                this.logger.warn(`Déconnexion d'un client non identifié: ${client.id}`);
                 return;
+            }
+            const currentSocketId = this.userSockets.get(userId);
+            if (currentSocketId !== client.id) {
+                this.logger.debug(`Socket ${client.id} n'est pas le dernier socket actif pour l'utilisateur ${userId}`);
+                return;
+            }
+            const user = await this.prisma.user.findUnique({
+                where: { id: userId },
+                select: { username: true, avatar: true }
+            });
             await this.redisService.srem('online_users', userId);
             await this.redisService.del(`user:${userId}:socket`);
-            await this.prisma.user.update({
-                where: { id: userId },
-                data: { isOnline: false }
-            });
             this.connectedClients.delete(client.id);
             this.userSockets.delete(userId);
-            this.server.emit('userStatusChange', { userId, isOnline: false });
+            const disconnectEvent = {
+                userId,
+                isOnline: false,
+                timestamp: new Date().toISOString(),
+                username: user?.username,
+                avatar: user?.avatar,
+                eventType: 'disconnection',
+                reason: client.disconnected ? 'client_disconnected' : 'unknown'
+            };
+            this.logger.debug('Émission de l\'événement de déconnexion:', disconnectEvent.username);
+            this.server.emit('userStatusChange', disconnectEvent);
+            this.heartbeatService.stopHeartbeat(client);
         }
         catch (error) {
-            this.logger.error(`Disconnection error for client ${client.id}:`, error);
+            this.logger.error(`Erreur lors de la déconnexion du client ${client.id}:`, error);
+            this.server.emit('userStatusChange', {
+                userId: client.data?.userId,
+                isOnline: false,
+                timestamp: new Date().toISOString(),
+                eventType: 'disconnection',
+                error: true
+            });
         }
     }
-    handleHeartbeat(client) {
-        client.emit('heartbeat');
-    }
-    startHeartbeat(clientId) {
-        const interval = setInterval(() => {
-            const client = this.connectedClients.get(clientId);
-            if (client?.connected) {
-                client.emit('heartbeat');
-            }
-            else {
-                this.stopHeartbeat(clientId);
-            }
-        }, 30000);
-        this.heartbeatIntervals.set(clientId, interval);
-    }
-    stopHeartbeat(clientId) {
-        const interval = this.heartbeatIntervals.get(clientId);
-        if (interval) {
-            clearInterval(interval);
-            this.heartbeatIntervals.delete(clientId);
-        }
+    handlePong(client) {
+        this.heartbeatService.handlePong(client);
     }
     async broadcastUsersList() {
         const users = await this.redisClient.sMembers('online_users');
@@ -149,12 +226,12 @@ __decorate([
     __metadata("design:type", socket_io_1.Server)
 ], UserGateway.prototype, "server", void 0);
 __decorate([
-    (0, websockets_1.SubscribeMessage)('heartbeat'),
+    (0, websockets_1.SubscribeMessage)('pong'),
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [socket_io_1.Socket]),
     __metadata("design:returntype", void 0)
-], UserGateway.prototype, "handleHeartbeat", null);
+], UserGateway.prototype, "handlePong", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('setUsername'),
     __param(0, (0, websockets_1.MessageBody)()),
@@ -180,6 +257,7 @@ exports.UserGateway = UserGateway = UserGateway_1 = __decorate([
         connectTimeout: 10000
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        heartbeat_service_1.HeartbeatService])
 ], UserGateway);
 //# sourceMappingURL=user.gateway.js.map

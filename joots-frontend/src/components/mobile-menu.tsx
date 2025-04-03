@@ -5,7 +5,7 @@ import { ShoppingBag, Package, Mail, Gift, HelpCircle, Settings, ChevronRight, C
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useStore } from "@/app/store/store"
+import { useUserStore } from "@/stores/userStore"
 import { signOut } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,7 @@ import axiosInstance from "@/app/api/axiosInstance"
 
 export default function MobileMenu() {
   const router = useRouter()
-  const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useStore()
+  const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useUserStore()
 
   const handleLogout = async () => {
     try {
@@ -38,7 +38,7 @@ export default function MobileMenu() {
       });
 
       // Mettre à jour le store avec la nouvelle préférence
-      useStore.setState((state) => ({
+      useUserStore.setState((state) => ({
         user: state.user ? { ...state.user, isAvailableForChat: checked } : null
       }));
     } catch (error) {

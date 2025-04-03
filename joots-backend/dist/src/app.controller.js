@@ -12,10 +12,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppController = void 0;
 const common_1 = require("@nestjs/common");
 const app_service_1 = require("./app.service");
+const logger_service_1 = require("./logger/logger.service");
 let AppController = class AppController {
     appService;
-    constructor(appService) {
+    logger;
+    constructor(appService, logger) {
         this.appService = appService;
+        this.logger = logger;
+        this.logger.log('Test de log INFO');
+        this.logger.warn('Test de log WARN');
+        this.logger.error('Test de log ERROR');
     }
     getHello() {
         return this.appService.getHello();
@@ -30,6 +36,7 @@ __decorate([
 ], AppController.prototype, "getHello", null);
 exports.AppController = AppController = __decorate([
     (0, common_1.Controller)(),
-    __metadata("design:paramtypes", [app_service_1.AppService])
+    __metadata("design:paramtypes", [app_service_1.AppService,
+        logger_service_1.AppLogger])
 ], AppController);
 //# sourceMappingURL=app.controller.js.map

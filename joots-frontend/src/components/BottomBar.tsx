@@ -2,7 +2,7 @@ import { Button } from "./ui/button"
 import { Home, User } from "lucide-react"
 import { ExperienceLogo } from "./ExperienceLogo"
 import { memo } from "react"
-import { useStore } from "@/app/store/store"
+import { useUserStore } from "@/stores/userStore"
 import Link from "next/link"
 
 interface BottomBarProps {
@@ -10,7 +10,7 @@ interface BottomBarProps {
 }
 
 export const BottomBar = memo(function BottomBar({ experience }: BottomBarProps) {
-  const setMobileMenuOpen = useStore((state) => state.setMobileMenuOpen)
+  const setMobileMenuOpen = useUserStore((state) => state.setMobileMenuOpen)
 
   const handleUserClick = () => {
     setMobileMenuOpen(true)

@@ -1,6 +1,8 @@
 import { AppService } from './app.service';
+import { AppLogger } from './logger/logger.service';
 export declare class AppController {
     private readonly appService;
-    constructor(appService: AppService);
+    private readonly logger;
+    constructor(appService: AppService, logger: AppLogger);
     getHello(): string;
 }

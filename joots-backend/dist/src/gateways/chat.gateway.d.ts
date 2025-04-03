@@ -2,11 +2,15 @@ import { OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { HeartbeatService } from './services/heartbeat.service';
 export declare class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-    private prisma;
-    private redis;
+    private readonly prisma;
+    private readonly redis;
+    private readonly heartbeatService;
     server: Server;
-    constructor(prisma: PrismaService, redis: RedisService);
+    private readonly logger;
+    private heartbeatIntervals;
+    constructor(prisma: PrismaService, redis: RedisService, heartbeatService: HeartbeatService);
     handleConnection(client: Socket): Promise<void>;
     handleDisconnect(client: Socket): void;
     handleJoinConversation(client: Socket, conversationId: string): Promise<{
@@ -32,7 +36,10 @@ export declare class ChatGateway implements OnGatewayConnection, OnGatewayDiscon
         senderId: string;
         content: string;
         createdAt: Date;
+        editedAt: Date | null;
         isRead: boolean;
+        isDeleted: boolean;
         conversationId: string;
     }>;
+    handlePong(client: Socket): void;
 }

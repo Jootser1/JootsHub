@@ -1,10 +1,12 @@
 import { FC } from 'react'
 import Link from 'next/link'
 import { useSession } from 'next-auth/react'
-import { Conversation, Message } from './types'
+import { Conversation } from '@/types/chat'
 import { ConversationStatus } from './ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
+import { useChatStore } from '@/stores/chatStore'
+import { getOtherParticipant } from '@/utils/conversationUtils'
 
 interface ConversationItemProps {
   conversation: Conversation
@@ -13,14 +15,17 @@ interface ConversationItemProps {
 const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
+  const conversations = useChatStore((state) => state.conversations)
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
-  const otherUser = conversation.initiator.id === currentUserId 
-    ? conversation.receiver 
-    : conversation.initiator
+  const otherUser = currentUserId ? getOtherParticipant(conversation, currentUserId) : undefined
+  if (!otherUser) return null;
 
   // Récupérer le dernier message s'il existe
   const lastMessage = conversation.messages[0]
+
+  // Récupérer le statut en ligne depuis le chatStore
+  const isOnline = otherUser.isOnline ?? false
 
   return (
     <Link 
@@ -39,13 +44,13 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-[#E59C45] text-white text-lg">
-                {otherUser.username[0].toUpperCase()}
+                {otherUser.username && otherUser.username[0] ? otherUser.username[0].toUpperCase() : '?'}
               </div>
             )}
           </div>
           {/* Indicateur de statut en ligne */}
           <ConversationStatus 
-            isOnline={otherUser.isOnline} 
+            isOnline={isOnline} 
             className="absolute -bottom-1 -right-1 border-2 border-white"
           />
         </div>
@@ -55,7 +60,7 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
             <h3 className="font-medium truncate">{otherUser.username}</h3>
             {lastMessage && (
               <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
-                {formatDistanceToNow(new Date(lastMessage.createdAt), { 
+                {formatDistanceToNow(new Date(lastMessage.timestamp), { 
                   addSuffix: true,
                   locale: fr 
                 })}

@@ -1,90 +1,91 @@
-import { useState, useEffect } from 'react';
-import axiosInstance from '../app/api/axiosInstance';
-import { Conversation } from '@/components/icebreaker/types';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useSession } from 'next-auth/react';
+import axiosInstance from '@/app/api/axiosInstance';
+import { logger } from '@/utils/logger';
+import { Conversation } from '@/types/chat';
 
 export const useConversation = () => {
+  const { data: session } = useSession();
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
+  const conversationCache = useRef<Record<string, Conversation>>({});
+  const pendingRequests = useRef<Record<string, Promise<Conversation>>>({});
 
   const fetchConversations = async () => {
-    setIsLoading(true);
     try {
       const response = await axiosInstance.get('/conversations');
-      console.log('Conversations fetched:', response.data);
+      logger.debug('Conversations fetched:', response.data);
       setConversations(response.data);
     } catch (error) {
+      logger.error('Error fetching conversations:', error);
       setError(error instanceof Error ? error : new Error('Failed to fetch conversations'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const updateOnlineStatus = async (userId: string, isOnline: boolean) => {
-    setConversations(prevConversations => 
-      prevConversations.map(conv => {
-        if (conv.initiator.id === userId) {
-          return {
-            ...conv,
-            initiator: { ...conv.initiator, isOnline }
-          };
-        }
-        if (conv.receiver.id === userId) {
-          return {
-            ...conv,
-            receiver: { ...conv.receiver, isOnline }
-          };
-        }
-        return conv;
-      })
-    );
-
-    try {
-      await axiosInstance.post('/conversations/online-status', {
-        userId,
-        isOnline
-      });
-    } catch (error) {
-      console.error('Error updating online status:', error);
     }
   };
 
   const createConversation = async (receiverId: string) => {
     try {
-      console.log('Creating new conversation with:', receiverId);
-      const response = await axiosInstance.post('/conversations', {
-        receiverId
-      });
-      console.log('New conversation created:', response.data);
+      logger.debug('Creating new conversation with:', receiverId);
+      const response = await axiosInstance.post('/conversations', { receiverId });
+      logger.debug('New conversation created:', response.data);
+      setConversations(prev => [...prev, response.data]);
       return response.data;
     } catch (error) {
-      console.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', error);
       throw error;
     }
   };
 
-  const findConversation = async (receiverId: string) => {
+  const findConversation = useCallback(async (receiverId: string) => {
+    // Si la conversation est déjà en cache, la retourner
+    if (conversationCache.current[receiverId]) {
+      return conversationCache.current[receiverId];
+    }
+
+    // Si une requête est déjà en cours pour ce receiverId, retourner la promesse existante
+    const pendingRequest = pendingRequests.current[receiverId];
+    if (pendingRequest) {
+      return pendingRequest;
+    }
+
     try {
-      console.log('Finding conversation with:', receiverId);
-      const response = await axiosInstance.get(`/conversations/find/${receiverId}`);
-      console.log('Conversation found:', response.data);
-      return response.data;
+      logger.debug('Finding conversation with:', receiverId);
+      // Stocker la promesse dans pendingRequests
+      const request = axiosInstance.get(`/conversations/${receiverId}`)
+        .then(response => {
+          // Mettre en cache le résultat
+          conversationCache.current[receiverId] = response.data;
+          // Nettoyer la requête en cours
+          delete pendingRequests.current[receiverId];
+          return response.data;
+        })
+        .catch(error => {
+          // Nettoyer la requête en cours en cas d'erreur
+          delete pendingRequests.current[receiverId];
+          logger.error('Error finding conversation:', error);
+          throw error;
+        });
+
+      pendingRequests.current[receiverId] = request;
+      return request;
     } catch (error) {
-      console.error('Error finding conversation:', error);
+      logger.error('Error finding conversation:', error);
       throw error;
     }
-  };
+  }, []);
 
   useEffect(() => {
-    fetchConversations();
-  }, []);
+    if (session?.user?.id) {
+      fetchConversations();
+    }
+    setLoading(false);
+  }, [session?.user?.id]);
 
   return {
     conversations,
-    isLoading,
+    loading,
     error,
     fetchConversations,
-    updateOnlineStatus,
     createConversation,
     findConversation
   };

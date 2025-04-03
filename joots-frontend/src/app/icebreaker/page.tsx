@@ -16,6 +16,7 @@ export default function IcebreakerHome() {
   const user = session?.user
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
+  console.log("session dans icebreaker page", session)
 
   const handleStartRandomChat = async () => {
     try {

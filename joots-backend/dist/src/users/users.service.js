@@ -25,7 +25,6 @@ let UsersService = class UsersService {
             where: { id },
             include: { auth: true }
         });
-        console.log('findById user:', user);
         if (!user) {
             throw new common_1.NotFoundException('Utilisateur non trouvé');
         }
@@ -53,17 +52,21 @@ let UsersService = class UsersService {
     async getRandomAvailableUser(currentUserId) {
         const existingConversations = await this.prisma.conversation.findMany({
             where: {
-                OR: [
-                    { initiatorId: currentUserId },
-                    { receiverId: currentUserId }
-                ]
+                participants: {
+                    some: {
+                        userId: currentUserId
+                    }
+                }
             },
-            select: {
-                initiatorId: true,
-                receiverId: true
+            include: {
+                participants: {
+                    select: {
+                        userId: true
+                    }
+                }
             }
         });
-        const existingUserIds = new Set(existingConversations.flatMap(conv => [conv.initiatorId, conv.receiverId]));
+        const existingUserIds = new Set(existingConversations.flatMap(conv => conv.participants.map(p => p.userId)));
         const availableUsers = await this.prisma.user.findMany({
             where: {
                 AND: [

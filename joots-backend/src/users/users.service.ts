@@ -18,7 +18,6 @@ export class UsersService {
       where: { id },
       include: { auth: true }
   });
-    console.log('findById user:', user);
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
@@ -54,20 +53,26 @@ export class UsersService {
     // Récupérer les IDs des utilisateurs avec qui nous avons déjà une conversation
     const existingConversations = await this.prisma.conversation.findMany({
       where: {
-        OR: [
-          { initiatorId: currentUserId },
-          { receiverId: currentUserId }
-        ]
+          participants: {
+          some: {
+            userId: currentUserId
+          }
+        }
       },
-      select: {
-        initiatorId: true,
-        receiverId: true
+      include: {
+        participants: {
+          select: {
+            userId: true
+          }
+        }
       }
     });
   
     // Créer un Set des IDs des utilisateurs avec qui nous avons déjà parlé
     const existingUserIds = new Set(
-      existingConversations.flatMap(conv => [conv.initiatorId, conv.receiverId])
+      existingConversations.flatMap(conv => 
+        conv.participants.map(p => p.userId)
+      )
     );
   
     const availableUsers = await this.prisma.user.findMany({

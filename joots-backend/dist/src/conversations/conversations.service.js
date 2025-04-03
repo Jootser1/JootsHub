@@ -20,72 +20,88 @@ let ConversationsService = class ConversationsService {
         this.prisma = prisma;
         this.userGateway = userGateway;
     }
+    userSelect = {
+        id: true,
+        username: true,
+        avatar: true,
+        isOnline: true,
+    };
     async findAll(userId) {
-        return this.prisma.conversation.findMany({
-            where: {
-                OR: [
-                    { initiatorId: userId },
-                    { receiverId: userId }
-                ]
-            },
-            include: {
-                initiator: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
+        try {
+            return await this.prisma.conversation.findMany({
+                where: {
+                    participants: {
+                        some: { userId },
                     },
                 },
-                receiver: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
+                include: {
+                    participants: {
+                        include: {
+                            user: { select: this.userSelect },
+                        },
+                    },
+                    messages: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1,
                     },
                 },
-                messages: {
-                    orderBy: {
-                        createdAt: 'desc',
-                    },
-                    take: 1,
-                },
-            },
-            orderBy: {
-                updatedAt: 'desc',
-            },
-        });
+                orderBy: { updatedAt: 'desc' },
+            });
+        }
+        catch (error) {
+            console.error('Erreur dans findAll:', error);
+            throw error;
+        }
     }
     async findOne(id, userId) {
         const conversation = await this.prisma.conversation.findFirst({
             where: {
                 id,
-                OR: [
-                    { initiatorId: userId },
-                    { receiverId: userId }
-                ]
+                participants: {
+                    some: { userId },
+                },
             },
             include: {
-                initiator: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
-                    },
-                },
-                receiver: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
+                participants: {
+                    include: {
+                        user: { select: this.userSelect },
                     },
                 },
                 messages: {
-                    orderBy: {
-                        createdAt: 'asc',
+                    orderBy: { createdAt: 'asc' },
+                },
+            },
+        });
+        if (!conversation) {
+            throw new common_1.NotFoundException('Conversation non trouvée');
+        }
+        return conversation;
+    }
+    async findConversation(userId, receiverId) {
+        const conversation = await this.prisma.conversation.findFirst({
+            where: {
+                AND: [
+                    { participants: { some: { userId } } },
+                    { participants: { some: { userId: receiverId } } },
+                ],
+            },
+            include: {
+                participants: {
+                    include: {
+                        user: { select: this.userSelect },
+                    },
+                },
+                messages: {
+                    orderBy: { createdAt: 'desc' },
+                    take: 50,
+                    include: {
+                        sender: {
+                            select: {
+                                id: true,
+                                username: true,
+                                avatar: true,
+                            },
+                        },
                     },
                 },
             },
@@ -96,32 +112,24 @@ let ConversationsService = class ConversationsService {
         return conversation;
     }
     async create(userId, receiverId) {
+        const [user1, user2] = await Promise.all([
+            this.prisma.user.findUnique({ where: { id: userId } }),
+            this.prisma.user.findUnique({ where: { id: receiverId } }),
+        ]);
+        if (!user1 || !user2) {
+            throw new common_1.NotFoundException('Un ou les deux utilisateurs sont introuvables');
+        }
         const existingConversation = await this.prisma.conversation.findFirst({
             where: {
-                OR: [
-                    {
-                        AND: [{ initiatorId: userId }, { receiverId: receiverId }],
-                    },
-                    {
-                        AND: [{ initiatorId: receiverId }, { receiverId: userId }],
-                    },
+                AND: [
+                    { participants: { some: { userId } } },
+                    { participants: { some: { userId: receiverId } } },
                 ],
             },
             include: {
-                initiator: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
-                    },
-                },
-                receiver: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
+                participants: {
+                    include: {
+                        user: { select: this.userSelect },
                     },
                 },
             },
@@ -131,205 +139,21 @@ let ConversationsService = class ConversationsService {
         }
         return this.prisma.conversation.create({
             data: {
-                initiatorId: userId,
-                receiverId: receiverId,
+                participants: {
+                    create: [
+                        { userId },
+                        { userId: receiverId },
+                    ],
+                },
             },
             include: {
-                initiator: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
-                    },
-                },
-                receiver: {
-                    select: {
-                        id: true,
-                        username: true,
-                        avatar: true,
-                        isOnline: true,
+                participants: {
+                    include: {
+                        user: { select: this.userSelect },
                     },
                 },
             },
         });
-    }
-    async findConversation(userId, receiverId) {
-        try {
-            const conversation = await this.prisma.conversation.findFirst({
-                where: {
-                    OR: [
-                        {
-                            AND: [{ initiatorId: userId }, { receiverId: receiverId }],
-                        },
-                        {
-                            AND: [{ initiatorId: receiverId }, { receiverId: userId }],
-                        },
-                    ],
-                },
-                include: {
-                    initiator: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    receiver: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    messages: {
-                        orderBy: {
-                            createdAt: "desc",
-                        },
-                        take: 50,
-                        include: {
-                            sender: {
-                                select: {
-                                    id: true,
-                                    username: true,
-                                    avatar: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            });
-            if (!conversation) {
-                throw new common_1.NotFoundException('Conversation not found');
-            }
-            return conversation;
-        }
-        catch (error) {
-            console.error('Erreur dans findConversation:', error);
-            throw error;
-        }
-    }
-    async createConversation(userId, receiverId) {
-        try {
-            const [initiator, receiver] = await Promise.all([
-                this.prisma.user.findUnique({ where: { id: userId } }),
-                this.prisma.user.findUnique({ where: { id: receiverId } })
-            ]);
-            if (!initiator || !receiver) {
-                throw new Error('Un ou les deux utilisateurs n\'existent pas');
-            }
-            const existingConversation = await this.prisma.conversation.findFirst({
-                where: {
-                    OR: [
-                        {
-                            AND: [{ initiatorId: userId }, { receiverId: receiverId }],
-                        },
-                        {
-                            AND: [{ initiatorId: receiverId }, { receiverId: userId }],
-                        },
-                    ],
-                },
-            });
-            if (existingConversation) {
-                throw new Error('Une conversation existe déjà entre ces utilisateurs');
-            }
-            const newConversation = await this.prisma.conversation.create({
-                data: {
-                    initiatorId: userId,
-                    receiverId: receiverId,
-                },
-                include: {
-                    initiator: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    receiver: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    messages: {
-                        include: {
-                            sender: {
-                                select: {
-                                    id: true,
-                                    username: true,
-                                    avatar: true,
-                                },
-                            },
-                        },
-                    },
-                },
-            });
-            this.userGateway.emitNewConversation(newConversation, userId, receiverId);
-            return newConversation;
-        }
-        catch (error) {
-            console.error('Erreur dans createConversation:', error);
-            throw error;
-        }
-    }
-    async getAllConversations(userId) {
-        try {
-            const conversations = await this.prisma.conversation.findMany({
-                where: {
-                    OR: [
-                        { initiatorId: userId },
-                        { receiverId: userId }
-                    ]
-                },
-                include: {
-                    initiator: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    receiver: {
-                        select: {
-                            id: true,
-                            username: true,
-                            avatar: true,
-                            isOnline: true,
-                        },
-                    },
-                    messages: {
-                        orderBy: {
-                            createdAt: "desc",
-                        },
-                        take: 1,
-                        include: {
-                            sender: {
-                                select: {
-                                    id: true,
-                                    username: true,
-                                    avatar: true,
-                                },
-                            },
-                        },
-                    },
-                },
-                orderBy: {
-                    updatedAt: "desc",
-                },
-            });
-            return conversations;
-        }
-        catch (error) {
-            console.error('Erreur dans getAllConversations:', error);
-            throw error;
-        }
     }
 };
 exports.ConversationsService = ConversationsService;

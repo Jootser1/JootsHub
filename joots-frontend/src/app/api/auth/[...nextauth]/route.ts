@@ -3,17 +3,11 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import axios from "axios";
 import { JWT } from 'next-auth/jwt'
 import { User as NextAuthUser } from 'next-auth'
+import { logger } from '@/utils/logger';
 
 interface User extends NextAuthUser {
   id: string
   token?: string
-}
-
-interface CustomSession extends Session {
-  user: {
-    id: string
-  } & Session['user']
-  accessToken: string
 }
 
 const authOptions = {
@@ -25,37 +19,35 @@ const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log("Tentative d'authentification avec:", { email: credentials?.email });
-        console.log("URL de l'API:", process.env.NEXT_PUBLIC_API_URL);
-
+        logger.debug('Tentative d\'authentification', { email: credentials?.email });
+        
         if (!credentials?.email || !credentials?.password) {
+          logger.warn('Tentative d\'authentification sans credentials');
           throw new Error('Email et mot de passe requis');
         }
 
         try {
-          console.log("Envoi de la requête au backend...");
+          logger.debug('Envoi de la requête de login au backend');
           const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             email: credentials.email,
             password: credentials.password,
           });
-          console.log("Réponse du backend:", res.data);
 
-          if (res.data && res.data.user && res.data.access_token) {
-            console.log("Authentification réussie");
+          if (res.data?.user?.id && res.data?.access_token) {
+            logger.info('Authentification réussie', { userId: res.data.user.id });
             return { 
               id: res.data.user.id, 
-              username: res.data.user.username, 
               email: res.data.user.email, 
               token: res.data.access_token 
             };
           }
+          logger.error('Réponse invalide du serveur au login', { response: res.data });
           throw new Error('Réponse invalide du serveur');
         } catch (error: any) {
-          console.error("Erreur détaillée:", {
+          logger.error('Erreur d\'authentification', {
             message: error.message,
             response: error.response?.data,
-            status: error.response?.status,
-            headers: error.response?.headers
+            status: error.response?.status
           });
           throw new Error(error.response?.data?.message || 'Erreur d\'authentification');
         }
@@ -64,18 +56,23 @@ const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }: { token: JWT, user?: User }) {
-      console.log("Callback JWT:", { token, user });
+      logger.debug('Callback JWT', { token, user });
       if (user) {
         token.id = user.id;
         token.accessToken = user.token;
       }
       return token;
     },
-    async session({ session, token }: { session: CustomSession, token: JWT }) {
-      console.log("Callback Session:", { session, token });
-      session.user.id = token.id as string;
-      session.accessToken = token.accessToken as string;
-      return session;
+    async session({ session, token }: { session: Session, token: JWT }) {
+      logger.debug('Callback Session', { session, token });
+      return {
+        user: {
+          id: token.id as string,
+          email: session.user?.email
+        },
+        accessToken: token.accessToken as string,
+        expires: session.expires
+      };
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

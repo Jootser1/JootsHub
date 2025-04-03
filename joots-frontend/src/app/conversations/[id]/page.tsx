@@ -1,48 +1,25 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, use } from "react"
 import { useSession } from "next-auth/react"
 import { useParams } from "next/navigation"
 import axiosInstance from "@/app/api/axiosInstance"
-import Layout from "@/components/Layout"
+import Layout from '@/components/Layout'
+import { ChatContainer } from '@/components/chat/ChatContainer'
 import { toast } from "sonner"
-import { ChatWindow } from "@/components/icebreaker/ChatWindow"
+import { getOtherParticipant } from '@/utils/conversationUtils'
+import { Conversation } from '@/types/chat'
 
-interface User {
-  id: string
-  name: string
-  image: string
-  isOnline?: boolean
-}
-
-interface Message {
-  id: string
-  content: string
-  senderId: string
-  createdAt: string
-}
-
-interface Conversation {
-  id: string
-  initiatorId: string
-  receiverId: string
-  initiator: User
-  receiver: User
-  messages: Message[]
-  createdAt: string
-  updatedAt: string
-}
-
-export default function ConversationPage() {
+export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
+  const resolvedParams = use(params);
   const { data: session } = useSession()
-  const params = useParams()
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const fetchConversation = async () => {
       try {
-        const response = await axiosInstance.get(`/conversations/${params.id}`)
+        const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
         setConversation(response.data)
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
@@ -51,10 +28,10 @@ export default function ConversationPage() {
       }
     }
 
-    if (session?.user && params.id) {
+    if (session?.user && resolvedParams.id) {
       fetchConversation()
     }
-  }, [session?.user, params.id])
+  }, [session?.user, resolvedParams.id])
 
   if (!session?.user) {
     return <div>Chargement...</div>
@@ -77,18 +54,21 @@ export default function ConversationPage() {
   }
 
   // Déterminer l'autre utilisateur
-  const otherUser = conversation.initiatorId === session.user.id
-    ? conversation.receiver
-    : conversation.initiator
+  const otherUser = getOtherParticipant(conversation, session.user.id)
+
+  if (!otherUser) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Utilisateur non trouvé</p>
+      </div>
+    )
+  }
 
   return (
     <Layout experience="icebreaker">
       <main className="flex min-h-screen flex-col bg-gray-50">
         <div className="max-w-md w-full mx-auto bg-white min-h-screen shadow-lg">
-          <ChatWindow
-            conversationId={params.id as string}
-            otherUser={otherUser}
-          />
+          <ChatContainer conversationId={resolvedParams.id} />
         </div>
       </main>
     </Layout>

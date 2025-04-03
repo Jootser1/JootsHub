@@ -1,19 +1,30 @@
 import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
+import { getServerSession } from 'next-auth';
+import axiosInstance from '@/app/api/axiosInstance';
 
 export async function GET(request: NextRequest) {
-  const id = request.nextUrl.searchParams.get('id');
+  try {
+    const session = await getServerSession();
+    if (!session?.user) {
+      return new NextResponse('Non autorisé', { status: 401 });
+    }
 
-  if (!id) {
-    return NextResponse.json({ error: "ID manquant" }, { status: 400 });
+    const id = request.nextUrl.searchParams.get('id');
+
+    if (!id) {
+      return NextResponse.json({ error: "ID manquant" }, { status: 400 });
+    }
+
+    const response = await axiosInstance.get(`/users/${id}`);
+    return NextResponse.json(response.data);
+  } catch (error: any) {
+    console.error('Erreur lors de la récupération de l\'utilisateur:', error);
+    
+    if (error.response?.status === 404) {
+      return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
+    }
+    
+    return new NextResponse('Erreur serveur', { status: 500 });
   }
-
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/users/${id}`);
-  const data = await res.json();
-
-  if (!res.ok) {
-    return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
-  }
-
-  return NextResponse.json(data);
 }
