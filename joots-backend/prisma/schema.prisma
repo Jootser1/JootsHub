@@ -38,6 +38,24 @@ model User {
   isAvailableForChat Boolean @default(true)
   sentMessages     Message[] @relation("SentMessages")
   conversations    ConversationParticipant[]
+  contacts      UserContact[] @relation("UserContacts")
+  contactOf     UserContact[] @relation("ContactOf")
+}
+
+model UserContact {
+  userId      String
+  contactId   String
+  createdAt   DateTime @default(now())
+  
+  // Relations
+  user        User     @relation("UserContacts", fields: [userId], references: [id], onDelete: Cascade)
+  contact     User     @relation("ContactOf", fields: [contactId], references: [id], onDelete: Cascade)
+  
+  // Contrainte de clé primaire composite
+  @@id([userId, contactId])
+  // Indexation pour améliorer les performances
+  @@index([userId])
+  @@index([contactId])
 }
 
 model Conversation {

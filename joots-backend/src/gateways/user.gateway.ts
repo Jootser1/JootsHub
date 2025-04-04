@@ -1,16 +1,14 @@
 import {
   WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   SubscribeMessage,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
+import { BaseGateway } from './base.gateway';
+import { UserContactsService } from 'src/users/contacts/contacts.service';
 
 @WebSocketGateway({
   cors: {
@@ -21,59 +19,16 @@ import { RedisService } from '../redis/redis.service';
   },
   namespace: 'users'
 })
-export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server: Server;
-  
-  private readonly logger = new Logger(UserGateway.name);
+
+export class UserGateway extends BaseGateway {
   private connectedUsers = new Map<string, Set<string>>();
   
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService
-  ) {}
-  
-  // Middleware d'authentification
-  afterInit(server: Server) {
-    server.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token;
-        const userId = socket.handshake.auth.userId;
-        
-        if (!token || !userId) {
-          return next(new Error('Authentification requise'));
-        }
-        
-        // Extraire le userId du token
-        const validUserId = this.extractUserIdFromToken(token);
-        
-        if (!validUserId || validUserId !== userId) {
-          return next(new Error('Token invalide'));
-        }
-        
-        // Ajouter l'ID utilisateur au socket
-        socket.data.userId = userId;
-        next();
-      } catch (error) {
-        next(new Error('Erreur d\'authentification'));
-      }
-    });
-  }
-  
-  // Décodage simple du token
-  private extractUserIdFromToken(token: string): string | null {
-    try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) return null;
-      
-      const payload = JSON.parse(
-        Buffer.from(tokenParts[1], 'base64').toString()
-      );
-      
-      return payload.sub;
-    } catch (error) {
-      return null;
-    }
+    private readonly redis: RedisService,
+    private readonly userContactsService: UserContactsService
+  ) {
+    super(UserGateway.name);
   }
   
   // Gestion de la connexion
@@ -102,12 +57,8 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
         data: { isOnline: true }
       });
       
-      // Notifier les autres clients
-      this.server.emit('userStatusChange', {
-        userId,
-        isOnline: true,
-        timestamp: new Date().toISOString()
-      });
+      // Notifier uniquement les contacts
+      await this.notifyContactsStatusChange(userId, true);
       
       this.logger.log(`Utilisateur connecté: ${userId} (socket: ${client.id})`);
     } catch (error) {
@@ -157,6 +108,38 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
   
+  private async notifyContactsStatusChange(userId: string, isOnline: boolean) {
+    try {
+      // Récupérer tous les utilisateurs dont cet utilisateur est un contact
+      const contactOf = await this.prisma.userContact.findMany({
+        where: { contactId: userId },
+        select: { userId: true }
+      });
+      
+      // Pour chaque utilisateur qui a cet utilisateur en contact
+      contactOf.forEach(({ userId: contactUserId }) => {
+        // Si ce contact est connecté, lui envoyer la notification
+        const socketIds = this.connectedUsers.get(contactUserId);
+        if (socketIds && socketIds.size > 0) {
+          // Émettre uniquement aux sockets de ce contact
+          socketIds.forEach(socketId => {
+            const socket = this.server.sockets.get(socketId);
+            if (socket) {
+              socket.emit('userStatusChange', {
+                userId,
+                isOnline,
+                timestamp: new Date().toISOString()
+              });
+            }
+          });
+        }
+      });
+      
+      this.logger.debug(`Notification de changement de statut envoyée aux contacts de ${userId}`);
+    } catch (error) {
+      this.logger.error(`Erreur lors de la notification des contacts: ${error.message}`);
+    }
+  }
   // Mise à jour manuelle du statut
   @SubscribeMessage('updateUserStatus')
   async handleUpdateUserStatus(
@@ -205,4 +188,4 @@ export class UserGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
     }
   }
-}
+} 

@@ -150,4 +150,4 @@ exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService])
 ], ChatGateway);
-//# sourceMappingURL=chat.gateway.js.map
+//# sourceMappingURL=chat.gateway.new.js.map

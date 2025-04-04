@@ -1,15 +1,12 @@
 import {
   WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   SubscribeMessage,
   ConnectedSocket,
   MessageBody,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
+import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
+import { BaseGateway } from './base.gateway';
 
 @WebSocketGateway({
   cors: {
@@ -20,57 +17,9 @@ import { PrismaService } from '../../prisma/prisma.service';
   },
   namespace: 'chat'
 })
-export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server: Server;
-  
-  private readonly logger = new Logger(ChatGateway.name);
-  
-  constructor(
-    private readonly prisma: PrismaService
-  ) {}
-  
-  // Même middleware d'authentification que le UserGateway
-  afterInit(server: Server) {
-    server.use(async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token;
-        const userId = socket.handshake.auth.userId;
-        
-        if (!token || !userId) {
-          return next(new Error('Authentification requise'));
-        }
-        
-        // Extraire le userId du token
-        const validUserId = this.extractUserIdFromToken(token);
-        
-        if (!validUserId || validUserId !== userId) {
-          return next(new Error('Token invalide'));
-        }
-        
-        // Ajouter l'ID utilisateur au socket
-        socket.data.userId = userId;
-        next();
-      } catch (error) {
-        next(new Error('Erreur d\'authentification'));
-      }
-    });
-  }
-  
-  // Décodage simple du token
-  private extractUserIdFromToken(token: string): string | null {
-    try {
-      const tokenParts = token.split('.');
-      if (tokenParts.length !== 3) return null;
-      
-      const payload = JSON.parse(
-        Buffer.from(tokenParts[1], 'base64').toString()
-      );
-      
-      return payload.sub;
-    } catch (error) {
-      return null;
-    }
+export class ChatGateway extends BaseGateway {
+  constructor(private readonly prisma: PrismaService) {
+    super(ChatGateway.name);
   }
   
   handleConnection(client: Socket) {
