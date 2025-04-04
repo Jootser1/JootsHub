@@ -30,6 +30,14 @@ export class ConversationsController {
     return this.conversationsService.findOne(id, req.user.sub);
   }
 
+  @Get(':id/messages')
+  findMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    if (!req.user?.sub) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    return this.conversationsService.findMessages(id, req.user.sub);
+  }
+
   @Post()
   create(@Body() body: { receiverId: string }, @Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {

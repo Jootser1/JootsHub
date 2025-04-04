@@ -4,12 +4,53 @@ import { useSocket } from './useSocket';
 import { useChatStore } from '@/stores/chatStore';
 import { logger } from '@/utils/logger';
 import { Message } from '@/types/chat';
+import axiosInstance from '@/app/api/axiosInstance';
 
 export const useChatSocket = (conversationId?: string) => {
   const { data: session } = useSession();
   const { socket, isConnected } = useSocket();
   const chatStore = useChatStore();
   const [localMessages, setLocalMessages] = useState<Message[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Charger les messages historiques depuis l'API
+  const loadHistoricalMessages = useCallback(async () => {
+    if (!conversationId) return;
+    
+    try {
+      setIsLoading(true);
+      logger.debug(`Chargement des messages historiques pour la conversation ${conversationId}`);
+      
+      const response = await axiosInstance.get(`/conversations/${conversationId}/messages`);
+      const messages = response.data.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        senderId: msg.sender.id,
+        receiverId: msg.recipientId || '',
+        type: msg.type || 'text',
+        timestamp: new Date(msg.createdAt),
+        status: 'delivered' as const
+      }));
+      
+      // Mettre à jour le store
+      messages.forEach((message: Message) => {
+        chatStore.addMessage(conversationId, message);
+      });
+      
+      setLocalMessages(messages);
+    } catch (error) {
+      logger.error(`Erreur lors du chargement des messages historiques: ${error}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [conversationId, chatStore]);
+  
+  // Charger les messages au chargement de la conversation
+  useEffect(() => {
+    if (conversationId) {
+      loadHistoricalMessages();
+    }
+  }, [conversationId, loadHistoricalMessages]);
   
   // Charger les messages du store
   useEffect(() => {
@@ -34,7 +75,7 @@ export const useChatSocket = (conversationId?: string) => {
         const newMessage: Message = {
           id: message.id,
           content: message.content,
-          senderId: message.senderId,
+          senderId: message.sender.id,
           receiverId: message.recipientId || '',
           type: message.type || 'text',
           timestamp: new Date(message.createdAt),
@@ -66,9 +107,20 @@ export const useChatSocket = (conversationId?: string) => {
     socket.sendMessage(conversationId, content, session.user.id);
   }, [conversationId, isConnected, socket, session?.user?.id]);
   
+  // Envoyer un statut de frappe
+  const sendTypingStatus = useCallback((isTyping: boolean) => {
+    if (!conversationId || !isConnected || !socket || !session?.user?.id) {
+      return;
+    }
+    
+    socket.sendTypingStatus(conversationId, isTyping);
+  }, [conversationId, isConnected, socket, session?.user?.id]);
+  
   return {
     isConnected,
     sendMessage,
-    messages: localMessages // Utiliser l'état local
+    sendTypingStatus,
+    messages: localMessages,
+    isLoading
   };
 }; 

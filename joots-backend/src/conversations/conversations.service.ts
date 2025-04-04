@@ -155,4 +155,41 @@ export class ConversationsService {
       },
     });
   }
+
+  async findMessages(conversationId: string, userId: string) {
+    // Vérifier que l'utilisateur a accès à la conversation
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        participants: {
+          some: { userId },
+        },
+      },
+    });
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
+    }
+
+    // Récupérer les messages avec les informations de l'expéditeur
+    const messages = await this.prisma.message.findMany({
+      where: {
+        conversationId,
+      },
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            avatar: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
+
+    return messages;
+  }
 }

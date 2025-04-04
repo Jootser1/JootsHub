@@ -109,4 +109,20 @@ export declare class ConversationsService {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    findMessages(conversationId: string, userId: string): Promise<({
+        sender: {
+            id: string;
+            avatar: string | null;
+            username: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        senderId: string;
+        content: string;
+        editedAt: Date | null;
+        isRead: boolean;
+        isDeleted: boolean;
+        conversationId: string;
+    })[]>;
 }

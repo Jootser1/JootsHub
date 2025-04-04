@@ -165,6 +165,12 @@ class SocketService {
     this.chatSocket.emit('sendMessage', { conversationId, content, userId });
   }
   
+  sendTypingStatus(conversationId: string, isTyping: boolean): void {
+    if (!this.chatSocket?.connected) return;
+    
+    this.chatSocket.emit('typingStatus', { conversationId, isTyping });
+  }
+  
   // Écouteurs d'événements
   onUserStatusChange(callback: (data: any) => void): () => void {
     if (!this.userSocket) return () => {};

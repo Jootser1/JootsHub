@@ -62,6 +62,22 @@ export declare class ConversationsController {
         createdAt: Date;
         updatedAt: Date;
     }>;
+    findMessages(id: string, req: AuthenticatedRequest): Promise<({
+        sender: {
+            id: string;
+            avatar: string | null;
+            username: string;
+        };
+    } & {
+        id: string;
+        createdAt: Date;
+        senderId: string;
+        content: string;
+        editedAt: Date | null;
+        isRead: boolean;
+        isDeleted: boolean;
+        conversationId: string;
+    })[]>;
     create(body: {
         receiverId: string;
     }, req: AuthenticatedRequest): Promise<{

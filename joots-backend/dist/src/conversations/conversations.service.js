@@ -155,6 +155,37 @@ let ConversationsService = class ConversationsService {
             },
         });
     }
+    async findMessages(conversationId, userId) {
+        const conversation = await this.prisma.conversation.findFirst({
+            where: {
+                id: conversationId,
+                participants: {
+                    some: { userId },
+                },
+            },
+        });
+        if (!conversation) {
+            throw new common_1.NotFoundException('Conversation non trouvée ou accès non autorisé');
+        }
+        const messages = await this.prisma.message.findMany({
+            where: {
+                conversationId,
+            },
+            include: {
+                sender: {
+                    select: {
+                        id: true,
+                        username: true,
+                        avatar: true,
+                    },
+                },
+            },
+            orderBy: {
+                createdAt: 'asc',
+            },
+        });
+        return messages;
+    }
 };
 exports.ConversationsService = ConversationsService;
 exports.ConversationsService = ConversationsService = __decorate([

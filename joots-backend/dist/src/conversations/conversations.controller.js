@@ -33,6 +33,12 @@ let ConversationsController = class ConversationsController {
         }
         return this.conversationsService.findOne(id, req.user.sub);
     }
+    findMessages(id, req) {
+        if (!req.user?.sub) {
+            throw new common_1.UnauthorizedException('User not authenticated');
+        }
+        return this.conversationsService.findMessages(id, req.user.sub);
+    }
     create(body, req) {
         if (!req.user?.sub) {
             throw new common_1.UnauthorizedException('User not authenticated');
@@ -56,6 +62,14 @@ __decorate([
     __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], ConversationsController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)(':id/messages'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ConversationsController.prototype, "findMessages", null);
 __decorate([
     (0, common_1.Post)(),
     __param(0, (0, common_1.Body)()),

@@ -22,7 +22,8 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
     isConnected, 
     sendMessage, 
     sendTypingStatus,
-    messages
+    messages,
+    isLoading: isLoadingMessages
   } = useChatSocket(conversationId);
   const { isReady, currentQuestion, handleReady, handleResponse } = useIcebreaker(conversationId);
   const [conversation, setConversation] = useState<Conversation | null>(null);
@@ -61,7 +62,7 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
   };
 
   if (isLoading) {
-    return <div className="flex items-center justify-center h-full">Chargement...</div>;
+    return <div className="flex items-center justify-center h-full">Chargement de la conversation...</div>;
   }
 
   if (error) {
@@ -87,11 +88,17 @@ export const ChatContainer = ({ conversationId }: ChatContainerProps) => {
         otherUser={otherUser}
         isOnline={otherUser.isOnline}
       />
-      <ChatMessages 
-        messages={messages}
-        currentUserId={session.user.id}
-        isConnected={isConnected}
-      />
+      {isLoadingMessages ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-gray-500">Chargement des messages...</div>
+        </div>
+      ) : (
+        <ChatMessages 
+          messages={messages}
+          currentUserId={session.user.id}
+          isConnected={isConnected}
+        />
+      )}
       <ChatInput 
         conversationId={conversationId}
         currentUserId={session.user.id}

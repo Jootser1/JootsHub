@@ -10,6 +10,7 @@ import { LoggerModule } from './logger/logger.module';
 import { GatewaysModule } from './gateways/gateways.module';
 import { ConfigModule } from '@nestjs/config';
 import { ConversationsModule } from './conversations/conversations.module';
+import { MessagesModule } from './messages/messages.module';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { ConversationsModule } from './conversations/conversations.module';
     PrismaModule,
     LoggerModule,
     GatewaysModule,
-    ConversationsModule
+    ConversationsModule,
+    MessagesModule
   ],
   controllers: [AppController, UsersController],
   providers: [AppService, UsersService],
