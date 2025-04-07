@@ -1,0 +1,8 @@
+// tsconfig.json
+{
+    "files": [],
+    "references": [
+      { "path": "./joots-backend" },
+      { "path": "./joots-frontend" }
+    ]
+  }

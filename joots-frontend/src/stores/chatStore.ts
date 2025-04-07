@@ -131,12 +131,12 @@ export const useChatStore = create<ChatStore>()(
           const updatedConversations = { ...state.conversations };
           
           Object.entries(updatedConversations).forEach(([id, conversation]) => {
-            const participant = conversation.participants.find(p => p.id === participantId);
+            const participant = conversation.participants.find(p => p.userId === participantId);
             if (participant) {
               updatedConversations[id] = {
                 ...conversation,
                 participants: conversation.participants.map(p => 
-                  p.id === participantId ? { ...p, isOnline } : p
+                  p.userId === participantId ? { ...p, isOnline } : p
                 ),
               };
             }
@@ -150,12 +150,12 @@ export const useChatStore = create<ChatStore>()(
           const updatedConversations = { ...state.conversations };
           
           Object.entries(updatedConversations).forEach(([id, conversation]) => {
-            const participant = conversation.participants.find(p => p.id === participantId);
+            const participant = conversation.participants.find(p => p.userId === participantId);
             if (participant) {
               updatedConversations[id] = {
                 ...conversation,
                 participants: conversation.participants.map(p => 
-                  p.id === participantId ? { ...p, isTyping } : p
+                  p.userId === participantId ? { ...p, isTyping } : p
                 ),
               };
             }
@@ -217,14 +217,14 @@ export const useChatStore = create<ChatStore>()(
           const conversation = state.conversations[conversationId];
           if (!conversation || !conversation.icebreakerStatus.currentQuestion) return state;
 
-          const otherParticipant = getOtherParticipant(conversation, conversation.participants[0].id);
+          const otherParticipant = getOtherParticipant(conversation, conversation.participants[0].userId);
           if (!otherParticipant) return state;
 
           const newMessage: Message = {
             id: crypto.randomUUID(),
             content: conversation.icebreakerStatus.currentQuestion,
-            senderId: isCurrentUser ? conversation.participants[0].id : otherParticipant.id,
-            receiverId: isCurrentUser ? otherParticipant.id : conversation.participants[0].id,
+            senderId: isCurrentUser ? conversation.participants[0].userId : otherParticipant.id,
+            receiverId: isCurrentUser ? otherParticipant.id : conversation.participants[0].userId,
             timestamp: new Date(),
             status: 'sent',
             type: 'icebreaker',

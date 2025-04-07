@@ -123,7 +123,7 @@ export class UserGateway extends BaseGateway {
         if (socketIds && socketIds.size > 0) {
           // Émettre uniquement aux sockets de ce contact
           socketIds.forEach(socketId => {
-            const socket = this.server.sockets.get(socketId);
+            const socket = this.server.sockets.sockets.get(socketId);
             if (socket) {
               socket.emit('userStatusChange', {
                 userId,

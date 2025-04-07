@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
-import { Conversation } from '@/types/chat';
+import { Conversation, Message } from '@/types/chat';
+import { useChatStore } from '@/stores/chatStore';
 
 export const useConversation = () => {
   const { data: session } = useSession();
@@ -11,6 +12,7 @@ export const useConversation = () => {
   const [error, setError] = useState<Error | null>(null);
   const conversationCache = useRef<Record<string, Conversation>>({});
   const pendingRequests = useRef<Record<string, Promise<Conversation>>>({});
+  const chatStore = useChatStore();
 
   const fetchConversations = async () => {
     try {
@@ -74,6 +76,38 @@ export const useConversation = () => {
     }
   }, []);
 
+  const loadMessages = useCallback(async (conversationId: string) => {
+    if (!conversationId) return;
+    
+    try {
+      setLoading(true);
+      logger.debug(`Chargement des messages historiques pour la conversation ${conversationId}`);
+      
+      const response = await axiosInstance.get(`/conversations/${conversationId}/messages`);
+      const messages = response.data.map((msg: any) => ({
+        id: msg.id,
+        content: msg.content,
+        senderId: msg.sender.id,
+        receiverId: msg.recipientId || '',
+        type: msg.type || 'text',
+        timestamp: new Date(msg.createdAt),
+        status: 'delivered' as const
+      }));
+      
+      // Mettre à jour le store
+      messages.forEach((message: Message) => {
+        chatStore.addMessage(conversationId, message);
+      });
+      
+      return messages;
+    } catch (error) {
+      logger.error(`Erreur lors du chargement des messages historiques: ${error}`);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, [chatStore]);
+
   useEffect(() => {
     if (session?.user?.id) {
       fetchConversations();
@@ -87,6 +121,7 @@ export const useConversation = () => {
     error,
     fetchConversations,
     createConversation,
-    findConversation
+    findConversation,
+    loadMessages
   };
 };

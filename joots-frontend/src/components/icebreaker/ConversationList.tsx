@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import ConversationItem from './ConversationItem'
 import { useConversation } from '@/hooks/useConversation'
 import { useSession } from 'next-auth/react'
-import { useOnlineStatus } from '@/hooks/useOnlineStatus'
+import { useUserSocket } from '@/hooks/useUserSocket'
 import { Conversation } from '@/types/chat'
 import { logger } from '@/utils/logger'
 
@@ -15,7 +15,7 @@ export const ConversationList = () => {
     error, 
     fetchConversations, 
   } = useConversation()
-  const { updateMyStatus } = useOnlineStatus()
+  const { updateMyStatus } = useUserSocket()
 
   useEffect(() => {
     if (!session?.user?.id || isInitializedRef.current) return

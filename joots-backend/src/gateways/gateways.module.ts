@@ -5,7 +5,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisModule } from '../redis/redis.module';
 import { RedisService } from '../redis/redis.service';
 import { HeartbeatService } from './services/heartbeat.service';
-
+import { UserContactsService } from '../users/contacts/contacts.service';
 @Module({
   imports: [RedisModule],
   providers: [
@@ -13,7 +13,8 @@ import { HeartbeatService } from './services/heartbeat.service';
     ChatGateway, 
     PrismaService, 
     RedisService,
-    HeartbeatService
+    HeartbeatService, 
+    UserContactsService
   ],
   exports: [UserGateway, ChatGateway],
 })

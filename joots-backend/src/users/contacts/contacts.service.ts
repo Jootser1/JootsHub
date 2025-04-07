@@ -1,7 +1,7 @@
 // src/services/user-contacts.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConversationParticipant } from '../types/chat';
+import { PrismaService } from '../../../prisma/prisma.service';
+import { ConversationParticipant } from '../../../types/chat';
 
 @Injectable()
 export class UserContactsService {
@@ -10,31 +10,28 @@ export class UserContactsService {
   /**
    * Récupère tous les contacts d'un utilisateur
    */
-  async getUserContacts(userId: string): Promise<ConversationParticipant[]> {
+  async getUserContacts(userId: string): Promise<{ contact: { id: string; username: string; avatar: string | null; isOnline: boolean } }[]> {
     const contacts = await this.prisma.userContact.findMany({
       where: { userId },
       include: {
         contact: {
           select: {
             id: true,
-            name: true,
-            email: true,
-            image: true,
-            isOnline: true,
-            lastSeen: true,
+            username: true,
+            avatar: true,
+            isOnline: true
           }
         }
       }
     });
 
-    // Transformer les résultats au format ConversationParticipant
     return contacts.map(contact => ({
-      id: contact.contact.id,
-      name: contact.contact.name,
-      email: contact.contact.email,
-      image: contact.contact.image,
-      isOnline: contact.contact.isOnline,
-      lastSeen: contact.contact.lastSeen
+      contact: {
+        id: contact.contact.id,
+        username: contact.contact.username,
+        avatar: contact.contact.avatar,
+        isOnline: contact.contact.isOnline
+      }
     }));
   }
 

@@ -4,15 +4,16 @@ import { useSocket } from './useSocket';
 import { useChatStore } from '@/stores/chatStore';
 import { useUserStore } from '@/stores/userStore';
 import { logger } from '@/utils/logger';
+import { UserSocketService } from '@/services/UserSocketService';
 
 interface UserStatusChange {
   userId: string;
   isOnline: boolean;
 }
 
-export const useOnlineStatus = () => {
+export const useUserSocket = () => {
   const { data: session } = useSession();
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected } = useSocket('users');
   const setParticipantOnlineStatus = useChatStore((state) => state.setParticipantOnlineStatus);
   const updateUserStatus = useUserStore((state) => state.updateUserStatus);
   const [localOnlineStatus, setLocalOnlineStatus] = useState<boolean>(true);
@@ -32,12 +33,12 @@ export const useOnlineStatus = () => {
 
   useEffect(() => {
     if (!socket || !session?.user?.id) {
-      logger.warn('useOnlineStatus: Pas de socket ou de session utilisateur');
+      logger.warn('useUserSocket: Pas de socket ou de session utilisateur');
       return;
     }
 
-    logger.debug(`[useOnlineStatus] Hook initialisé pour l'utilisateur ${session.user.id}`);
-    logger.debug(`État de connexion socket: ${socket.connected ? 'Connecté' : 'Déconnecté'}`);
+    logger.debug(`[useUserSocket] Hook initialisé pour l'utilisateur ${session.user.id}`);
+    logger.debug(`État de connexion socket: ${socket.isConnected() ? 'Connecté' : 'Déconnecté'}`);
 
     // Fonction de gestionnaire d'événement pour userStatusChange
     const handleUserStatusChange = (data: UserStatusChange) => {
@@ -59,15 +60,15 @@ export const useOnlineStatus = () => {
     };
     
     // S'abonner à l'événement de changement de statut
-    const unsubscribe = socket.onUserStatusChange(handleUserStatusChange);
+    const unsubscribe = (socket as UserSocketService).onUserStatusChange(handleUserStatusChange);
     
     // Émettre un ping pour signaler la présence et vérifier la connexion
-    if (socket.connected) {
-      socket.emit('ping');
+    if (socket.isConnected()) {
+      socket.getSocket()?.emit('ping');
     }
 
     return () => {
-      logger.debug('Nettoyage des écouteurs d\'événements useOnlineStatus');
+      logger.debug('Nettoyage des écouteurs d\'événements useUserSocket');
       unsubscribe();
     };
   }, [socket, session?.user?.id, setParticipantOnlineStatus, updateUserStatus]);
@@ -87,8 +88,8 @@ export const useOnlineStatus = () => {
       setLocalOnlineStatus(isOnline);
       
       // Émettre l'événement via Socket.IO
-      if (socket.connected) {
-        socket.emit('updateUserStatus', { isOnline });
+      if (socket.isConnected()) {
+        (socket as UserSocketService).emitNewUserStatus(isOnline);
       } else {
         logger.warn('Socket non connecté lors de la tentative de mise à jour du statut');
       }
@@ -99,6 +100,8 @@ export const useOnlineStatus = () => {
 
   return { 
     updateMyStatus,
-    isOnline: localOnlineStatus 
+    isOnline: localOnlineStatus,
+    socket,
+    isConnected
   };
 }; 

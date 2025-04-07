@@ -21,18 +21,18 @@ export declare class ChatGateway extends BaseGateway {
         message: {
             sender: {
                 id: string;
-                username: string;
                 avatar: string | null;
+                username: string;
             };
         } & {
             id: string;
-            senderId: string;
-            content: string;
             createdAt: Date;
+            conversationId: string;
+            content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
         };
         error?: undefined;
     } | {

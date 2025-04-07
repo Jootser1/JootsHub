@@ -19,14 +19,17 @@ const socket_io_1 = require("socket.io");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const base_gateway_1 = require("./base.gateway");
+const contacts_service_1 = require("../users/contacts/contacts.service");
 let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseGateway {
     prisma;
     redis;
+    userContactsService;
     connectedUsers = new Map();
-    constructor(prisma, redis) {
+    constructor(prisma, redis, userContactsService) {
         super(UserGateway_1.name);
         this.prisma = prisma;
         this.redis = redis;
+        this.userContactsService = userContactsService;
     }
     async handleConnection(client) {
         const userId = client.data.userId;
@@ -46,11 +49,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
                 where: { id: userId },
                 data: { isOnline: true }
             });
-            this.server.emit('userStatusChange', {
-                userId,
-                isOnline: true,
-                timestamp: new Date().toISOString()
-            });
+            await this.notifyContactsStatusChange(userId, true);
             this.logger.log(`Utilisateur connecté: ${userId} (socket: ${client.id})`);
         }
         catch (error) {
@@ -86,6 +85,33 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
         }
         else {
             this.logger.debug(`Socket ${client.id} déconnecté, mais l'utilisateur ${userId} a encore d'autres connexions actives`);
+        }
+    }
+    async notifyContactsStatusChange(userId, isOnline) {
+        try {
+            const contactOf = await this.prisma.userContact.findMany({
+                where: { contactId: userId },
+                select: { userId: true }
+            });
+            contactOf.forEach(({ userId: contactUserId }) => {
+                const socketIds = this.connectedUsers.get(contactUserId);
+                if (socketIds && socketIds.size > 0) {
+                    socketIds.forEach(socketId => {
+                        const socket = this.server.sockets.sockets.get(socketId);
+                        if (socket) {
+                            socket.emit('userStatusChange', {
+                                userId,
+                                isOnline,
+                                timestamp: new Date().toISOString()
+                            });
+                        }
+                    });
+                }
+            });
+            this.logger.debug(`Notification de changement de statut envoyée aux contacts de ${userId}`);
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de la notification des contacts: ${error.message}`);
         }
     }
     async handleUpdateUserStatus(client, data) {
@@ -150,6 +176,7 @@ exports.UserGateway = UserGateway = UserGateway_1 = __decorate([
         namespace: 'users'
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        contacts_service_1.UserContactsService])
 ], UserGateway);
 //# sourceMappingURL=user.gateway.js.map

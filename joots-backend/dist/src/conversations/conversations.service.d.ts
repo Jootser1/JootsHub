@@ -9,12 +9,12 @@ export declare class ConversationsService {
         messages: {
             id: string;
             createdAt: Date;
-            senderId: string;
+            conversationId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -36,12 +36,12 @@ export declare class ConversationsService {
         messages: {
             id: string;
             createdAt: Date;
-            senderId: string;
+            conversationId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -69,12 +69,12 @@ export declare class ConversationsService {
         } & {
             id: string;
             createdAt: Date;
-            senderId: string;
+            conversationId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
         })[];
         participants: ({
             user: {
@@ -118,11 +118,11 @@ export declare class ConversationsService {
     } & {
         id: string;
         createdAt: Date;
-        senderId: string;
+        conversationId: string;
         content: string;
+        senderId: string;
         editedAt: Date | null;
         isRead: boolean;
         isDeleted: boolean;
-        conversationId: string;
     })[]>;
 }

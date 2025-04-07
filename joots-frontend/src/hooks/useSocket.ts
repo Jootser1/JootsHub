@@ -1,12 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
-import SocketService from '@/services/SocketService';
+import { BaseSocketService } from '@/services/BaseSocketService';
+import { UserSocketService } from '@/services/UserSocketService';
 
-export const useSocket = () => {
+class SocketService extends BaseSocketService {
+  constructor(namespace: string) {
+    super(namespace);
+  }
+}
+
+export const useSocket = (namespace: string) => {
   const { data: session } = useSession();
   const [isConnected, setIsConnected] = useState(false);
-  const socketRef = useRef<SocketService | null>(null);
+  const socketRef = useRef<BaseSocketService | null>(null);
 
   useEffect(() => {
     if (!session?.user?.id || !session?.accessToken) {
@@ -14,15 +21,15 @@ export const useSocket = () => {
       return;
     }
 
-    // Initialiser le service socket
-    const socketService = SocketService.getInstance();
+    const socketService = namespace === 'users' 
+      ? UserSocketService.getInstance()
+      : new SocketService(namespace);
+      
     socketRef.current = socketService;
     
-    // Établir la connexion
     socketService.connect(session.user.id, session.accessToken);
     
-    // Gérer les changements d'état de connexion
-    const unsubscribe = socketService.onConnectionChange((status) => {
+    const unsubscribe = socketService.onConnectionChange((status: boolean) => {
       setIsConnected(status);
     });
     
@@ -31,7 +38,7 @@ export const useSocket = () => {
       socketService.disconnect();
       setIsConnected(false);
     };
-  }, [session?.user?.id, session?.accessToken]);
+  }, [session?.user?.id, session?.accessToken, namespace]);
 
   return {
     socket: socketRef.current,

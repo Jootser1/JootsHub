@@ -14,6 +14,7 @@ const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_module_1 = require("../redis/redis.module");
 const redis_service_1 = require("../redis/redis.service");
 const heartbeat_service_1 = require("./services/heartbeat.service");
+const contacts_service_1 = require("../users/contacts/contacts.service");
 let GatewaysModule = class GatewaysModule {
 };
 exports.GatewaysModule = GatewaysModule;
@@ -25,7 +26,8 @@ exports.GatewaysModule = GatewaysModule = __decorate([
             chat_gateway_1.ChatGateway,
             prisma_service_1.PrismaService,
             redis_service_1.RedisService,
-            heartbeat_service_1.HeartbeatService
+            heartbeat_service_1.HeartbeatService,
+            contacts_service_1.UserContactsService
         ],
         exports: [user_gateway_1.UserGateway, chat_gateway_1.ChatGateway],
     })
