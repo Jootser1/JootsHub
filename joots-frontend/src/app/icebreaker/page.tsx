@@ -19,27 +19,32 @@ export default function IcebreakerHome() {
   console.log("session dans icebreaker page", session)
 
   const handleStartRandomChat = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true)
       // 1. Trouver un utilisateur aléatoire
-      const response = await axiosInstance.get('/users/random/available')
-      const randomUser = response.data
-      console.log('randomUser:', randomUser)
+      
+      const response = await axiosInstance.get('/users/random/available');
+      const randomUser = response.data;
       
       // 2. Créer une conversation avec cet utilisateur
       const conversationResponse = await axiosInstance.post('/conversations', {
         receiverId: randomUser.id
-      })
-      const conversation = conversationResponse.data
+      });
+      const conversation = conversationResponse.data;
       
-      toast.success('Conversation créée ! Redirection vers le chat...')
-      router.push(`/conversations/${conversation.id}`)
+      toast.success('Conversation créée ! Redirection vers le chat...');
+      router.push(`/chat/${conversation.id}`);
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Aucun utilisateur disponible pour le moment')
+      console.error('Erreur:', error);
+      if (error.response?.status === 404) {
+        toast.error('Aucun utilisateur disponible pour le moment. Revenez plus tard !');
+      } else {
+        toast.error('Une erreur est survenue');
+      }
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   if (!user) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>

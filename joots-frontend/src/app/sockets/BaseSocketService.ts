@@ -1,7 +1,13 @@
 import { io, Socket } from 'socket.io-client';
 import { logger } from '@/utils/logger';
-import { Message as ChatMessage, MessageStatus, MessageType } from '@/types/chat';
-import { UserStatusChange, SocketMessage, TypingStatus } from '@/types/socket';
+
+type EventCallback = (data: any) => void;
+
+interface SocketEvent {
+  eventName: string;
+  callback: EventCallback;
+}
+
 
 export abstract class BaseSocketService {
   protected socket: Socket | null = null;
@@ -10,18 +16,18 @@ export abstract class BaseSocketService {
   protected namespace: string;
   protected connectionListeners: Set<(status: boolean) => void> = new Set();
   protected reconnectTimer: NodeJS.Timeout | null = null;
-  
+
   constructor(namespace: string) {
     this.namespace = namespace;
   }
   
   connect(userId: string, token: string): void {
-    logger.info(`Tentative de connexion ${this.namespace} pour l'utilisateur ${userId}`);
+    logger.info(`Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
     
     this.userId = userId;
     this.token = token;
     
-    this.closeExistingConnection();
+    this.closeExistingSocketConnection();
     
     const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
     
@@ -38,11 +44,11 @@ export abstract class BaseSocketService {
   }
   
   disconnect(): void {
-    this.closeExistingConnection();
+    this.closeExistingSocketConnection();
     this.connectionListeners.clear();
   }
   
-  protected closeExistingConnection(): void {
+  protected closeExistingSocketConnection(): void {
     if (this.socket) {
       this.socket.removeAllListeners();
       this.socket.disconnect();
@@ -60,12 +66,12 @@ export abstract class BaseSocketService {
 
     this.socket.on('connect', () => {
       logger.info(`Socket ${this.namespace} connecté`);
-      this.notifyConnectionChange(true);
+      this.notifySocketConnectionChange(true);
     });
     
     this.socket.on('disconnect', (reason) => {
       logger.warn(`Socket ${this.namespace} déconnecté: ${reason}`);
-      this.notifyConnectionChange(false);
+      this.notifySocketConnectionChange(false);
     });
     
     this.socket.on('connect_error', (error) => {
@@ -87,14 +93,14 @@ export abstract class BaseSocketService {
     }, 5000);
   }
   
-  onConnectionChange(callback: (status: boolean) => void): () => void {
+  onSocketConnectionChange(callback: (status: boolean) => void): () => void {
     this.connectionListeners.add(callback);
     return () => {
       this.connectionListeners.delete(callback);
     };
   }
   
-  protected notifyConnectionChange(status: boolean): void {
+  protected notifySocketConnectionChange(status: boolean): void {
     this.connectionListeners.forEach(listener => listener(status));
   }
   
@@ -111,17 +117,37 @@ export abstract class BaseSocketService {
     this.socket.emit(event, data);
   }
 
-  protected on(event: string, callback: (data: any) => void): () => void {
+  protected onEvent<T>(eventName: string, callback: (data: T) => void): () => void {
     if (!this.socket) return () => {};
     
-    this.socket.on(event, callback);
+    this.socket.on(eventName, (data) => {
+      logger.debug(`Événement ${eventName} reçu:`, data);
+      callback(data);
+    });
+    
     return () => {
-      this.socket?.off(event, callback);
+      this.socket?.off(eventName, callback);
     };
+  }
+
+  protected registerSocketEvents(socket: Socket, events: SocketEvent[]) {
+    events.forEach(({ eventName, callback }) => {
+      socket.on(eventName, callback);
+    });
+  }
+  
+  protected unregisterSocketEvents(socket: Socket, events: SocketEvent[]) {
+    events.forEach(({ eventName, callback }) => {
+      socket.off(eventName, callback);
+    });
   }
 
   // Getters
   getSocket(): Socket | null {
     return this.socket;
+  }
+
+  get connected(): boolean {
+    return this.isConnected();
   }
 }

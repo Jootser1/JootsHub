@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
-import { BaseSocketService } from '@/services/BaseSocketService';
-import { UserSocketService } from '@/services/UserSocketService';
+import { BaseSocketService } from '@/app/sockets/BaseSocketService';
+import { UserSocketService } from '@/app/sockets/user/userSocketService';
 
 class SocketService extends BaseSocketService {
   constructor(namespace: string) {
@@ -29,7 +29,7 @@ export const useSocket = (namespace: string) => {
     
     socketService.connect(session.user.id, session.accessToken);
     
-    const unsubscribe = socketService.onConnectionChange((status: boolean) => {
+    const unsubscribe = socketService.onSocketConnectionChange((status: boolean) => {
       setIsConnected(status);
     });
     

@@ -50,6 +50,7 @@ let UsersController = class UsersController {
         return this.usersService.updateChatPreference(id, isAvailableForChat);
     }
     async getRandomAvailableUser(user) {
+        console.log('user dans getRandomAvailableUser');
         return this.usersService.getRandomAvailableUser(user.id);
     }
 };

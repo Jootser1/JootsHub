@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useUserStore } from "@/stores/userStore";
 import axiosInstance from "@/app/api/axiosInstance";
 import { useRouter } from "next/navigation";
-import { useSocket } from "@/hooks/useSocket";
 import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"
 import MobileMenu from "./mobile-menu"
@@ -22,7 +21,6 @@ export default function Layout({
   const { data: session, status } = useSession();
   const { user, setUser, logout } = useUserStore();
   const [loading, setLoading] = useState(true);
-  const socket = useSocket();
 
   useEffect(() => {
     if (status === "unauthenticated") {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useSocket } from '@/hooks/useSocket';
+import { useSocket } from '@/app/sockets/useSocket';
 import { useSession } from 'next-auth/react';
 import { logger } from '@/utils/logger';
 

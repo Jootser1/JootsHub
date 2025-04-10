@@ -19,13 +19,12 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         email,
         password,
-        redirect: false,
+        redirect: true,
+        callbackUrl: "/hub"
       });
 
       if (result?.error) {
         setError(result.error);
-      } else {
-        router.push("/hub");
       }
     } catch (err) {
       setError("Une erreur est survenue lors de la connexion.");

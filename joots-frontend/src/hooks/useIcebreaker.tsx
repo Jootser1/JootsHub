@@ -1,10 +1,10 @@
 import { useState, useCallback } from 'react';
-import { useSocket } from './useSocket';
+import { useSocket } from '../app/sockets/useSocket';
 import { logger } from '@/utils/logger';
 
 export const useIcebreaker = (conversationId: string) => {
   const [isReady, setIsReady] = useState(false);
-  const { socket, isConnected } = useSocket();
+  const { socket, isConnected } = useSocket('chat');
   
   const handleReady = useCallback(() => {
     if (!isConnected || !socket) {
