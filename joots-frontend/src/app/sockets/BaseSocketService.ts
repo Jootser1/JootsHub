@@ -22,7 +22,7 @@ export abstract class BaseSocketService {
   }
   
   connect(userId: string, token: string): void {
-    logger.info(`Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
+    logger.info(`BaseSocketService: Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
     
     this.userId = userId;
     this.token = token;
@@ -82,6 +82,7 @@ export abstract class BaseSocketService {
     this.socket.on('ping', () => {
       this.socket?.emit('pong');
     });
+    
   }
   
   protected scheduleReconnect(): void {
@@ -121,7 +122,8 @@ export abstract class BaseSocketService {
     if (!this.socket) return () => {};
     
     this.socket.on(eventName, (data) => {
-      logger.debug(`Événement ${eventName} reçu:`, data);
+      const userInfo = data.user ? ` (${data.user.username})` : '';
+      logger.debug(`BaseSocketService: Événement ${eventName} reçu${userInfo}:`, data);
       callback(data);
     });
     

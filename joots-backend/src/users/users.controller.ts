@@ -58,4 +58,13 @@ export class UsersController {
     console.log('user dans getRandomAvailableUser')
     return this.usersService.getRandomAvailableUser(user.id);
   }
+
+  @Patch(':id/status')
+  @UseGuards(JwtAuthGuard)
+  async updateUserStatus(
+    @Param('id') id: string,
+    @Body('isOnline') isOnline: boolean,
+  ) {
+    return this.usersService.updateUserStatus(id, isOnline);
+  }
 }

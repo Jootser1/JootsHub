@@ -23,17 +23,18 @@ let UserContactsController = class UserContactsController {
     }
     async getContacts(req) {
         try {
-            const userId = req.user.id;
+            const userId = req.user.sub;
             const contacts = await this.userContactsService.getUserContacts(userId);
             return contacts;
         }
         catch (error) {
+            console.log('req', req);
             throw new common_1.BadRequestException(error.message);
         }
     }
     async addContact(req, body) {
         try {
-            const userId = req.user.id;
+            const userId = req.user.sub;
             const { contactId } = body;
             if (!contactId) {
                 throw new common_1.BadRequestException('contactId est requis');
@@ -47,7 +48,7 @@ let UserContactsController = class UserContactsController {
     }
     async removeContact(req, contactId) {
         try {
-            const userId = req.user.id;
+            const userId = req.user.sub;
             const isContact = await this.userContactsService.isUserContact(userId, contactId);
             if (!isContact) {
                 throw new common_1.NotFoundException('Contact non trouvé');
@@ -60,7 +61,7 @@ let UserContactsController = class UserContactsController {
         }
     }
     async checkContact(req, contactId) {
-        const userId = req.user.id;
+        const userId = req.user.sub;
         const isContact = await this.userContactsService.isUserContact(userId, contactId);
         return { isContact };
     }
@@ -98,7 +99,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], UserContactsController.prototype, "checkContact", null);
 exports.UserContactsController = UserContactsController = __decorate([
-    (0, common_1.Controller)('users/contacts'),
+    (0, common_1.Controller)('users/me/contacts'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __metadata("design:paramtypes", [contacts_service_1.UserContactsService])
 ], UserContactsController);

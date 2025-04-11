@@ -77,6 +77,7 @@ export const useContactStore = create<ContactStore>()(
           return { onlineUsers: updatedOnlineUsers };
         });
       },
+
       isUserOnline: (userId) => {
         const isContact = get().isContact(userId);
         if (!isContact) return false;

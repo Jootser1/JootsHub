@@ -17,7 +17,6 @@ export const useSocket = (namespace: string) => {
 
   useEffect(() => {
     if (!session?.user?.id || !session?.accessToken) {
-      logger.warn('useSocket: Session utilisateur non disponible');
       return;
     }
 
@@ -27,18 +26,22 @@ export const useSocket = (namespace: string) => {
       
     socketRef.current = socketService;
     
-    socketService.connect(session.user.id, session.accessToken);
-    
-    const unsubscribe = socketService.onSocketConnectionChange((status: boolean) => {
-      setIsConnected(status);
-    });
-    
-    return () => {
-      unsubscribe();
-      socketService.disconnect();
-      setIsConnected(false);
-    };
-  }, [session?.user?.id, session?.accessToken, namespace]);
+    try {
+      socketService.connect(session.user.id, session.accessToken);
+      
+      const unsubscribe = socketService.onSocketConnectionChange((status: boolean) => {
+        setIsConnected(status);
+      });
+      
+      return () => {
+        unsubscribe();
+        socketService.disconnect();
+        setIsConnected(false);
+      };
+    } catch (error) {
+      logger.error('Erreur lors de la connexion du socket:', error);
+    }
+  }, [session?.accessToken, namespace]);
 
   return {
     socket: socketRef.current,

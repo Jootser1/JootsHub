@@ -7,6 +7,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { useChatStore } from '@/stores/chatStore'
 import { getOtherParticipant } from '@/utils/conversationUtils'
+import { useContactStore } from '@/stores/contactStore'
+import { useUserStore } from '@/stores/userStore'
 
 interface ConversationItemProps {
   conversation: Conversation
@@ -16,6 +18,8 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id
   const conversations = useChatStore((state) => state.conversations)
+  const contactStore = useContactStore()
+  const userStore = useUserStore()
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
   const otherUser = currentUserId ? getOtherParticipant(conversation, currentUserId) : undefined
@@ -24,8 +28,8 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
   // Récupérer le dernier message s'il existe
   const lastMessage = conversation.messages[0]
 
-  // Récupérer le statut en ligne depuis le chatStore
-  const isOnline = otherUser.isOnline ?? false
+  // Récupérer le statut en ligne depuis le contactStore
+  const isOnline = contactStore.isUserOnline(otherUser.id)
 
   return (
     <Link 

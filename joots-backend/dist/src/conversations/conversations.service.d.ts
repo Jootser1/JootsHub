@@ -1,20 +1,22 @@
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
+import { UserContactsService } from '../users/contacts/contacts.service';
 export declare class ConversationsService {
     private readonly prisma;
     private readonly userGateway;
-    constructor(prisma: PrismaService, userGateway: UserGateway);
+    private readonly userContactsService;
+    constructor(prisma: PrismaService, userGateway: UserGateway, userContactsService: UserContactsService);
     private readonly userSelect;
     findAll(userId: string): Promise<({
         messages: {
             id: string;
             createdAt: Date;
-            conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -36,12 +38,12 @@ export declare class ConversationsService {
         messages: {
             id: string;
             createdAt: Date;
-            conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -69,12 +71,12 @@ export declare class ConversationsService {
         } & {
             id: string;
             createdAt: Date;
-            conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            conversationId: string;
         })[];
         participants: ({
             user: {
@@ -118,11 +120,11 @@ export declare class ConversationsService {
     } & {
         id: string;
         createdAt: Date;
-        conversationId: string;
-        content: string;
         senderId: string;
+        content: string;
         editedAt: Date | null;
         isRead: boolean;
         isDeleted: boolean;
+        conversationId: string;
     })[]>;
 }

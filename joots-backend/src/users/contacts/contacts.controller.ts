@@ -14,7 +14,7 @@ import {
   import { JwtAuthGuard } from '../../auth/jwt-auth.guard';
   import { UserContactsService } from './contacts.service';
   
-  @Controller('users/contacts')
+  @Controller('users/me/contacts')
   @UseGuards(JwtAuthGuard)
   export class UserContactsController {
     constructor(private userContactsService: UserContactsService) {}
@@ -22,18 +22,18 @@ import {
     @Get()
     async getContacts(@Request() req) {
       try {
-        const userId = req.user.id;
+        const userId = req.user.sub;
         const contacts = await this.userContactsService.getUserContacts(userId);
         return contacts;
       } catch (error) {
-        throw new BadRequestException(error.message);
-      }
+        console.log('req', req);
+        throw new BadRequestException(error.message);      }
     }
-  
+    
     @Post()
     async addContact(@Request() req, @Body() body: { contactId: string }) {
       try {
-        const userId = req.user.id;
+        const userId = req.user.sub;
         const { contactId } = body;
         
         if (!contactId) {
@@ -50,7 +50,7 @@ import {
     @Delete(':contactId')
     async removeContact(@Request() req, @Param('contactId') contactId: string) {
       try {
-        const userId = req.user.id;
+        const userId = req.user.sub;
         
         // Vérifier si le contact existe
         const isContact = await this.userContactsService.isUserContact(userId, contactId);
@@ -67,7 +67,7 @@ import {
   
     @Get(':contactId/check')
     async checkContact(@Request() req, @Param('contactId') contactId: string) {
-      const userId = req.user.id;
+      const userId = req.user.sub;
       const isContact = await this.userContactsService.isUserContact(userId, contactId);
       return { isContact };
     }

@@ -10,6 +10,6 @@ export declare class RedisService {
     del(key: string): Promise<number>;
     setUserOnline(userId: string, ttl?: number): Promise<boolean>;
     setUserOffline(userId: string): Promise<boolean>;
+    getUserStatus(userId: string): Promise<'online' | 'offline'>;
     refreshUserStatus(userId: string, ttl?: number): Promise<boolean>;
-    getUserLastActivity(userId: string): Promise<number | null>;
 }

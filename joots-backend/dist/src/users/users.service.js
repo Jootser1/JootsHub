@@ -88,6 +88,16 @@ let UsersService = class UsersService {
         const randomIndex = Math.floor(Math.random() * availableUsers.length);
         return availableUsers[randomIndex];
     }
+    async updateUserStatus(userId, isOnline) {
+        const user = await this.prisma.user.update({
+            where: { id: userId },
+            data: { isOnline },
+        });
+        if (!user) {
+            throw new common_1.NotFoundException('Utilisateur non trouvé');
+        }
+        return { id: user.id, isOnline: user.isOnline };
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

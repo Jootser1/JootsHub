@@ -41,5 +41,9 @@ export declare class UsersService {
         avatar: string | null;
         username: string;
     }>;
+    updateUserStatus(userId: string, isOnline: boolean): Promise<{
+        id: string;
+        isOnline: boolean;
+    }>;
 }
 export {};

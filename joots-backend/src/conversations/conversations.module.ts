@@ -3,6 +3,7 @@ import { ConversationsController } from './conversations.controller';
 import { ConversationsService } from './conversations.service';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { GatewaysModule } from '../gateways/gateways.module';
+import { UserContactsService } from '../users/contacts/contacts.service';
 
 @Module({
   imports: [
@@ -10,7 +11,7 @@ import { GatewaysModule } from '../gateways/gateways.module';
     GatewaysModule
   ],
   controllers: [ConversationsController],
-  providers: [ConversationsService],
+  providers: [ConversationsService, UserContactsService],
   exports: [ConversationsService],
 })
 export class ConversationsModule {}

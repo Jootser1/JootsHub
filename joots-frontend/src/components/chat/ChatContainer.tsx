@@ -6,7 +6,7 @@ import { User } from '@/types/user';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { useChatSocket } from '@/hooks/useChatSocket';
+import { useChatSocket } from '@/app/sockets/chat/useChatSocket';
 import { useIcebreaker } from '@/hooks/useIcebreaker';
 import { getOtherParticipant } from '@/utils/conversationUtils';
 import { logger } from '@/utils/logger';

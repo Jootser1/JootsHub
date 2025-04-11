@@ -56,7 +56,6 @@ const authOptions = {
   ],
   callbacks: {
     async jwt({ token, user }: { token: JWT, user?: User }) {
-      logger.debug('Callback JWT', { token, user });
       if (user) {
         token.id = user.id;
         token.accessToken = user.token;
@@ -64,7 +63,7 @@ const authOptions = {
       return token;
     },
     async session({ session, token }: { session: Session, token: JWT }) {
-      logger.debug('Callback Session', { session, token });
+      //logger.debug('Callback Session', { session, token });
       return {
         user: {
           id: token.id as string,

@@ -1,7 +1,6 @@
-import { handleUserStatusChange } from './userEventHandlers';
+import { handleUserStatusChange, handleUserProfileChange } from './userEventHandlers';
 
-
-export const userEventRegistry = {
-  userStatusChange: handleUserStatusChange,
-
-};
+export const createUserEventRegistry = (currentUserId: string) => ({
+  userStatusChange: (data: any) => handleUserStatusChange(data, currentUserId),
+  userProfileChange: () => handleUserProfileChange(currentUserId),
+});

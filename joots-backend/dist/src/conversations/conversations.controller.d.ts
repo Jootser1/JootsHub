@@ -12,12 +12,12 @@ export declare class ConversationsController {
         messages: {
             id: string;
             createdAt: Date;
-            conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -39,12 +39,12 @@ export declare class ConversationsController {
         messages: {
             id: string;
             createdAt: Date;
-            conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            conversationId: string;
         }[];
         participants: ({
             user: {
@@ -71,12 +71,12 @@ export declare class ConversationsController {
     } & {
         id: string;
         createdAt: Date;
-        conversationId: string;
-        content: string;
         senderId: string;
+        content: string;
         editedAt: Date | null;
         isRead: boolean;
         isDeleted: boolean;
+        conversationId: string;
     })[]>;
     create(body: {
         receiverId: string;

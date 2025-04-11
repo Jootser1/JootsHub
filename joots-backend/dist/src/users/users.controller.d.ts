@@ -44,4 +44,8 @@ export declare class UsersController {
         avatar: string | null;
         username: string;
     }>;
+    updateUserStatus(id: string, isOnline: boolean): Promise<{
+        id: string;
+        isOnline: boolean;
+    }>;
 }

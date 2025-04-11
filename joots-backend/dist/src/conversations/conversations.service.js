@@ -13,12 +13,15 @@ exports.ConversationsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const user_gateway_1 = require("../gateways/user.gateway");
+const contacts_service_1 = require("../users/contacts/contacts.service");
 let ConversationsService = class ConversationsService {
     prisma;
     userGateway;
-    constructor(prisma, userGateway) {
+    userContactsService;
+    constructor(prisma, userGateway, userContactsService) {
         this.prisma = prisma;
         this.userGateway = userGateway;
+        this.userContactsService = userContactsService;
     }
     userSelect = {
         id: true,
@@ -137,6 +140,10 @@ let ConversationsService = class ConversationsService {
         if (existingConversation) {
             return existingConversation;
         }
+        await Promise.all([
+            this.userContactsService.addUserContact(userId, receiverId),
+            this.userContactsService.addUserContact(receiverId, userId)
+        ]);
         return this.prisma.conversation.create({
             data: {
                 participants: {
@@ -191,6 +198,7 @@ exports.ConversationsService = ConversationsService;
 exports.ConversationsService = ConversationsService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        user_gateway_1.UserGateway])
+        user_gateway_1.UserGateway,
+        contacts_service_1.UserContactsService])
 ], ConversationsService);
 //# sourceMappingURL=conversations.service.js.map

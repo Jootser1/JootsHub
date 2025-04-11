@@ -12,6 +12,7 @@ const conversations_controller_1 = require("./conversations.controller");
 const conversations_service_1 = require("./conversations.service");
 const prisma_module_1 = require("../../prisma/prisma.module");
 const gateways_module_1 = require("../gateways/gateways.module");
+const contacts_service_1 = require("../users/contacts/contacts.service");
 let ConversationsModule = class ConversationsModule {
 };
 exports.ConversationsModule = ConversationsModule;
@@ -22,7 +23,7 @@ exports.ConversationsModule = ConversationsModule = __decorate([
             gateways_module_1.GatewaysModule
         ],
         controllers: [conversations_controller_1.ConversationsController],
-        providers: [conversations_service_1.ConversationsService],
+        providers: [conversations_service_1.ConversationsService, contacts_service_1.UserContactsService],
         exports: [conversations_service_1.ConversationsService],
     })
 ], ConversationsModule);

@@ -1,50 +1,17 @@
 "use client"
 
 import Layout from "@/components/Layout"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import axiosInstance from "@/app/api/axiosInstance"
-import { toast } from "sonner"
-import { ConversationList } from "@/components/icebreaker/ConversationList"
+import { ConversationList } from "@/components/Conversations/ConversationList"
+import { useRandomChat } from '@/hooks/useRandomChat'
 
 export default function IcebreakerHome() {
   const { data: session } = useSession()
   const user = session?.user
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  console.log("session dans icebreaker page", session)
-
-  const handleStartRandomChat = async () => {
-    setIsLoading(true);
-    try {
-      // 1. Trouver un utilisateur aléatoire
-      
-      const response = await axiosInstance.get('/users/random/available');
-      const randomUser = response.data;
-      
-      // 2. Créer une conversation avec cet utilisateur
-      const conversationResponse = await axiosInstance.post('/conversations', {
-        receiverId: randomUser.id
-      });
-      const conversation = conversationResponse.data;
-      
-      toast.success('Conversation créée ! Redirection vers le chat...');
-      router.push(`/chat/${conversation.id}`);
-    } catch (error: any) {
-      console.error('Erreur:', error);
-      if (error.response?.status === 404) {
-        toast.error('Aucun utilisateur disponible pour le moment. Revenez plus tard !');
-      } else {
-        toast.error('Une erreur est survenue');
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { isLoading, startRandomChat } = useRandomChat()
 
   if (!user) {
     return <div className="flex items-center justify-center min-h-screen">Chargement...</div>
@@ -69,7 +36,7 @@ export default function IcebreakerHome() {
             <div className="px-4 pb-4 flex space-x-2">
               <Button 
                 className="flex-1 bg-[#E59C45] hover:bg-[#E59C45]/90 text-white rounded-full text-sm py-6"
-                onClick={handleStartRandomChat}
+                onClick={startRandomChat}
                 disabled={isLoading}
               >
                 <Plus className="h-5 w-5 mr-2" />

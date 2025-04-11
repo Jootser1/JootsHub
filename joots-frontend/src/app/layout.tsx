@@ -1,19 +1,17 @@
 import { Providers } from "./providers";
 import "@/styles/globals.css";
 import { ReactNode } from "react";
-import { UserSocketProvider } from "./sockets/user/userSocketContext";
+import { GlobalUserSocketProvider } from "./sockets/user/GlobalUserSocketProvider";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="fr">
       <body>
-
-          <Providers>
-          <UserSocketProvider>
+        <Providers>
+          <GlobalUserSocketProvider>
             {children}
-            </UserSocketProvider>
-            </Providers>
-
+          </GlobalUserSocketProvider>
+        </Providers>
       </body>
     </html>
   );

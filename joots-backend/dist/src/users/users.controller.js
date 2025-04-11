@@ -53,6 +53,9 @@ let UsersController = class UsersController {
         console.log('user dans getRandomAvailableUser');
         return this.usersService.getRandomAvailableUser(user.id);
     }
+    async updateUserStatus(id, isOnline) {
+        return this.usersService.updateUserStatus(id, isOnline);
+    }
 };
 exports.UsersController = UsersController;
 __decorate([
@@ -101,6 +104,15 @@ __decorate([
     __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], UsersController.prototype, "getRandomAvailableUser", null);
+__decorate([
+    (0, common_1.Patch)(':id/status'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Body)('isOnline')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Boolean]),
+    __metadata("design:returntype", Promise)
+], UsersController.prototype, "updateUserStatus", null);
 exports.UsersController = UsersController = __decorate([
     (0, common_1.Controller)('users'),
     __metadata("design:paramtypes", [users_service_1.UsersService])

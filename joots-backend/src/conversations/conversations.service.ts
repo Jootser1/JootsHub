@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
+import { UserContactsService } from '../users/contacts/contacts.service';
 
 @Injectable()
 export class ConversationsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly userGateway: UserGateway,
+    private readonly userContactsService: UserContactsService,
   ) {}
 
   private readonly userSelect = {
@@ -136,6 +138,12 @@ export class ConversationsService {
     if (existingConversation) {
       return existingConversation;
     }
+
+    // Créer les contacts réciproques
+    await Promise.all([
+      this.userContactsService.addUserContact(userId, receiverId),
+      this.userContactsService.addUserContact(receiverId, userId)
+    ]);
 
     return this.prisma.conversation.create({
       data: {

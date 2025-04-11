@@ -45,30 +45,36 @@ let RedisService = class RedisService {
         return this.redis.del(key);
     }
     async setUserOnline(userId, ttl = 300) {
-        await this.sadd('online_users', userId);
-        const userStatusKey = `user:${userId}:status`;
-        await this.set(userStatusKey, 'online', ttl);
+        const batch = this.redis.multi();
+        const userStatusKey = `user:status:${userId}`;
+        batch.set(userStatusKey, 'online', 'EX', ttl);
         const lastActivityKey = `user:${userId}:last_activity`;
-        await this.set(lastActivityKey, Date.now().toString());
+        batch.set(lastActivityKey, Date.now().toString());
+        batch.sadd('online_users', userId);
+        await batch.exec();
         return true;
     }
     async setUserOffline(userId) {
-        await this.srem('online_users', userId);
-        const userStatusKey = `user:${userId}:status`;
-        await this.del(userStatusKey);
+        const batch = this.redis.multi();
+        const userStatusKey = `user:status:${userId}`;
+        batch.del(userStatusKey);
+        const lastActivityKey = `user:${userId}:last_activity`;
+        batch.set(lastActivityKey, Date.now().toString());
+        batch.srem('online_users', userId);
+        await batch.exec();
         return true;
     }
+    async getUserStatus(userId) {
+        const userStatusKey = `user:status:${userId}`;
+        const status = await this.get(userStatusKey);
+        return status === 'online' ? 'online' : 'offline';
+    }
     async refreshUserStatus(userId, ttl = 300) {
-        const userStatusKey = `user:${userId}:status`;
+        const userStatusKey = `user:status:${userId}`;
         await this.set(userStatusKey, 'online', ttl);
         const lastActivityKey = `user:${userId}:last_activity`;
         await this.set(lastActivityKey, Date.now().toString());
         return true;
-    }
-    async getUserLastActivity(userId) {
-        const lastActivityKey = `user:${userId}:last_activity`;
-        const timestamp = await this.get(lastActivityKey);
-        return timestamp ? parseInt(timestamp) : null;
     }
 };
 exports.RedisService = RedisService;
