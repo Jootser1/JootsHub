@@ -8,7 +8,6 @@ import { useContactStore } from '@/stores/contactStore';
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
 import { UserSocketService } from './userSocketService';
-import { UserStatusChange } from '@/types/socket';
 
 interface GlobalUserSocketContextType {
   socketService: UserSocketService | null;
@@ -23,16 +22,12 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
   const [isLoading, setIsLoading] = useState(true);
   const { user, setUser, updateUserStatus, syncUserStatus } = useUserStore();
   const { socket, isConnected } = useSocket('users');
-  const socketService = socket as UserSocketService;
   const [eventsRegistered, setEventsRegistered] = useState(false);
-  
+  const socketService = UserSocketService.getInstance();
 
-
-  
-  
   useEffect(() => {
     const setupSocket = async () => {
-      if (status !== 'authenticated' ||  !isConnected) return;
+      if (status !== 'authenticated' || !isConnected || !session?.user?.id || !session?.accessToken) return;
       
       try {
         // Récupération des données utilisateur si nécessaire
@@ -46,38 +41,35 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
             isOnline: true,
             isAvailableForChat: response.data.isAvailableForChat,
           };
-          // Mettre à jour l'utilisateur
           setUser(userData);     
         }
         
+        // Configuration du socket
+        socketService.connect(session.user.id, session.accessToken);
         socketService.registerEvents();
+        setEventsRegistered(true);
         
-        const contactsResponse = await axiosInstance.get('/users/me/contacts')
+        const contactsResponse = await axiosInstance.get('/users/me/contacts');
         const contactIds = contactsResponse.data.map((contact: any) => contact.contact.id);
-        console.log('contactIds', contactIds);  
-        // Rejoindre les rooms uniquement si le service est disponible
+        
         if (socketService.isConnected()) {
-          // Rejoindre les rooms des contacts
           socketService.joinContactsRooms(contactIds);
           logger.info('Rooms des contacts rejointes:', contactIds.length);
-          
-          // Mettre à jour le statut après avoir rejoint les rooms
           socketService.updateUserStatus(session.user.id, true);
           logger.info('Statut utilisateur mis à jour dans redis via socket');
-        } else {
-          logger.warn('Socket déconnecté pendant la configuration, statut non envoyé');
         }
-      } catch (error) {
-        logger.error("Erreur lors du chargement des contacts:", error);
-      }
-    }
-    setupSocket();
         
-    // Nettoyage lors du démontage du composant
-    return () => {   
-      if (socketService?.isConnected()) {
-           
-        // Utiliser les contacts déjà chargés dans le store
+        setIsLoading(false);
+      } catch (error) {
+        logger.error("Erreur lors de la configuration du socket:", error);
+        setIsLoading(false);
+      }
+    };
+
+    setupSocket();
+
+    return () => {
+      if (eventsRegistered) {
         const contactIds = useContactStore.getState().contactList;
         if (contactIds && contactIds.size > 0) {
           socketService.leaveContactsRooms([...contactIds]);
@@ -86,21 +78,15 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
           socketService.updateUserStatus(user.id, false);
           logger.info('Nettoyage socket effectué, utilisateur marqué hors ligne');
         }
-      }
-      
-      // Si les événements ont été enregistrés, on les supprime
-      if (eventsRegistered) {
         socketService.unregisterEvents();
         setEventsRegistered(false);
       }
-      
-      socketService?.disconnect();
-    }
-  }, [session?.user?.id, isConnected, socketService, eventsRegistered]);
-  
+    };
+  }, [session?.user?.id, session?.accessToken, isConnected, status]);
+
   return (
     <GlobalUserSocketContext.Provider value={{ socketService, isConnected, isLoading }}>
-    {children}
+      {children}
     </GlobalUserSocketContext.Provider>
   );
 };

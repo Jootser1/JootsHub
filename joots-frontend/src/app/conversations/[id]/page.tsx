@@ -9,6 +9,7 @@ import { ChatContainer } from '@/components/chat/ChatContainer'
 import { toast } from "sonner"
 import { getOtherParticipant } from '@/utils/conversationUtils'
 import { Conversation } from '@/types/chat'
+import { ChatSocketProvider } from '@/app/sockets/chat/ChatSocketProvider'
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -66,11 +67,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <Layout experience="icebreaker">
-      <main className="flex min-h-screen flex-col bg-gray-50">
-        <div className="max-w-md w-full mx-auto bg-white min-h-screen shadow-lg">
-          <ChatContainer conversationId={resolvedParams.id} />
-        </div>
-      </main>
+      <ChatSocketProvider>
+        <main className="flex min-h-screen flex-col bg-gray-50">
+          <div className="max-w-md w-full mx-auto bg-white min-h-screen shadow-lg">
+            <ChatContainer conversationId={resolvedParams.id} />
+          </div>
+        </main>
+      </ChatSocketProvider>
     </Layout>
   )
 } 
