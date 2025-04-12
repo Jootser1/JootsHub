@@ -44,6 +44,7 @@ export class ChatGateway extends BaseGateway {
     @MessageBody() conversationId: string
   ) {
     client.join(conversationId);
+    console.log('handleJoinConversation', conversationId);
     this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
     return { success: true };
   }
@@ -64,13 +65,22 @@ export class ChatGateway extends BaseGateway {
     @MessageBody() data: { conversationId: string; content: string; userId: string }
   ) {
     const { conversationId, content, userId } = data;
+    console.log('handleSendMessage', data);
     
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
-    
     try {
+      // Vérifier si la conversation existe
+      const conversation = await this.prisma.conversation.findUnique({
+        where: { id: conversationId }
+      });
+      
+      if (!conversation) {
+        return { success: false, error: 'Conversation non trouvée' };
+      }
+      
       // Sauvegarder le message dans la base de données
       const message = await this.prisma.message.create({
         data: {

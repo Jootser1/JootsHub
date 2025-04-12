@@ -3,15 +3,13 @@ import { Message } from '@/types/chat';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ensureDate } from '@/utils/dateUtils';
+import { useUserStore } from '@/stores/userStore';
 
-interface ChatMessagesProps {
-  messages: Message[];
-  currentUserId: string;
-  isConnected: boolean;
-}
 
-export const ChatMessages = ({ messages, currentUserId, isConnected }: ChatMessagesProps) => {
+
+export const ChatMessages = ({ messages }: { messages: Message[] }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { user } = useUserStore();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -21,7 +19,7 @@ export const ChatMessages = ({ messages, currentUserId, isConnected }: ChatMessa
     scrollToBottom();
   }, [messages]);
 
-  if (!isConnected) {
+  if (!user?.id) {
     return (
       <div className="flex items-center justify-center h-full text-gray-500">
         Déconnecté
@@ -32,7 +30,7 @@ export const ChatMessages = ({ messages, currentUserId, isConnected }: ChatMessa
   return (
     <div className="flex-1 overflow-y-auto p-4 space-y-4">
       {messages.map((message) => {
-        const isCurrentUser = message.senderId === currentUserId;
+        const isCurrentUser = message.senderId === user.id;
         const timeAgo = formatDistanceToNow(ensureDate(message.timestamp), { addSuffix: true, locale: fr });
 
         return (

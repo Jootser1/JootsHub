@@ -17,7 +17,6 @@ export const useConversation = () => {
   const fetchConversations = async () => {
     try {
       const response = await axiosInstance.get('/conversations');
-      logger.debug('Conversations fetched:', response.data);
       setConversations(response.data);
     } catch (error) {
       logger.error('Error fetching conversations:', error);

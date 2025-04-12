@@ -1,45 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { IcebreakerResponse, Message } from '@/types/chat';
 import { IcebreakerModal } from './IcebreakerModal';
-
+import { useUserStore } from '@/stores/userStore';
+import { useChatSocketContext } from '@/app/sockets/chat/ChatSocketProvider';
 interface ChatInputProps {
   conversationId: string;
   currentUserId: string;
-  isConnected: boolean;
   isIcebreakerReady: boolean;
   currentQuestion?: string;
-  onSendMessage: (content: string, conversationId: string) => void;
-  onTypingStatus: (isTyping: boolean) => void;
   onIcebreakerReady: () => void;
   onIcebreakerResponse: (response: IcebreakerResponse) => void;
 }
 
-export const ChatInput = ({ conversationId, currentUserId, isConnected, isIcebreakerReady, currentQuestion, onSendMessage, onTypingStatus, onIcebreakerReady, onIcebreakerResponse }: ChatInputProps) => {
+export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, currentQuestion, onIcebreakerReady, onIcebreakerResponse }: ChatInputProps) => {
   const [message, setMessage] = useState('');
   const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
   const [sendAttempted, setSendAttempted] = useState(false);
-  const typingTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const { user } = useUserStore();
+  const { isConnected, socketService } = useChatSocketContext();
+  
 
-  // Gérer l'état de frappe
-  useEffect(() => {
-    if (isTyping) {
-      onTypingStatus(true);
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-      typingTimeoutRef.current = setTimeout(() => {
-        setIsTyping(false);
-        onTypingStatus(false);
-      }, 2000);
-    }
-    return () => {
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, [isTyping, onTypingStatus]);
+  
 
   // Ajuster automatiquement la hauteur du textarea
   const adjustTextareaHeight = () => {
@@ -50,17 +32,7 @@ export const ChatInput = ({ conversationId, currentUserId, isConnected, isIcebre
     }
   };
 
-  const handleTyping = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newMessage = e.target.value;
-    setMessage(newMessage);
-
-    if (!isTyping && newMessage.length > 0) {
-      setIsTyping(true);
-    } else if (isTyping && newMessage.length === 0) {
-      setIsTyping(false);
-    }
-  };
-
+  
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -71,7 +43,9 @@ export const ChatInput = ({ conversationId, currentUserId, isConnected, isIcebre
       return;
     }
 
-    onSendMessage(message.trim(), conversationId);
+    if (socketService && user?.id) {
+      socketService.sendMessage(message.trim(), conversationId, user.id);
+    }
     setMessage('');
     setSendAttempted(false);
   };

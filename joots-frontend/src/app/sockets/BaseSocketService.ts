@@ -149,6 +149,10 @@ export abstract class BaseSocketService {
     return this.socket;
   }
 
+  getUserId(): string | null {
+    return this.userId;
+  }
+
   get connected(): boolean {
     return this.isConnected();
   }

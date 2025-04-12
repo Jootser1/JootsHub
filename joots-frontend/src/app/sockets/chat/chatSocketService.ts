@@ -44,22 +44,15 @@ export class ChatSocketService extends BaseSocketService {
     this.socket.emit('leaveConversation', conversationId);
   }
   
-  sendMessage(conversationId: string, content: string, userId: string): void {
-    if (!this.socket?.connected) {
-      logger.warn('Impossible d\'envoyer le message: non connecté');
-      return;
-    }
-    
-    logger.debug('ChatSocketService - Envoi du message:', { conversationId, content, userId });
+  sendMessage = (conversationId: string, content: string, userId: string) => {
+    if (!this.socket?.connected) return;
     this.socket.emit('sendMessage', { conversationId, content, userId });
   }
-  
-  sendTypingStatus(conversationId: string, isTyping: boolean): void {
-    if (!this.socket?.connected) return;
-    
-    this.socket.emit('typingStatus', { conversationId, isTyping });
-  }
 
+  sendTypingStatus = (conversationId: string, isTyping: boolean) => {
+    if (!this.socket?.connected) return;
+    this.socket.emit('typingStatus', { conversationId, isTyping });
+  };
   
   
   

@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import ConversationItem from './ConversationItem'
 import { useConversation } from '@/hooks/useConversation'
 import { useSession } from 'next-auth/react'
-import { useUserSocket } from '@/app/sockets/user/useUserSocket'
 import { Conversation } from '@/types/chat'
 import { logger } from '@/utils/logger'
 
@@ -20,11 +19,7 @@ export const ConversationList = () => {
   useEffect(() => {
     if (!session?.user?.id || isInitializedRef.current) return
 
-    logger.debug('ConversationList useEffect triggered, session status:', status)
-    logger.debug('Session data:', session)
-
     if (status === 'authenticated') {
-      logger.debug('Calling fetchConversations')
       fetchConversations()
     }
 

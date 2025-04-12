@@ -56,6 +56,27 @@ export const useSocket = (namespace: string) => {
     socket.on('ping', () => {
       socket.emit('pong');
     });
+
+    // Ajout de logs pour le cycle de vie du socket
+    socket.on('connecting', () => {
+      logger.info(`Socket ${namespace}: Tentative de connexion...`);
+    });
+
+    socket.on('reconnect', (attemptNumber) => {
+      logger.info(`Socket ${namespace}: Reconnexion réussie après ${attemptNumber} tentatives`);
+    });
+
+    socket.on('reconnect_attempt', (attemptNumber) => {
+      logger.info(`Socket ${namespace}: Tentative de reconnexion #${attemptNumber}`);
+    });
+
+    socket.on('reconnect_error', (error) => {
+      logger.error(`Socket ${namespace}: Erreur de reconnexion:`, error);
+    });
+
+    socket.on('reconnect_failed', () => {
+      logger.error(`Socket ${namespace}: Échec de toutes les tentatives de reconnexion`);
+    });
     
     return () => {
       logger.info(`Socket ${namespace}: Nettoyage de la connexion`);

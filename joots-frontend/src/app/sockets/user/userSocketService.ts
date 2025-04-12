@@ -58,6 +58,7 @@ export class UserSocketService extends BaseSocketService {
 
   public unregisterEvents() {
     this.closeExistingSocketConnection();
+    logger.info('Désenregistrement des événements socket pour', this.userId);
   }
 
   public updateUserStatus(userId: string, isOnline: boolean): void {
@@ -71,9 +72,14 @@ export class UserSocketService extends BaseSocketService {
       if (userId === this.userId) {
         // Ne mettre à jour le store que si le statut change
         if (this.lastStatus !== isOnline) {
+          // Mettre à jour le statut local immédiatement
           userStore.updateUserStatus(isOnline);
-          this.emitNewUserStatus(isOnline);
           this.lastStatus = isOnline;
+          
+          // Émettre l'événement sans attendre d'accusé de réception
+          // Le serveur pourrait ne pas implémenter la réponse à cet événement
+          this.socket.emit('updateUserStatus', { isOnline });
+          logger.info(`Émission du statut utilisateur: ${isOnline ? 'en ligne' : 'hors ligne'}`);
         }
       }
       
@@ -115,6 +121,9 @@ export class UserSocketService extends BaseSocketService {
       logger.warn('userSocketService: Impossible de mettre à jour le statut: non connecté');
       return;
     }
-    this.socket?.emit('updateUserStatus', { isOnline });
+    
+    // Émettre l'événement sans callback pour éviter les erreurs de timeout
+    this.socket.emit('updateUserStatus', { isOnline });
+    logger.info(`Émission du statut utilisateur: ${isOnline ? 'en ligne' : 'hors ligne'}`);
   }
 }

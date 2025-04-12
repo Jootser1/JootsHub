@@ -38,6 +38,7 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
     }
     handleJoinConversation(client, conversationId) {
         client.join(conversationId);
+        console.log('handleJoinConversation', conversationId);
         this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
         return { success: true };
     }
@@ -48,10 +49,17 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
     }
     async handleSendMessage(client, data) {
         const { conversationId, content, userId } = data;
+        console.log('handleSendMessage', data);
         if (userId !== client.data.userId) {
             return { success: false, error: 'Non autorisé' };
         }
         try {
+            const conversation = await this.prisma.conversation.findUnique({
+                where: { id: conversationId }
+            });
+            if (!conversation) {
+                return { success: false, error: 'Conversation non trouvée' };
+            }
             const message = await this.prisma.message.create({
                 data: {
                     content,

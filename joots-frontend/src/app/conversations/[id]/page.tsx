@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { getOtherParticipant } from '@/utils/conversationUtils'
 import { Conversation } from '@/types/chat'
 import { ChatSocketProvider } from '@/app/sockets/chat/ChatSocketProvider'
+import { useChatStore } from '@/stores/chatStore'
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -21,7 +22,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     const fetchConversation = async () => {
       try {
         const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
-        setConversation(response.data)
+        const conversationData = response.data;
+        setConversation(conversationData);
+        
+        // Ajout des messages au chatStore
+        if (conversationData.messages) {
+          conversationData.messages.forEach((message: any) => {
+            useChatStore.getState().addMessage(conversationData.id, message);
+          });
+        }
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
       } finally {
@@ -67,10 +76,13 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <Layout experience="icebreaker">
-      <ChatSocketProvider>
+      <ChatSocketProvider conversation={conversation}>
         <main className="flex min-h-screen flex-col bg-gray-50">
           <div className="max-w-md w-full mx-auto bg-white min-h-screen shadow-lg">
-            <ChatContainer conversationId={resolvedParams.id} />
+            <ChatContainer 
+              conversationId={resolvedParams.id} 
+              conversation={conversation}
+            />
           </div>
         </main>
       </ChatSocketProvider>
