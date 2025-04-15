@@ -1,7 +1,7 @@
 import { Providers } from "./providers";
 import "@/styles/globals.css";
 import { ReactNode } from "react";
-import { GlobalUserSocketProvider } from "./sockets/user/GlobalUserSocketProvider";
+import { GlobalUserSocketProvider } from "../features/user/sockets/GlobalUserSocketProvider";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

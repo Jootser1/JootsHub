@@ -14,7 +14,7 @@ const TestSocketDisconnection = () => {
   // Exécuter le test au chargement
   useEffect(() => {
     const runTest = async () => {
-      console.log('Démarrage du test de déconnexion socket...');
+      console.log('Démarrage du test de déconnexion socket utilisateur...');
       const result = await testSocketDisconnection(userId, token);
       console.log('Résultat du test:', result);
     };
@@ -24,7 +24,7 @@ const TestSocketDisconnection = () => {
   
   return (
     <div>
-      <h1>Test de déconnexion socket</h1>
+      <h1>Test de déconnexion socket utilisateur</h1>
       <p>Vérifiez la console pour les résultats.</p>
     </div>
   );

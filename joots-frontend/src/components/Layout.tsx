@@ -2,7 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
-import { useUserStore } from "@/stores/userStore";
+import { useUserStore } from "@/features/user/stores/userStore";
 import { useRouter } from "next/navigation";
 import { Header } from "./Header"
 import { BottomBar } from "./BottomBar"

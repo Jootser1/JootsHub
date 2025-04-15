@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button"
 import { ChevronLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import { useSession } from "next-auth/react"
-import { ConversationList } from "@/components/Conversations/ConversationList"
-import { useRandomChat } from '@/hooks/useRandomChat'
+import { ConversationList } from "@/features/conversations/components/ConversationList"
+import { useRandomChat } from '@/features/conversations/hooks/useRandomChat'
 
 export default function IcebreakerHome() {
   const { data: session } = useSession()

@@ -2,7 +2,7 @@ import { Button } from "./ui/button"
 import { Home, User } from "lucide-react"
 import { ExperienceLogo } from "./ExperienceLogo"
 import { memo } from "react"
-import { useUserStore } from "@/stores/userStore"
+import { useUserStore } from "@/features/user/stores/userStore"
 import Link from "next/link"
 
 interface BottomBarProps {

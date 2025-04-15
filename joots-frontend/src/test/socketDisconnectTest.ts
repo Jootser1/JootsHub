@@ -1,13 +1,14 @@
 // Test de déconnexion socket
-import { useSocketStore } from '@/stores/socketStore';
-import { useUserStore } from '@/stores/userStore';
+import { useUserSocketStore } from '@/features/user/stores/userSocketStore';
+import { useUserStore } from '@/features/user/stores/userStore';
 import { logger } from '@/utils/logger';
 
 export async function testSocketDisconnection(userId: string, token: string) {
   try {
     // 1. Connexion
     logger.info('Test de connexion socket...');
-    const socket = await useSocketStore.getState().connectUserSocket(userId, token);
+    const userSocketStore = useUserSocketStore.getState();
+    const socket = await userSocketStore.connectUserSocket(userId, token);
     logger.info(`Socket connecté: ${socket.isConnected()}`);
     
     // Vérifier statut de connexion dans le store user
@@ -16,14 +17,14 @@ export async function testSocketDisconnection(userId: string, token: string) {
     
     // 2. Déconnexion
     logger.info('Test de déconnexion socket...');
-    useSocketStore.getState().disconnectUserSocket();
+    userSocketStore.disconnectUserSocket();
     
     // 3. Vérifier le statut utilisateur après déconnexion
     const userAfterDisconnect = useUserStore.getState().user;
     logger.info(`Statut utilisateur après déconnexion: ${userAfterDisconnect?.isOnline}`);
     
     return {
-      isDisconnected: !useSocketStore.getState().userSocket?.isConnected(),
+      isDisconnected: !userSocketStore.userSocket?.isConnected(),
       userStatusBeforeDisconnect: userBeforeDisconnect?.isOnline,
       userStatusAfterDisconnect: userAfterDisconnect?.isOnline
     };

@@ -1,5 +1,5 @@
-import { Message, IcebreakerResponse } from './chat';
-
+import { Message } from '@/features/chat/chat.types';
+import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 // Events envoyés au serveur
 export interface ClientToServerEvents {
   joinConversation: (conversationId: string) => void;

@@ -1,7 +1,7 @@
 import { JootsLogo } from "./joots-logo"
 import Link from "next/link"
 import Image from "next/image"
-import { useUserStore } from "@/stores/userStore"
+import { useUserStore } from "@/features/user/stores/userStore"
 import { signOut } from "next-auth/react"
 
 export function Header() {

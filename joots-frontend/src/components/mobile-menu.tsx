@@ -5,7 +5,7 @@ import { ShoppingBag, Package, Mail, Gift, HelpCircle, Settings, ChevronRight, C
 import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useUserStore } from "@/stores/userStore"
+import { useUserStore } from "@/features/user/stores/userStore"
 import { signOut } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"

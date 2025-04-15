@@ -5,12 +5,12 @@ import { useSession } from "next-auth/react"
 import { useParams } from "next/navigation"
 import axiosInstance from "@/app/api/axiosInstance"
 import Layout from '@/components/Layout'
-import { ChatContainer } from '@/components/chat/ChatContainer'
+import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from "sonner"
-import { getOtherParticipant } from '@/utils/conversationUtils'
-import { Conversation } from '@/types/chat'
-import { ChatSocketProvider } from '@/app/sockets/chat/ChatSocketProvider'
-import { useChatStore } from '@/stores/chatStore'
+import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils'
+import { Conversation } from '@/features/conversations/conversation.types'
+import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
+import { useChatStore } from '@/features/chat/stores/chatStore'
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);

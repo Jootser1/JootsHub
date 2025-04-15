@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import Layout from "@/components/Layout";
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useUserStore } from "@/stores/userStore"
+import { useUserStore } from "@/features/user/stores/userStore"
 
 const apps = [
   {
