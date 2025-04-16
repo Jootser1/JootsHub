@@ -132,6 +132,7 @@ export class ChatGateway extends BaseGateway {
       };
       
       // Émettre l'événement à tous les clients dans la conversation
+      client.join(conversationId); // S'assurer que l'émetteur est dans la salle
       this.server.to(conversationId).emit('newMessage', messageToEmit);
       
       return { success: true, message: messageToEmit };

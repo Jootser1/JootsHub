@@ -8,6 +8,7 @@ interface ChatHeaderProps {
 
 export const ChatHeader = ({ otherUser, isOnline }: ChatHeaderProps) => {
   const isTyping = useChatStore((state) => state.isTyping);
+  console.log('isOnline', isOnline);
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200">
       <div className="flex items-center space-x-3">

@@ -47,22 +47,25 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
   }
   
   const otherUser = getOtherParticipant(conversation, user.id);
+  console.log('otherUser dans ChatContainer', otherUser);
 
   if (!otherUser) {
     return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
   }
   
   return (
-    <div className="relative flex flex-col flex-1 bg-gray-50">   
-        <ChatHeader otherUser={otherUser} isOnline={otherUser.isOnline} />    
-        <ChatMessages messages={conversation?.messages || []} conversationId={conversationId}/>
-        <ChatInput 
-          conversationId={conversationId}
-          currentUserId={user.id}
-          isIcebreakerReady={isReady}
-          onIcebreakerReady={handleReady}
-          onIcebreakerResponse={handleResponse}
-        />
+    <div className="relative flex flex-col h-full bg-gray-50">
+      <ChatHeader otherUser={otherUser} isOnline={otherUser.isOnline} />
+      <div className="flex-1 overflow-y-auto">
+        <ChatMessages messages={conversation?.messages || []} conversationId={conversationId} />
       </div>
+      <ChatInput 
+        conversationId={conversationId}
+        currentUserId={user.id}
+        isIcebreakerReady={isReady}
+        onIcebreakerReady={handleReady}
+        onIcebreakerResponse={handleResponse}
+      />
+    </div>
   );
 }; 

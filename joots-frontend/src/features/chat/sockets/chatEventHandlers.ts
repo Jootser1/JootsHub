@@ -16,7 +16,7 @@ export function handleNewMessageEvent(message: any) {
     }
     
     // Loggons le message complet pour le debug
-    logger.info('Message brut reçu du gateway:', message);
+    //logger.info('Message brut reçu du gateway:', message);
     
     // Utiliser l'ID de conversation du message si disponible
     const conversationId = message.conversationId;
@@ -37,7 +37,6 @@ export function handleNewMessageEvent(message: any) {
     };
 
     // Vérifier que la date est valide avant d'ajouter le message
-    logger.info(`Timestamp du message: ${newMessage.createdAt.toISOString()}`);
     
     chatStore.addMessage(conversationId, newMessage);
     console.log('newMessage reçu et ajouté au store', newMessage);

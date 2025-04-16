@@ -25,7 +25,7 @@ export function handleUserStatusChange(data: UserStatusChange, currentUserId?: s
   const onlineContacts = [...contactStore.contactList].filter(contactId => 
     contactStore.isUserOnline(contactId)
   );
-  console.log('Contacts en ligne:', onlineContacts);
+  logger.debug('Contacts en ligne mis à jour dans le store des contacts:', onlineContacts);
 }
 
 export function handleUserProfileChange(currentUserId?: string) {

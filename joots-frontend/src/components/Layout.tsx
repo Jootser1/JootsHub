@@ -26,17 +26,14 @@ export default function Layout({
       router.push("/login");
       return;
     }
-  
-    
   }, [status, session?.user?.id, router]);
 
-
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="flex-1 overflow-y-auto pb-16">
-        <main className="flex flex-col">{children}</main>
-      </div>
-      <div className="fixed bottom-0 left-0 right-0 z-10">
+    <div className="h-screen flex flex-col">
+      <main className="flex-1 flex flex-col overflow-hidden">
+        {children}
+      </main>
+      <div className="flex-shrink-0">
         <BottomBar experience={experience} />
       </div>
       <MobileMenu />

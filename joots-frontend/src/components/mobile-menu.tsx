@@ -81,6 +81,7 @@ export default function MobileMenu() {
               />
             </div>
             <span className="text-gray-800 font-medium flex-1">{user?.username || "Non connecté"}</span>
+            <span className="text-gray-800 font-medium flex-1">{user?.isOnline ? "En ligne" : "Hors ligne"}</span>
             <ChevronRight className="h-5 w-5 text-gray-400" />
           </Link>
 

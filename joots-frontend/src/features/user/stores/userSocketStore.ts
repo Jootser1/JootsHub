@@ -20,16 +20,16 @@ export const useUserSocketStore = create<UserSocketStoreState>((set, get) => ({
             throw new Error('Cannot connect socket on server side');
         }
         
+        
         // 1. Vérifier si un socket existe déjà et est connecté
         const existingSocket = get().userSocket;
         if (existingSocket?.isConnected()) {
-            logger.info('Socket utilisateur déjà connecté, réutilisation');
+            logger.info('UserSocketStore: Socket déjà connecté, réutilisation');
             return existingSocket;
         }
         
         // 2. Initialisation
         const userSocketService = UserSocketService.getInstance();
-        logger.info(`Connexion du socket utilisateur pour ${userId}`);
         userSocketService.connect(userId, token);
         
         // 3. Attendre la connexion avec un timeout de sécurité
@@ -38,23 +38,25 @@ export const useUserSocketStore = create<UserSocketStoreState>((set, get) => ({
         }
         
         // 4. Enregistrer les événements
-        if (!userSocketService.isConnected()) {
+        if (userSocketService.isConnected()) {
             userSocketService.registerEvents();
         }
         
         // 5. Configuration post-connexion
         if (userSocketService.isConnected()) {
             try {
+                logger.info('UserSocketStore: Configuration des rooms');
                 await setupUserRooms(userSocketService, userId);
             } catch (error) {
                 logger.error("Erreur lors de la configuration des rooms:", error);
             }
         } else {
-            logger.warn('Socket toujours non connecté après attente - impossible de configurer les rooms');
+            logger.warn('UserSocketStore: Socket toujours non connecté après attente');
         }
         
         // 6. Mettre à jour le store et retourner le service
         set({ userSocket: userSocketService });
+        logger.info('UserSocketStore: Socket configuré avec succès');
         return userSocketService;
     },
     

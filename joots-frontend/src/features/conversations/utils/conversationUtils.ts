@@ -1,8 +1,14 @@
 import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types';
 import { User } from '@/features/user/user.types';
+import { useContactStore } from '@/features/contacts/stores/contactStore';
 
 export const getOtherParticipant = (conversation: Conversation, currentUserId: string): User | undefined => {
-  return conversation.participants.find(p => p.userId !== currentUserId)?.user;
+  const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId);
+  if (!otherParticipant) return undefined;
+  
+  const contactStore = useContactStore.getState();
+  const isUserOnline = contactStore.isUserOnline(otherParticipant.user.id);
+  return { ...otherParticipant.user, isOnline: isUserOnline };
 };
 
 export const isCurrentUserSender = (message: { senderId: string }, currentUserId: string): boolean => {

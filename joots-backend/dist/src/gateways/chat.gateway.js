@@ -101,6 +101,7 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
                 conversationId,
                 createdAt: message.createdAt || new Date().toISOString()
             };
+            client.join(conversationId);
             this.server.to(conversationId).emit('newMessage', messageToEmit);
             return { success: true, message: messageToEmit };
         }

@@ -36,7 +36,6 @@ export class UserSocketService extends BaseSocketService {
     });
     
     this.setupEventListeners();
-    //this.setupUserEventListeners()
   }
 
   static getInstance(): UserSocketService {
@@ -51,7 +50,9 @@ export class UserSocketService extends BaseSocketService {
     
     const eventRegistry = createUserEventRegistry(this.userId);
     Object.entries(eventRegistry).forEach(([event, handler]) => {
-      this.onEvent(event, handler);
+      this.onEvent(event, (data) => {
+        handler(data);
+      });
     })
     logger.info('Enregistrement des événements socket pour', this.userId);
   }

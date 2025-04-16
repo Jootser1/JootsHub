@@ -186,6 +186,10 @@ export class ChatSocketService extends BaseSocketService {
               clearTimeout(timeout);
               if (this.socket?.connected) {
                 try {
+                  // S'assurer que l'utilisateur est dans la conversation
+                  if (this.activeConversation !== conversationId) {
+                    this.joinConversation(conversationId);
+                  }
                   this.socket.emit('sendMessage', { conversationId, content, userId });
                   logger.info(`Message envoyé après reconnexion dans la conversation ${conversationId}`);
                   resolve(true);

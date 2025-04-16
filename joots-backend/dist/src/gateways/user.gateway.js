@@ -40,6 +40,13 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
             await this.redis.sadd('online_users', userId);
             await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
             this.logger.log(`Utilisateur connecté: ${userId}`);
+            const contacts = await this.prisma.userContact.findMany({
+                where: { userId: userId },
+                select: { contactId: true }
+            });
+            contacts.forEach(contact => {
+                client.join(`user-status-${contact.contactId}`);
+            });
             await this.notifyContactsStatusChange(userId, true);
         }
         catch (error) {
@@ -67,8 +74,8 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
     async notifyContactsStatusChange(userId, isOnline) {
         try {
             const contacts = await this.prisma.userContact.findMany({
-                where: { contactId: userId },
-                select: { userId: true }
+                where: { userId: userId },
+                select: { contactId: true }
             });
             const user = await this.prisma.user.findUnique({
                 where: { id: userId },
@@ -88,6 +95,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
     }
     async handleJoinContactsRooms(client, payload) {
         const { contactIds } = payload;
+        console.log('handleJoinContactsRooms', contactIds);
         contactIds.forEach(contactId => {
             client.join(`user-status-${contactId}`);
         });

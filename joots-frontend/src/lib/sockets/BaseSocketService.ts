@@ -22,7 +22,6 @@ export abstract class BaseSocketService {
   }
   
   connect(userId: string, token: string): void {
-    logger.info(`BaseSocketService: Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
     
     this.userId = userId;
     this.token = token;
@@ -125,7 +124,7 @@ export abstract class BaseSocketService {
     
     this.socket.on(eventName, (data) => {
       const userInfo = data.user ? ` (${data.user.username})` : '';
-      logger.debug(`BaseSocketService: Événement ${eventName} reçu${userInfo}:`, data);
+      //logger.debug(`BaseSocketService: Événement ${eventName} reçu${userInfo}:`, data);
       callback(data);
     });
     

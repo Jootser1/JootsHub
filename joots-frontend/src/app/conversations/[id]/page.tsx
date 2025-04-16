@@ -83,7 +83,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   return (
     <Layout experience="icebreaker">
       <ChatSocketProvider conversation={conversation}>
-        <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col">
+        <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full">
           <ChatContainer 
             conversation={conversation}
           />

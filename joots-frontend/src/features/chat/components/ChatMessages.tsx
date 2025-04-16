@@ -17,7 +17,7 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { user } = useUserStore();
-  
+  const messages =useChatStore((state) => state.messages);
   const storeMessages = useConversationMessages(conversationId);
   
   // Combiner les messages du props et du store pour assurer la compatibilité

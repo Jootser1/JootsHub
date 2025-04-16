@@ -48,9 +48,18 @@ export class UserGateway extends BaseGateway {
       await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
       this.logger.log(`Utilisateur connecté: ${userId}`);
       
+      // Récupérer les contacts de l'utilisateur et rejoindre leurs rooms
+      const contacts = await this.prisma.userContact.findMany({
+        where: { userId: userId },
+        select: { contactId: true }
+      });
+      
+      contacts.forEach(contact => {
+        client.join(`user-status-${contact.contactId}`);
+      });
+      
       // Notifier les contacts via les rooms
       await this.notifyContactsStatusChange(userId, true);
-      
       
     } catch (error) {
       this.logger.error(`Erreur lors de la connexion: ${error.message}`);
@@ -85,8 +94,8 @@ export class UserGateway extends BaseGateway {
     try {
       // Récupérer les contacts de l'utilisateur
       const contacts = await this.prisma.userContact.findMany({
-        where: { contactId: userId },
-        select: { userId: true }
+        where: { userId: userId },
+        select: { contactId: true }
       });
 
       // Récupérer les informations de l'utilisateur
@@ -111,7 +120,8 @@ export class UserGateway extends BaseGateway {
 
   @SubscribeMessage('joinContactsRooms')
   async handleJoinContactsRooms(client: Socket, payload: { contactIds: string[] }) {
-    const { contactIds } = payload;
+    const { contactIds } = payload; 
+    console.log('handleJoinContactsRooms', contactIds);
     
     contactIds.forEach(contactId => {
       client.join(`user-status-${contactId}`);

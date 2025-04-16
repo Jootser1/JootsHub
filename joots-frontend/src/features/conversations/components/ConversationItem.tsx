@@ -8,6 +8,7 @@ import { getOtherParticipant } from '@/features/conversations/utils/conversation
 import { useContactStore } from '@/features/contacts/stores/contactStore'
 import { useUserStore } from '@/features/user/stores/userStore'
 import { ensureDate } from '@/utils/dateUtils'
+import { logger } from '@/utils/logger'
 
 interface ConversationItemProps {
   conversation: Conversation
