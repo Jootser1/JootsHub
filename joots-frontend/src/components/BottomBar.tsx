@@ -17,15 +17,17 @@ export const BottomBar = memo(function BottomBar({ experience }: BottomBarProps)
   }
 
   return (
-    <div className="bg-white border-t flex justify-around p-3">
-      <Link href="/hub">
+    <div className="border-t flex p-3 w-full bg-white">
+      <div className="flex-1 flex items-center justify-center"><Link href="/hub">
         <Button variant="ghost" size="icon" className="rounded-full">
           <Home className="h-6 w-6" />
         </Button>
       </Link>
-
+      </div>
+      <div className="flex-1 flex items-center justify-center">
       <ExperienceLogo experience={experience} />
-
+      </div>
+      <div className="flex-1 flex items-center justify-center">
       <Button 
         variant="ghost" 
         size="icon" 
@@ -34,6 +36,7 @@ export const BottomBar = memo(function BottomBar({ experience }: BottomBarProps)
       >
         <User className="h-6 w-6" />
       </Button>
+      </div>
     </div>
   )
 }) 

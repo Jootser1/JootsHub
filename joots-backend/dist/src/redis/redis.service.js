@@ -44,6 +44,9 @@ let RedisService = class RedisService {
     async del(key) {
         return this.redis.del(key);
     }
+    async hset(key, field, value) {
+        return this.redis.hset(key, field, value);
+    }
     async setUserOnline(userId, ttl = 300) {
         const batch = this.redis.multi();
         const userStatusKey = `user:status:${userId}`;

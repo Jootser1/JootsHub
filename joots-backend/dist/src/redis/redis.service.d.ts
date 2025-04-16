@@ -8,6 +8,7 @@ export declare class RedisService {
     get(key: string): Promise<string | null>;
     set(key: string, value: string, ttl?: number): Promise<"OK">;
     del(key: string): Promise<number>;
+    hset(key: string, field: string, value: string): Promise<number>;
     setUserOnline(userId: string, ttl?: number): Promise<boolean>;
     setUserOffline(userId: string): Promise<boolean>;
     getUserStatus(userId: string): Promise<'online' | 'offline'>;

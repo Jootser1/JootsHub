@@ -1,25 +1,22 @@
 import { FC } from 'react'
 import Link from 'next/link'
-import { useSession } from 'next-auth/react'
 import { Conversation } from '@/features/conversations/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { useChatStore } from '@/features/chat/stores/chatStore'
 import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils'
 import { useContactStore } from '@/features/contacts/stores/contactStore'
 import { useUserStore } from '@/features/user/stores/userStore'
+import { ensureDate } from '@/utils/dateUtils'
 
 interface ConversationItemProps {
   conversation: Conversation
 }
 
 const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
-  const { data: session } = useSession()
-  const currentUserId = session?.user?.id
-  const conversations = useChatStore((state) => state.conversations)
+  const currentUserId = useUserStore((state) => state.user?.id)
   const contactStore = useContactStore()
-  const userStore = useUserStore()
+  
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
   const otherUser = currentUserId ? getOtherParticipant(conversation, currentUserId) : undefined
@@ -65,11 +62,7 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
             {lastMessage && (
               <span className="text-xs text-gray-500 whitespace-nowrap ml-2">
                 {formatDistanceToNow(
-                  typeof lastMessage.timestamp === 'string' 
-                    ? new Date(lastMessage.timestamp) 
-                    : lastMessage.timestamp instanceof Date 
-                      ? lastMessage.timestamp 
-                      : new Date(), 
+                  ensureDate(lastMessage.createdAt), 
                   { 
                     addSuffix: true,
                     locale: fr 

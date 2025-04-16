@@ -11,13 +11,15 @@ import { getOtherParticipant } from '@/features/conversations/utils/conversation
 import { Conversation } from '@/features/conversations/conversation.types'
 import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
 import { useChatStore } from '@/features/chat/stores/chatStore'
+import { useUserStore } from "@/features/user/stores/userStore"
+
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
-  const { data: session } = useSession()
+  const user = useUserStore((state) => state.user)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
+  
   useEffect(() => {
     const fetchConversation = async () => {
       try {
@@ -25,28 +27,25 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         const conversationData = response.data;
         setConversation(conversationData);
         
-        // Ajout des messages au chatStore
+        // Ajout des messages historiques au chatStore
         if (conversationData.messages) {
-          conversationData.messages.forEach((message: any) => {
-            useChatStore.getState().addMessage(conversationData.id, message);
-          });
+          useChatStore.getState().initializeConversationMessages(conversationData.id, conversationData.messages);
         }
+        useChatStore.getState().setActiveConversation(conversationData.id);
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
       } finally {
         setIsLoading(false)
       }
     }
-
-    if (session?.user && resolvedParams.id) {
+    
+    if (user && resolvedParams.id) {
       fetchConversation()
     }
-  }, [session?.user, resolvedParams.id])
-
-  if (!session?.user) {
-    return <div>Chargement...</div>
-  }
-
+  }, [user, resolvedParams.id])
+  
+  
+  
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -63,8 +62,15 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  // Déterminer l'autre utilisateur
-  const otherUser = getOtherParticipant(conversation, session.user.id)
+  if (!user) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <p>Utilisateur non connecté</p>
+      </div>
+    )
+  }
+
+  const otherUser = getOtherParticipant(conversation, user.id)
 
   if (!otherUser) {
     return (
@@ -77,14 +83,11 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   return (
     <Layout experience="icebreaker">
       <ChatSocketProvider conversation={conversation}>
-        <main className="flex min-h-screen flex-col bg-gray-50">
-          <div className="max-w-md w-full mx-auto bg-white min-h-screen shadow-lg">
-            <ChatContainer 
-              conversationId={resolvedParams.id} 
-              conversation={conversation}
-            />
-          </div>
-        </main>
+        <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col">
+          <ChatContainer 
+            conversation={conversation}
+          />
+        </div>
       </ChatSocketProvider>
     </Layout>
   )

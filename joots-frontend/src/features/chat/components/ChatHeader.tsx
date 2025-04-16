@@ -1,11 +1,13 @@
 import { User } from '@/features/user/user.types';
-
+import { useChatStore } from '@/features/chat/stores/chatStore';
 interface ChatHeaderProps {
   otherUser: User;
   isOnline: boolean;
+  isTyping?: boolean;
 }
 
 export const ChatHeader = ({ otherUser, isOnline }: ChatHeaderProps) => {
+  const isTyping = useChatStore((state) => state.isTyping);
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200">
       <div className="flex items-center space-x-3">
@@ -30,7 +32,7 @@ export const ChatHeader = ({ otherUser, isOnline }: ChatHeaderProps) => {
         <div>
           <h2 className="text-lg font-semibold">{otherUser.username}</h2>
           <p className="text-sm text-gray-500">
-            {otherUser.isTyping ? 'En train d\'écrire...' : (
+            {isTyping ? 'En train d\'écrire...' : (
               isOnline ? 'En ligne' : 'Hors ligne'
             )}
           </p>

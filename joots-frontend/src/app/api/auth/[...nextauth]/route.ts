@@ -19,7 +19,6 @@ const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        logger.debug('Tentative d\'authentification', { email: credentials?.email });
         
         if (!credentials?.email || !credentials?.password) {
           logger.warn('Tentative d\'authentification sans credentials');
@@ -27,7 +26,6 @@ const authOptions = {
         }
 
         try {
-          logger.debug('Envoi de la requête de login au backend');
           const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             email: credentials.email,
             password: credentials.password,

@@ -1,15 +1,11 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { 
-  ChatStore, 
-  ChatState, 
-  Message, 
-  MessageStatus, 
-  ConnectionStatus,
-  Conversation,
-  IcebreakerResponse
-} from '../../../types/chat.types';
+import { Message, ChatState, ChatStore, MessageStatus} from '@/features/chat/chat.types'; 
+import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
+import { Conversation } from '@/features/conversations/conversation.types';
+import { ConnectionStatus } from '@/features/contacts/contacts.types';
 import { getOtherParticipant, isCurrentUserSender, getUnreadCount } from '../../conversations/utils/conversationUtils';
+import { ensureDate } from '@/utils/dateUtils';
 
 const initialState: ChatState = {
   messages: {},
@@ -24,6 +20,7 @@ const defaultIcebreakerStatus = {
   receiverReady: false,
   currentQuestion: undefined,
 };
+
 
 export const useChatStore = create<ChatStore>()(
   devtools(
@@ -45,9 +42,18 @@ export const useChatStore = create<ChatStore>()(
         set((state) => {
           const conversationMessages = state.messages[conversationId] || [];
           const conversation = state.conversations[conversationId];
-
-          if (!conversation) return state;
-
+      
+          // ✅ Cas où la conversation n'existe pas encore (ex: premier message reçu)
+          if (!conversation) {
+            return {
+              ...state,
+              messages: {
+                ...state.messages,
+                [conversationId]: [...conversationMessages, message],
+              },
+            };
+          }
+      
           return {
             messages: {
               ...state.messages,
@@ -208,10 +214,7 @@ export const useChatStore = create<ChatStore>()(
           };
         }),
 
-      submitIcebreakerResponse: (
-        conversationId: string,
-        isCurrentUser: boolean,
-        response: IcebreakerResponse
+      submitIcebreakerResponse: (conversationId: string, isCurrentUser: boolean, response: IcebreakerResponse
       ) =>
         set((state) => {
           const conversation = state.conversations[conversationId];
@@ -225,7 +228,7 @@ export const useChatStore = create<ChatStore>()(
             content: conversation.icebreakerStatus.currentQuestion,
             senderId: isCurrentUser ? conversation.participants[0].userId : otherParticipant.id,
             receiverId: isCurrentUser ? otherParticipant.id : conversation.participants[0].userId,
-            timestamp: new Date(),
+            createdAt: new Date(),
             status: 'sent',
             type: 'icebreaker',
             icebreakerData: {
@@ -274,6 +277,22 @@ export const useChatStore = create<ChatStore>()(
             },
           };
         }),
+
+      initializeConversationMessages: (conversationId: string, messages: Message[]) => {
+        messages.forEach((message) => {
+          const processedMessage = {
+            ...message,
+            createdAt: typeof message.createdAt === 'string' 
+              ? ensureDate(message.createdAt) 
+              : message.createdAt instanceof Date 
+                ? message.createdAt 
+                : new Date()
+          };
+          get().addMessage(conversationId, processedMessage);
+        });
+      },
+
+
     }),
     { name: 'chat-store' }
   )

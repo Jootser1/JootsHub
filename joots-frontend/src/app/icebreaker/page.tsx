@@ -4,13 +4,14 @@ import Layout from "@/components/Layout"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
-import { useSession } from "next-auth/react"
 import { ConversationList } from "@/features/conversations/components/ConversationList"
 import { useRandomChat } from '@/features/conversations/hooks/useRandomChat'
+import { useUserStore } from "@/features/user/stores/userStore"
+
+
 
 export default function IcebreakerHome() {
-  const { data: session } = useSession()
-  const user = session?.user
+  const user = useUserStore((state) => state.user)
   const { isLoading, startRandomChat } = useRandomChat()
 
   if (!user) {
@@ -19,8 +20,7 @@ export default function IcebreakerHome() {
 
   return (
     <Layout experience="icebreaker">
-      <main className="flex min-h-screen flex-col bg-gray-50">
-        <div className="max-w-md w-full mx-auto bg-white min-h-screen">
+        <div className="max-w-md w-full mx-auto bg-white">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-white border-b">
             <div className="p-4 flex items-center">
@@ -33,7 +33,7 @@ export default function IcebreakerHome() {
             </div>
 
             {/* Action buttons */}
-            <div className="px-4 pb-4 flex space-x-2">
+            <div className="px-4 pb-4 flex space-x-2 bg-gray-50">
               <Button 
                 className="flex-1 bg-[#E59C45] hover:bg-[#E59C45]/90 text-white rounded-full text-sm py-6"
                 onClick={startRandomChat}
@@ -61,7 +61,6 @@ export default function IcebreakerHome() {
             <ConversationList />
           </div>
         </div>
-      </main>
     </Layout>
   )
 }

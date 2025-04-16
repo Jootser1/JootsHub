@@ -18,11 +18,14 @@ const websockets_1 = require("@nestjs/websockets");
 const socket_io_1 = require("socket.io");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const base_gateway_1 = require("./base.gateway");
+const redis_service_1 = require("../redis/redis.service");
 let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseGateway {
     prisma;
-    constructor(prisma) {
+    redis;
+    constructor(prisma, redis) {
         super(ChatGateway_1.name);
         this.prisma = prisma;
+        this.redis = redis;
     }
     handleConnection(client) {
         const userId = client.data.userId;
@@ -37,19 +40,30 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
         this.logger.log(`Client chat déconnecté: ${client.id}`);
     }
     handleJoinConversation(client, conversationId) {
-        client.join(conversationId);
-        console.log('handleJoinConversation', conversationId);
-        this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
-        return { success: true };
+        try {
+            client.join(conversationId);
+            this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
+            return { success: true };
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de la jonction à la conversation ${conversationId}:`, error);
+            return { success: false, error: error.message };
+        }
     }
     handleLeaveConversation(client, conversationId) {
-        client.leave(conversationId);
-        this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
-        return { success: true };
+        try {
+            client.leave(conversationId);
+            this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
+            return { success: true };
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors du départ de la conversation ${conversationId}:`, error);
+            return { success: false, error: error.message };
+        }
     }
     async handleSendMessage(client, data) {
         const { conversationId, content, userId } = data;
-        console.log('handleSendMessage', data);
+        this.logger.debug('handleSendMessage', data);
         if (userId !== client.data.userId) {
             return { success: false, error: 'Non autorisé' };
         }
@@ -72,12 +86,23 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
                     }
                 }
             });
-            this.server.to(conversationId).emit('newMessage', {
+            try {
+                await this.redis.hset(`conversation:${conversationId}:messages`, message.id, JSON.stringify({
+                    ...message,
+                    conversationId,
+                    createdAt: message.createdAt || new Date().toISOString()
+                }));
+            }
+            catch (redisError) {
+                this.logger.error(`Erreur Redis: ${redisError.message}`);
+            }
+            const messageToEmit = {
                 ...message,
                 conversationId,
                 createdAt: message.createdAt || new Date().toISOString()
-            });
-            return { success: true, message };
+            };
+            this.server.to(conversationId).emit('newMessage', messageToEmit);
+            return { success: true, message: messageToEmit };
         }
         catch (error) {
             this.logger.error(`Erreur lors de l'envoi du message: ${error.message}`);
@@ -156,6 +181,7 @@ exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
         },
         namespace: 'chat'
     }),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService,
+        redis_service_1.RedisService])
 ], ChatGateway);
 //# sourceMappingURL=chat.gateway.js.map

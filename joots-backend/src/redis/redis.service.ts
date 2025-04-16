@@ -43,6 +43,10 @@ export class RedisService {
     return this.redis.del(key);
   }
 
+  async hset(key: string, field: string, value: string) {
+    return this.redis.hset(key, field, value);
+  }
+
   // Nouvelles méthodes pour la gestion du statut utilisateur
   async setUserOnline(userId: string, ttl: number = 300) {
     const batch = this.redis.multi();

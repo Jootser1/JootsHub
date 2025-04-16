@@ -8,7 +8,7 @@ interface ChatSocketStoreState {
     chatSocket: BaseSocketService | null;
     connectChatSocket: (userId: string, token: string, conversationId?: string) => Promise<BaseSocketService>;
     disconnectChatSocket: () => void;
-    sendChatMessage: (conversationId: string, content: string, userId: string) => boolean;
+    sendChatMessage: (conversationId: string, content: string, userId: string) => boolean | Promise<boolean>;
     sendTypingStatus: (conversationId: string, isTyping: boolean) => void;
 }
 
@@ -101,13 +101,21 @@ disconnectChatSocket: () => {
     });
 },
 
-sendChatMessage: (conversationId: string, content: string, userId: string): boolean => {
+sendChatMessage: (conversationId: string, content: string, userId: string) => {
     const chatSocket = get().chatSocket as ChatSocketService;
-    if (!chatSocket?.isConnected()) {
-        logger.warn('Impossible d\'envoyer le message: socket non connecté');
+    if (!chatSocket) {
+        logger.warn('Impossible d\'envoyer le message: socket non initialisé');
         return false;
     }
-    return chatSocket.sendMessage(conversationId, content, userId);
+    
+    const result = chatSocket.sendMessage(conversationId, content, userId);
+    
+    // Si le résultat est une promesse (cas de reconnexion)
+    if (result instanceof Promise) {
+        return result;
+    }
+    
+    return result;
 },
 
 sendTypingStatus: (conversationId: string, isTyping: boolean): void => {

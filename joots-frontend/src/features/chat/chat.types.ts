@@ -11,7 +11,7 @@ export interface Message {
   content: string;
   senderId: string;
   receiverId: string;
-  timestamp: Date;
+  createdAt: Date;
   status: MessageStatus;
   type: MessageType;
   icebreakerData?: {
@@ -39,6 +39,7 @@ export type ChatActions = {
   addMessage: (conversationId: string, message: Message) => void;
   updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) => void;
   markMessagesAsRead: (conversationId: string) => void;
+  initializeConversationMessages: (conversationId: string, messages: Message[]) => void;
 
   // Conversation actions
   updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;

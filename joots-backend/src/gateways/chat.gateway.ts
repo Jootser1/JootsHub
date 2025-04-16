@@ -7,6 +7,7 @@ import {
 import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BaseGateway } from './base.gateway';
+import { RedisService } from '../redis/redis.service';
 
 @WebSocketGateway({
   cors: {
@@ -18,7 +19,10 @@ import { BaseGateway } from './base.gateway';
   namespace: 'chat'
 })
 export class ChatGateway extends BaseGateway {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService
+  ) {
     super(ChatGateway.name);
   }
   
@@ -43,10 +47,14 @@ export class ChatGateway extends BaseGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() conversationId: string
   ) {
-    client.join(conversationId);
-    console.log('handleJoinConversation', conversationId);
-    this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
-    return { success: true };
+    try {
+      client.join(conversationId);
+      this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Erreur lors de la jonction à la conversation ${conversationId}:`, error);
+      return { success: false, error: error.message };
+    }
   }
   
   @SubscribeMessage('leaveConversation')
@@ -54,9 +62,14 @@ export class ChatGateway extends BaseGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() conversationId: string
   ) {
-    client.leave(conversationId);
-    this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
-    return { success: true };
+    try {
+      client.leave(conversationId);
+      this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Erreur lors du départ de la conversation ${conversationId}:`, error);
+      return { success: false, error: error.message };
+    }
   }
   
   @SubscribeMessage('sendMessage')
@@ -65,12 +78,13 @@ export class ChatGateway extends BaseGateway {
     @MessageBody() data: { conversationId: string; content: string; userId: string }
   ) {
     const { conversationId, content, userId } = data;
-    console.log('handleSendMessage', data);
+    this.logger.debug('handleSendMessage', data);
     
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
+
     try {
       // Vérifier si la conversation existe
       const conversation = await this.prisma.conversation.findUnique({
@@ -81,7 +95,6 @@ export class ChatGateway extends BaseGateway {
         return { success: false, error: 'Conversation non trouvée' };
       }
       
-      // Sauvegarder le message dans la base de données
       const message = await this.prisma.message.create({
         data: {
           content,
@@ -94,15 +107,34 @@ export class ChatGateway extends BaseGateway {
           }
         }
       });
+
+      // Sauvegarder le message dans Redis
+      try {
+        await this.redis.hset(
+          `conversation:${conversationId}:messages`,
+          message.id,
+          JSON.stringify({
+            ...message,
+            conversationId,
+            createdAt: message.createdAt || new Date().toISOString()
+          })
+        );
+      } catch (redisError) {
+        // Log l'erreur Redis mais continue (non bloquant)
+        this.logger.error(`Erreur Redis: ${redisError.message}`);
+      }
       
-      // Émettre l'événement à tous les clients dans la conversation
-      this.server.to(conversationId).emit('newMessage', {
+      // Préparer le message à émettre
+      const messageToEmit = {
         ...message,
         conversationId,
         createdAt: message.createdAt || new Date().toISOString()
-      });
+      };
       
-      return { success: true, message };
+      // Émettre l'événement à tous les clients dans la conversation
+      this.server.to(conversationId).emit('newMessage', messageToEmit);
+      
+      return { success: true, message: messageToEmit };
     } catch (error) {
       this.logger.error(`Erreur lors de l'envoi du message: ${error.message}`);
       return { success: false, error: error.message };

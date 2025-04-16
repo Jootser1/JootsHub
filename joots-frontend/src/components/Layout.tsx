@@ -33,9 +33,12 @@ export default function Layout({
 
   return (
     <div className="h-screen flex flex-col overflow-hidden">
-      <Header />
-      <main className="flex-1 overflow-y-auto">{children}</main>
-      <BottomBar experience={experience} />
+      <div className="flex-1 overflow-y-auto pb-16">
+        <main className="flex flex-col">{children}</main>
+      </div>
+      <div className="fixed bottom-0 left-0 right-0 z-10">
+        <BottomBar experience={experience} />
+      </div>
       <MobileMenu />
     </div>
   );

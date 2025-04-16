@@ -7,19 +7,41 @@ import { ChatInput } from './ChatInput';
 import { useIcebreaker } from '@/features/icebreakers/hooks/useIcebreaker';
 import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
-import { logger } from '@/utils/logger';
-import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
+import { useChatStore } from '../stores/chatStore';
+
 
 interface ChatContainerProps {
-  conversationId: string;
   conversation: Conversation;
 }
 
-export const ChatContainer = ({ conversationId, conversation }: ChatContainerProps) => {
-  const { data: session } = useSession();
-  const { isReady, handleReady, handleResponse } = useIcebreaker(conversationId);
+export const ChatContainer = ({ conversation }: ChatContainerProps) => {
+  const conversationId = useChatStore((state) => state.activeConversationId);
+  const { isReady, handleReady, handleResponse } = useIcebreaker(conversationId || '');
   const { user } = useUserStore();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+  
+  useEffect(() => {
+    scrollToBottom();
+
+    const input = document.getElementById("chat-input");
+    input?.addEventListener("focus", scrollToBottom);
+
+    return () => {
+      input?.removeEventListener("focus", scrollToBottom);
+    };
+  }, [conversation?.messages.length]);
+
+
+
+  if (!conversationId) {
+    return <div className="flex items-center justify-center h-full">Conversation non trouvée</div>;
+  }
+
   if (!user?.id) {
     return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
   }
@@ -31,19 +53,16 @@ export const ChatContainer = ({ conversationId, conversation }: ChatContainerPro
   }
   
   return (
-    <div className="flex flex-col h-full">
-    <ChatHeader 
-    otherUser={otherUser}
-    isOnline={otherUser.isOnline}
-    />
-    <ChatMessages messages={conversation?.messages || []} />
-    <ChatInput 
-    conversationId={conversationId}
-    currentUserId={user.id}
-    isIcebreakerReady={isReady}
-    onIcebreakerReady={handleReady}
-    onIcebreakerResponse={handleResponse}
-    />
-    </div>
+    <div className="relative flex flex-col flex-1 bg-gray-50">   
+        <ChatHeader otherUser={otherUser} isOnline={otherUser.isOnline} />    
+        <ChatMessages messages={conversation?.messages || []} conversationId={conversationId}/>
+        <ChatInput 
+          conversationId={conversationId}
+          currentUserId={user.id}
+          isIcebreakerReady={isReady}
+          onIcebreakerReady={handleReady}
+          onIcebreakerResponse={handleResponse}
+        />
+      </div>
   );
 }; 

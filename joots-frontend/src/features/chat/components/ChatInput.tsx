@@ -44,10 +44,38 @@ export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, cu
     }
 
     if (user?.id) {
-      sendMessage(conversationId, message.trim(), user.id);
+      try {
+        const sendResult = sendMessage(conversationId, message.trim(), user.id);
+        
+        // Si le résultat est une promesse (cas de reconnexion)
+        if (sendResult instanceof Promise) {
+          sendResult.then(success => {
+            if (success) {
+              setMessage('');
+              setSendAttempted(false);
+            } else {
+              setSendAttempted(true);
+              setTimeout(() => setSendAttempted(false), 3000);
+            }
+          }).catch(() => {
+            setSendAttempted(true);
+            setTimeout(() => setSendAttempted(false), 3000);
+          });
+        } else if (sendResult) {
+          // Cas synchrone réussi
+          setMessage('');
+          setSendAttempted(false);
+        } else {
+          // Cas synchrone échoué
+          setSendAttempted(true);
+          setTimeout(() => setSendAttempted(false), 3000);
+        }
+      } catch (error) {
+        console.error('Erreur lors de l\'envoi du message:', error);
+        setSendAttempted(true);
+        setTimeout(() => setSendAttempted(false), 3000);
+      }
     }
-    setMessage('');
-    setSendAttempted(false);
   };
 
   const handleIcebreakerClick = () => {

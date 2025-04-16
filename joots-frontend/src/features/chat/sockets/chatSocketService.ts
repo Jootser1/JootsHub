@@ -6,6 +6,7 @@ import { io } from 'socket.io-client';
 export class ChatSocketService extends BaseSocketService {
   private static instance: ChatSocketService | null = null;
   private activeConversation: string | null = null;
+  private pingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super('chat');
@@ -41,7 +42,40 @@ export class ChatSocketService extends BaseSocketService {
     });
     
     this.setupEventListeners();
-    //this.setupUserEventListeners()
+    this.startPingInterval();
+  }
+
+  private startPingInterval() {
+    // Arrêter l'intervalle existant si présent
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+    }
+    
+    // Créer un nouvel intervalle qui envoie un ping toutes les 30 secondes
+    this.pingInterval = setInterval(() => {
+      if (this.socket?.connected) {
+        this.socket.emit('ping');
+        logger.debug('Ping envoyé pour maintenir la connexion active');
+      } else {
+        // Si le socket est déconnecté, essayer de reconnecter
+        logger.warn('Socket déconnecté lors du ping. Tentative de reconnexion...');
+        if (this.userId && this.token) {
+          this.connect(this.userId, this.token);
+        } else {
+          logger.warn('Impossible de reconnecter: informations d\'authentification manquantes');
+        }
+      }
+    }, 30000); // 30 secondes
+  }
+
+  disconnect(): void {
+    // Arrêter l'intervalle de ping avant de déconnecter
+    if (this.pingInterval) {
+      clearInterval(this.pingInterval);
+      this.pingInterval = null;
+    }
+    
+    super.disconnect();
   }
 
   static getInstance(): ChatSocketService {
@@ -133,13 +167,59 @@ export class ChatSocketService extends BaseSocketService {
   
   sendMessage = (conversationId: string, content: string, userId: string) => {
     if (!this.socket?.connected) {
-      logger.warn('Impossible d\'envoyer le message: non connecté');
+      logger.warn('Socket chat déconnecté. Tentative de reconnexion...');
+      
+      // Tenter de reconnecter si nous avons les informations d'authentification
+      if (this.userId && this.token) {
+        try {
+          this.connect(this.userId, this.token);
+          
+          // Retourner une promesse mais s'assurer qu'elle se résout correctement
+          return new Promise<boolean>((resolve) => {
+            const timeout = setTimeout(() => {
+              logger.error('Timeout de reconnexion dépassé');
+              resolve(false);
+            }, 3000); // Timeout de sécurité
+            
+            // Fonction d'envoi après reconnexion
+            const sendAfterReconnect = () => {
+              clearTimeout(timeout);
+              if (this.socket?.connected) {
+                try {
+                  this.socket.emit('sendMessage', { conversationId, content, userId });
+                  logger.info(`Message envoyé après reconnexion dans la conversation ${conversationId}`);
+                  resolve(true);
+                } catch (e) {
+                  logger.error('Erreur lors de l\'envoi du message après reconnexion', e);
+                  resolve(false);
+                }
+              } else {
+                logger.error('Échec de reconnexion, impossible d\'envoyer le message');
+                resolve(false);
+              }
+            };
+            
+            // Attendre un court instant pour la connexion et réessayer
+            setTimeout(sendAfterReconnect, 1000);
+          });
+        } catch (e) {
+          logger.error('Erreur lors de la tentative de reconnexion', e);
+          return false;
+        }
+      }
+      
+      logger.warn('Impossible d\'envoyer le message: informations d\'authentification manquantes');
       return false;
     }
     
-    this.socket.emit('sendMessage', { conversationId, content, userId });
-    logger.info(`Message envoyé dans la conversation ${conversationId}`);
-    return true;
+    try {
+      this.socket.emit('sendMessage', { conversationId, content, userId });
+      logger.info(`Message envoyé dans la conversation ${conversationId}`);
+      return true;
+    } catch (e) {
+      logger.error('Erreur lors de l\'envoi du message', e);
+      return false;
+    }
   }
 
   sendTypingStatus = (conversationId: string, isTyping: boolean) => {
