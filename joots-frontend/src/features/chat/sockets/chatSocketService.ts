@@ -232,7 +232,11 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
-    this.socket.emit('typingStatus', { conversationId, isTyping });
+    this.socket.emit('typing', { 
+      conversationId, 
+      userId: this.userId,
+      isTyping 
+    });
   };
   
   getActiveConversation(): string | null {

@@ -110,6 +110,26 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return { success: false, error: error.message };
         }
     }
+    handleTyping(client, data) {
+        const { conversationId, userId, isTyping } = data;
+        this.logger.debug('handleTyping', data);
+        if (userId !== client.data.userId) {
+            return { success: false, error: 'Non autorisé' };
+        }
+        try {
+            client.to(conversationId).emit('typing', {
+                conversationId,
+                userId,
+                isTyping,
+                timestamp: new Date().toISOString()
+            });
+            return { success: true };
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de l'envoi du statut de frappe: ${error.message}`);
+            return { success: false, error: error.message };
+        }
+    }
     handleIcebreakerReady(client, conversationId) {
         const userId = client.data.userId;
         this.server.to(conversationId).emit('icebreakerReady', {
@@ -156,6 +176,14 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", Promise)
 ], ChatGateway.prototype, "handleSendMessage", null);
+__decorate([
+    (0, websockets_1.SubscribeMessage)('typing'),
+    __param(0, (0, websockets_1.ConnectedSocket)()),
+    __param(1, (0, websockets_1.MessageBody)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
+    __metadata("design:returntype", void 0)
+], ChatGateway.prototype, "handleTyping", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('icebreakerReady'),
     __param(0, (0, websockets_1.ConnectedSocket)()),

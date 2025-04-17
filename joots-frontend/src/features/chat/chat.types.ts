@@ -1,6 +1,5 @@
 import { User } from '@/features/user/user.types';
-import { Conversation } from '@/features/conversations/conversation.types';
-import { ConnectionStatus } from '@/features/contacts/contacts.types';
+import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types';
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
@@ -24,14 +23,12 @@ export interface Message {
 export interface ChatState {
   messages: Record<string, Message[]>;
   conversations: Record<string, Conversation>;
-  connectionStatus: ConnectionStatus;
   activeConversationId: string | null;
   error: string | null;
 }
 
 export type ChatActions = {
   // Connection actions
-  setConnectionStatus: (status: ConnectionStatus) => void;
   setActiveConversation: (conversationId: string | null) => void;
   setError: (error: string | null) => void;
 
@@ -39,12 +36,17 @@ export type ChatActions = {
   addMessage: (conversationId: string, message: Message) => void;
   updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) => void;
   markMessagesAsRead: (conversationId: string) => void;
-  initializeConversationMessages: (conversationId: string, messages: Message[]) => void;
+  initializeConversation: (conversation: Conversation) => void;
+
 
   // Conversation actions
   updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
-  setParticipantOnlineStatus: (participantId: string, isOnline: boolean) => void;
-  setParticipantTypingStatus: (participantId: string, isTyping: boolean) => void; 
+  updateParticipantField: <K extends keyof ConversationParticipant>(
+    conversationId: string,
+    participantId: string,
+    field: K,
+    value: ConversationParticipant[K]
+  ) => void; 
 }
 
 export type ChatStore = ChatState & ChatActions; 

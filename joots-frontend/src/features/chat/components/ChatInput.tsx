@@ -16,9 +16,11 @@ export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, cu
   const [message, setMessage] = useState('');
   const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
   const [sendAttempted, setSendAttempted] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useUserStore();
-  const { isConnected, sendMessage } = useChatSocket();
+  const { isConnected, sendMessage, sendTypingStatus } = useChatSocket();
   
 
   
@@ -32,7 +34,36 @@ export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, cu
     }
   };
 
-  
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newMessage = e.target.value;
+    setMessage(newMessage);
+
+    // Gérer le statut de frappe
+    if (!isTyping) {
+      setIsTyping(true);
+      sendTypingStatus(conversationId, true);
+    }
+
+    // Réinitialiser le timeout
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    // Définir un nouveau timeout pour arrêter le statut de frappe après 3 secondes d'inactivité
+    typingTimeoutRef.current = setTimeout(() => {
+      setIsTyping(false);
+      sendTypingStatus(conversationId, false);
+    }, 3000);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
@@ -96,7 +127,7 @@ export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, cu
           <input
             type="text"
             value={message}
-            onChange={(e) => setMessage(e.target.value)}
+            onChange={handleInputChange}
             placeholder={isConnected ? "Écrivez votre message..." : "Reconnexion en cours..."}
             className={`w-full rounded-lg border ${!isConnected ? 'border-orange-300 bg-orange-50' : 'border-gray-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />

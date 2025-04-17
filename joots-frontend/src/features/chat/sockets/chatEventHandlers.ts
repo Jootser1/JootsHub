@@ -48,15 +48,19 @@ export function handleNewMessageEvent(message: any) {
 // Handler pour 'userTyping' event
 export function handleTypingEvent(data: any) {
   try {
-    // Ex: update typing indicator in the store
     const conversationId = data?.conversationId;
-    if (conversationId) {
-      console.log('User typing in conversation', conversationId, data);
+    const userId = data?.userId;
+    const isTyping = data?.isTyping;
+
+    if (conversationId && userId) {
+      chatStore.updateParticipantField(conversationId, userId, 'isTyping', isTyping);
+      logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`);
     }
   } catch (error) {
     logger.error('Erreur lors du traitement du statut de frappe:', error);
   }
 }
+
 
 // Handler pour 'messageRead' event
 export function handleMessageReadEvent(data: any) {

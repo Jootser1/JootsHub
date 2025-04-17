@@ -49,6 +49,17 @@ export declare class ChatGateway extends BaseGateway {
         error: any;
         message?: undefined;
     }>;
+    handleTyping(client: Socket, data: {
+        conversationId: string;
+        userId: string;
+        isTyping: boolean;
+    }): {
+        success: boolean;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+    };
     handleIcebreakerReady(client: Socket, conversationId: string): {
         success: boolean;
     };

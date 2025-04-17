@@ -1,14 +1,30 @@
 import { User } from '@/features/user/user.types';
 import { useChatStore } from '@/features/chat/stores/chatStore';
+import { useEffect, useState, useMemo } from 'react';
+import { useContactStore } from '@/features/contacts/stores/contactStore';
+
 interface ChatHeaderProps {
   otherUser: User;
   isOnline: boolean;
   isTyping?: boolean;
+  conversationId: string;
 }
 
-export const ChatHeader = ({ otherUser, isOnline }: ChatHeaderProps) => {
-  const isTyping = useChatStore((state) => state.isTyping);
-  console.log('isOnline', isOnline);
+export const ChatHeader = ({ otherUser, isOnline: initialIsOnline, conversationId }: ChatHeaderProps) => {
+  // Écoute réactive du statut "isTyping" depuis le store
+  const isTyping = useChatStore((state) => {
+    console.log('[ChatHeader] state:', state);
+    const conversation = state.conversations[conversationId];
+    console.log('[ChatHeader] conversation:', conversation);
+    const participant = conversation?.participants.find(p => p.userId === otherUser.id);
+    console.log('[ChatHeader] isTyping update:', participant?.isTyping);
+    return participant?.isTyping || false;
+  });
+
+  // Écoute réactive du statut "isOnline" depuis un selector du contactStore
+  const isOnline = useContactStore((state) => state.isUserOnline(otherUser.id));
+
+
   return (
     <div className="flex items-center justify-between p-4 border-b border-gray-200">
       <div className="flex items-center space-x-3">

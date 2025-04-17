@@ -7,7 +7,7 @@ interface ContactStore {
   contactList: Set<string>;
 
   // État en ligne - uniquement pour les contacts
-  onlineUsers: Set<string>;
+  onlineContacts: Set<string>;
   
   // Cache des utilisateurs - uniquement pour les contacts
   userCache: Record<string, User & { lastSeen: number }>;
@@ -34,7 +34,7 @@ export const useContactStore = create<ContactStore>()(
   persist(
     (set, get) => ({
       contactList: new Set<string>(),
-      onlineUsers: new Set<string>(),
+      onlineContacts: new Set<string>(),
       userCache: {},
       
       // Fonctions de gestion des contacts
@@ -50,13 +50,13 @@ export const useContactStore = create<ContactStore>()(
           updatedContacts.delete(userId);
           
           // Nettoyage des données associées
-          const updatedOnlineUsers = new Set(state.onlineUsers);
-          updatedOnlineUsers.delete(userId);
+          const updatedOnlineContacts = new Set(state.onlineContacts);
+          updatedOnlineContacts.delete(userId);
           const { [userId]: _, ...remainingUserCache } = state.userCache;
           
           return { 
             contactList: updatedContacts,
-            onlineUsers: updatedOnlineUsers,
+            onlineContacts: updatedOnlineContacts,
             userCache: remainingUserCache
           };
         }),
@@ -68,20 +68,20 @@ export const useContactStore = create<ContactStore>()(
         if (!isContact) return; // Ignorer les non-contacts
         
         set((state) => {
-          const updatedOnlineUsers = new Set(state.onlineUsers);
+          const updatedOnlineContacts = new Set(state.onlineContacts);
           if (isOnline) {
-            updatedOnlineUsers.add(userId);
+            updatedOnlineContacts.add(userId);
           } else {
-            updatedOnlineUsers.delete(userId);
+            updatedOnlineContacts.delete(userId);
           }
-          return { onlineUsers: updatedOnlineUsers };
+          return { onlineContacts: updatedOnlineContacts };
         });
       },
 
       isUserOnline: (userId) => {
         const isContact = get().isContact(userId);
         if (!isContact) return false;
-        return get().onlineUsers.has(userId);
+        return get().onlineContacts.has(userId);
       },
       
       // Fonctions de cache - uniquement pour les contacts
@@ -128,7 +128,7 @@ export const useContactStore = create<ContactStore>()(
       partialize: (state) => ({
         // Nous persistons la liste des contacts et leur cache
         contactList: Array.from(state.contactList),
-        onlineUsers: Array.from(state.onlineUsers),
+        onlineContacts: Array.from(state.onlineContacts),
         userCache: state.userCache,
       }),
       onRehydrateStorage: () => (state) => {
@@ -136,8 +136,8 @@ export const useContactStore = create<ContactStore>()(
           if (Array.isArray(state.contactList)) {
             state.contactList = new Set(state.contactList);
           }
-          if (Array.isArray(state.onlineUsers)) {
-            state.onlineUsers = new Set(state.onlineUsers);
+          if (Array.isArray(state.onlineContacts)) {
+              state.onlineContacts = new Set(state.onlineContacts);
           }
         }
       },

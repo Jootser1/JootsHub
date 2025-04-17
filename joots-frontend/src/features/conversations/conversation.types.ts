@@ -6,6 +6,7 @@ export interface ConversationParticipant {
     conversationId: string;
     userId: string;
     user: User;
+    isTyping?: boolean;
   }
  
 

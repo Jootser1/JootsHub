@@ -27,9 +27,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         const conversationData = response.data;
         setConversation(conversationData);
         
-        // Ajout des messages historiques au chatStore
-        if (conversationData.messages) {
-          useChatStore.getState().initializeConversationMessages(conversationData.id, conversationData.messages);
+        // Ajout de la conversation entière au chatStore
+        if (conversationData) {
+          useChatStore.getState().initializeConversation(conversationData);
         }
         useChatStore.getState().setActiveConversation(conversationData.id);
       } catch (error: any) {

@@ -142,6 +142,34 @@ export class ChatGateway extends BaseGateway {
     }
   }
   
+  @SubscribeMessage('typing')
+  handleTyping(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { conversationId: string; userId: string; isTyping: boolean }
+  ) {
+    const { conversationId, userId, isTyping } = data;
+    this.logger.debug('handleTyping', data);
+    // Vérifier que l'utilisateur est bien celui authentifié
+    if (userId !== client.data.userId) {
+      return { success: false, error: 'Non autorisé' };
+    }
+    
+    try {
+      // Émettre l'événement à tous les clients dans la conversation sauf l'émetteur
+      client.to(conversationId).emit('typing', {
+        conversationId,
+        userId,
+        isTyping,
+        timestamp: new Date().toISOString()
+      });
+      
+      return { success: true };
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi du statut de frappe: ${error.message}`);
+      return { success: false, error: error.message };
+    }
+  }
+  
   @SubscribeMessage('icebreakerReady')
   handleIcebreakerReady(
     @ConnectedSocket() client: Socket,
