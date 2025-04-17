@@ -14,7 +14,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
       return null
     case "icebreaker":
       return (
-        <Button variant="ghost" size="icon" className="rounded-full">
+        <Button variant="ghost" size="icon" className="rounded-full bg-black">
           <div className="relative w-12 h-12">
             <IcebreakerLogo size={size} />
           </div>
