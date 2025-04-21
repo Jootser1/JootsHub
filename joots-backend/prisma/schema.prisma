@@ -36,6 +36,7 @@ model User {
   username  String    @unique
   isOnline  Boolean     @default(false)
   isAvailableForChat Boolean @default(true)
+  groups QuestionGroup[]
   sentMessages     Message[] @relation("SentMessages")
   conversations    ConversationParticipant[]
   contacts      UserContact[] @relation("UserContacts")
@@ -91,6 +92,72 @@ model Message {
   @@index([conversationId])
   @@index([senderId])
 }
+
+model QuestionGroup {
+  id           String                   @id @default(uuid())
+  type         Int                      // 1: Oui/Non/IDK, 2: QCM, 3: Échelle
+  authorId     String
+  author       User @relation(fields: [authorId], references: [id])
+  createdAt    DateTime                 @default(now())
+  isModerated  Boolean                  @default(false)
+  moderatedAt  DateTime?
+  pinned       Boolean                  @default(false)
+  enabled      Boolean                  @default(true)
+
+  questions    Question[]
+  options      QuestionOption[]
+  categories   QuestionGroupCategory[]
+}
+
+model Question {
+  id        String         @id @default(uuid())
+  groupId   String
+  locale    String         // 'fr_FR', 'en_US', etc.
+  question  String
+
+  group     QuestionGroup  @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId, locale])
+}
+
+model QuestionOption {
+  id       String          @id @default(uuid())
+  groupId  String
+  locale   String
+  label    String
+  order    Int
+
+  group    QuestionGroup   @relation(fields: [groupId], references: [id])
+
+  @@unique([groupId, locale, order])
+}
+
+model Category {
+  id              Int                       @id
+  translations    CategoryTranslation[]
+  groupLinks      QuestionGroupCategory[]
+}
+
+model CategoryTranslation {
+  categoryId  Int
+  locale      String
+  label       String
+
+  category    Category   @relation(fields: [categoryId], references: [id])
+
+  @@id([categoryId, locale])
+}
+
+model QuestionGroupCategory {
+  questionGroupId String
+  categoryId      Int
+
+  questionGroup   QuestionGroup @relation(fields: [questionGroupId], references: [id])
+  category        Category      @relation(fields: [categoryId], references: [id])
+
+  @@id([questionGroupId, categoryId])
+}
+
 
 
 
