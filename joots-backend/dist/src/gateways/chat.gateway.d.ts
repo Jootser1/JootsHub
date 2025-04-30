@@ -33,12 +33,12 @@ export declare class ChatGateway extends BaseGateway {
             createdAt: Date;
             sender: {
                 id: string;
-                avatar: string | null;
                 username: string;
+                avatar: string | null;
             };
             id: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -64,9 +64,17 @@ export declare class ChatGateway extends BaseGateway {
         conversationId: string;
         userId: string;
         isIcebreakerReady: boolean;
-    }): {
+    }): Promise<{
         success: boolean;
-    };
+        userId: string;
+        isIcebreakerReady: boolean;
+        error?: undefined;
+    } | {
+        success: boolean;
+        error: any;
+        userId?: undefined;
+        isIcebreakerReady?: undefined;
+    }>;
     handleIcebreakerResponse(client: Socket, data: {
         conversationId: string;
         response: any;

@@ -10,11 +10,11 @@ export declare class ConversationsController {
     constructor(conversationsService: ConversationsService);
     findAll(req: AuthenticatedRequest): Promise<({
         messages: {
-            id: string;
             createdAt: Date;
+            id: string;
             conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -27,25 +27,25 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
-            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
+            conversationId: string;
         })[];
     } & {
-        id: string;
         createdAt: Date;
+        id: string;
         updatedAt: Date;
     })[]>;
     findOne(id: string, req: AuthenticatedRequest): Promise<{
         messages: {
-            id: string;
             createdAt: Date;
+            id: string;
             conversationId: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -58,16 +58,16 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
-            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
+            conversationId: string;
         })[];
     } & {
-        id: string;
         createdAt: Date;
+        id: string;
         updatedAt: Date;
     }>;
     findMessages(id: string, req: AuthenticatedRequest): Promise<({
@@ -77,11 +77,11 @@ export declare class ConversationsController {
             username: string;
         };
     } & {
-        id: string;
         createdAt: Date;
+        id: string;
         conversationId: string;
-        content: string;
         senderId: string;
+        content: string;
         editedAt: Date | null;
         isRead: boolean;
         isDeleted: boolean;
@@ -97,16 +97,16 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            userId: string;
             createdAt: Date;
             updatedAt: Date;
-            userId: string;
-            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
+            conversationId: string;
         })[];
     } & {
-        id: string;
         createdAt: Date;
+        id: string;
         updatedAt: Date;
     }>;
 }

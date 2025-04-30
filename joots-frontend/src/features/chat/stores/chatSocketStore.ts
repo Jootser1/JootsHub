@@ -135,7 +135,7 @@ getActiveConversation: (): string | null => {
 sendIcebreakerReady: (conversationId: string, isIcebreakerReady: boolean) => {
     const chatSocket = get().chatSocket as ChatSocketService;
     const userId = chatSocket.getUserId();
-    if (chatSocket?.isConnected()) {
+    if (userId && chatSocket?.isConnected()) {
         chatSocket.sendIcebreakerReady(conversationId, userId, isIcebreakerReady);
     }
 },

@@ -169,21 +169,69 @@ export class ChatGateway extends BaseGateway {
   }
   
   @SubscribeMessage('icebreakerReady')
-  handleIcebreakerReady(
+  async handleIcebreakerReady(
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversationId: string; userId: string; isIcebreakerReady: boolean  }
   ) {
     const { conversationId, userId, isIcebreakerReady } = data;
     console.log("icebreakerReady", userId, conversationId, isIcebreakerReady);
-    
-    this.server.to(conversationId).emit('icebreakerReady', {
-      userId,
-      conversationId,
-      isIcebreakerReady,
-      timestamp: new Date().toISOString()
-    });
-    
-    return { success: true };
+
+    // Vérifier que l'utilisateur est bien celui authentifié
+    if (userId !== client.data.userId) {
+      return { success: false, error: 'Non autorisé' };
+    }
+
+    try {
+      // Vérifier si la conversation existe
+      const conversation = await this.prisma.conversation.findUnique({
+        where: { id: conversationId }
+      });
+      
+      if (!conversation) {
+        return { success: false, error: 'Conversation non trouvée' };
+      }
+
+      // Mettre à jour le statut de isIcebreakerReady pour l'utilisateur dans la conversation
+      await this.prisma.conversationParticipant.updateMany({
+        where: {
+          conversationId: conversationId,
+          userId: userId
+        },
+        data: {
+          isIcebreakerReady: isIcebreakerReady
+        }
+      });
+      
+      try {
+        await this.redis.hset(
+          `conversation:${conversationId}:participants`,
+          userId,
+          JSON.stringify({
+            isIcebreakerReady: isIcebreakerReady,
+            timestamp: new Date().toISOString()
+          })
+        );
+      } catch (redisError) {
+        // Log l'erreur Redis mais continue (non bloquant)
+        this.logger.error(`Erreur lors de la sauvegarde dans Redis: ${redisError.message}`);
+      }
+      
+      client.join(conversationId); // S'assurer que l'émetteur est dans la salle
+      this.server.to(conversationId).emit('icebreakerStatusUpdated', {
+        userId,
+        conversationId,
+        isIcebreakerReady,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Log pour confirmer la mise à jour
+      this.logger.log(`Statut de isIcebreakerReady mis à jour pour l'utilisateur ${userId} dans la conversation ${conversationId}: ${isIcebreakerReady}`);
+            
+      return { success: true, userId: userId, isIcebreakerReady: isIcebreakerReady };
+    } catch (error) {
+      this.logger.error(`Erreur lors de l'envoi du message: ${error.message}`);
+      return { success: false, error: error.message };
+    }
   }
   
   @SubscribeMessage('icebreakerResponse')

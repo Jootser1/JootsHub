@@ -4,7 +4,6 @@ import { Message, ChatState, ChatStore, MessageStatus} from '@/features/chat/cha
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 import { Conversation } from '@/features/conversations/conversation.types';
 import { getOtherParticipant, isCurrentUserSender, getUnreadCount } from '../../conversations/utils/conversationUtils';
-import { ensureDate } from '@/utils/dateUtils';
 import { ConversationParticipant } from '@/features/conversations/conversation.types';
 
 
@@ -156,7 +155,6 @@ export const useChatStore = create<ChatStore>()(
   }),
   
   
-  
   // Icebreaker actions
   setIcebreakerReady: (conversationId: string, isCurrentUser: boolean) =>
     set((state) => {
@@ -277,6 +275,29 @@ export const useChatStore = create<ChatStore>()(
       [conversation.id]: conversation.messages || [],
     },
   })),
+
+  getParticipant: (conversationId: string, userId: string) => {
+    const conversation = get().conversations[conversationId];
+    return conversation?.participants.find(participant => participant.userId === userId);
+  },
+
+  getOtherParticipant: (conversationId: string, userId: string) => {
+    const conversation = get().conversations[conversationId];
+    return conversation?.participants.find(participant => participant.userId !== userId);
+  },
+
+  getOtherParticipantId: (conversationId: string, userId: string) => {
+    const conversation = get().conversations[conversationId];
+    return conversation?.participants.find(participant => participant.userId !== userId)?.userId;
+  },
+
+  getOtherParticipantIcebreakerStatus: (conversationId: string, userId: string) => {
+    const conversation = get().conversations[conversationId];
+    if (!conversation) return undefined;
+    // Trouver l'autre participant
+    const otherParticipant = conversation.participants.find(participant => participant.userId !== userId);
+    return otherParticipant?.isIcebreakerReady;
+  },
 }),
 { name: 'chat-store' }
 )

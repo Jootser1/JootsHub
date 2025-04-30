@@ -7,6 +7,8 @@ export interface ConversationParticipant {
     userId: string;
     user: User;
     isTyping?: boolean;
+    isIcebreakerReady?: boolean;
+    icebreakerTimestamp?: string;
   }
  
 

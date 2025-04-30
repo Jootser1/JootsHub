@@ -135,7 +135,6 @@ export class ChatSocketService extends BaseSocketService {
     logger.info('Événements chat désenregistrés');
   }
 
-
   joinConversation(conversationId: string): void {
     if (!this.socket?.connected) {
       logger.warn('Impossible de rejoindre la conversation: non connecté');
@@ -244,7 +243,6 @@ export class ChatSocketService extends BaseSocketService {
       logger.warn('Impossible d\'envoyer le statut de Icebreaker ready: non connecté');
       return;
     }
-    console.log("sendIcebreakerReady", conversationId, isIcebreakerReady)
     this.socket.emit('icebreakerReady', { 
       conversationId, 
       userId: userId,

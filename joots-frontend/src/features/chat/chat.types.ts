@@ -46,7 +46,10 @@ export type ChatActions = {
     participantId: string,
     field: K,
     value: ConversationParticipant[K]
-  ) => void; 
+  ) => void;
+  getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
+  getOtherParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
+  getOtherParticipantId: (conversationId: string, userId: string) => string | undefined;
 }
 
 export type ChatStore = ChatState & ChatActions; 

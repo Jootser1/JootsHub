@@ -128,16 +128,51 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return { success: false, error: error.message };
         }
     }
-    handleIcebreakerReady(client, data) {
+    async handleIcebreakerReady(client, data) {
         const { conversationId, userId, isIcebreakerReady } = data;
         console.log("icebreakerReady", userId, conversationId, isIcebreakerReady);
-        this.server.to(conversationId).emit('icebreakerReady', {
-            userId,
-            conversationId,
-            isIcebreakerReady,
-            timestamp: new Date().toISOString()
-        });
-        return { success: true };
+        if (userId !== client.data.userId) {
+            return { success: false, error: 'Non autorisé' };
+        }
+        try {
+            const conversation = await this.prisma.conversation.findUnique({
+                where: { id: conversationId }
+            });
+            if (!conversation) {
+                return { success: false, error: 'Conversation non trouvée' };
+            }
+            await this.prisma.conversationParticipant.updateMany({
+                where: {
+                    conversationId: conversationId,
+                    userId: userId
+                },
+                data: {
+                    isIcebreakerReady: isIcebreakerReady
+                }
+            });
+            try {
+                await this.redis.hset(`conversation:${conversationId}:participants`, userId, JSON.stringify({
+                    isIcebreakerReady: isIcebreakerReady,
+                    timestamp: new Date().toISOString()
+                }));
+            }
+            catch (redisError) {
+                this.logger.error(`Erreur lors de la sauvegarde dans Redis: ${redisError.message}`);
+            }
+            client.join(conversationId);
+            this.server.to(conversationId).emit('icebreakerStatusUpdated', {
+                userId,
+                conversationId,
+                isIcebreakerReady,
+                timestamp: new Date().toISOString()
+            });
+            this.logger.log(`Statut de isIcebreakerReady mis à jour pour l'utilisateur ${userId} dans la conversation ${conversationId}: ${isIcebreakerReady}`);
+            return { success: true, userId: userId, isIcebreakerReady: isIcebreakerReady };
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de l'envoi du message: ${error.message}`);
+            return { success: false, error: error.message };
+        }
     }
     handleIcebreakerResponse(client, data) {
         const userId = client.data.userId;
@@ -190,7 +225,7 @@ __decorate([
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
-    __metadata("design:returntype", void 0)
+    __metadata("design:returntype", Promise)
 ], ChatGateway.prototype, "handleIcebreakerReady", null);
 __decorate([
     (0, websockets_1.SubscribeMessage)('icebreakerResponse'),

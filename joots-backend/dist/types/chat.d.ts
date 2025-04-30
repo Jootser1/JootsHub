@@ -15,6 +15,8 @@ export interface ConversationParticipant {
     conversationId: string;
     userId: string;
     user: User;
+    isIcebreakerReady: boolean;
+    hasGivenAnswer: boolean;
 }
 export interface Conversation {
     id: string;
@@ -25,8 +27,6 @@ export interface Conversation {
     lastMessage?: Message;
     unreadCount: number;
     icebreakerStatus: {
-        senderReady: boolean;
-        receiverReady: boolean;
         currentQuestion?: string;
     };
 }

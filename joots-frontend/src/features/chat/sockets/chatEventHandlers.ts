@@ -61,7 +61,6 @@ export function handleTypingEvent(data: any) {
   }
 }
 
-
 // Handler pour 'messageRead' event
 export function handleMessageReadEvent(data: any) {
   try {
@@ -74,3 +73,24 @@ export function handleMessageReadEvent(data: any) {
     logger.error('Erreur lors du traitement de la lecture du message:', error);
   }
 }
+
+// Handler pour 'icebreakerStatusUpdated' event
+export function handleIcebreakerStatusUpdatedEvent(data: any) {
+  try {
+    const conversationId = data?.conversationId;
+    const userId = data?.userId;
+    const isIcebreakerReady = data?.isIcebreakerReady;
+    const timestamp = data?.timestamp;
+
+    if (conversationId && userId) {
+        chatStore.updateParticipantField(conversationId, userId, 'isIcebreakerReady', isIcebreakerReady);
+        chatStore.updateParticipantField(conversationId, userId, 'icebreakerTimestamp', timestamp);
+    }
+
+    console.log('icebreakerStatusUpdated', conversationId, userId, isIcebreakerReady, timestamp);
+
+  } catch (error) {
+    logger.error('Erreur lors du traitement de la mise à jour du statut de l\'icebreaker:', error);
+  }
+}
+
