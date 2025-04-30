@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { User } from '@/features/user/user.types';
-
+import { devtools } from 'zustand/middleware';
 interface ContactStore {
   // Liste des utilisateurs avec qui on a une conversation
   contactList: Set<string>;
@@ -31,6 +31,7 @@ interface ContactStore {
 }
 
 export const useContactStore = create<ContactStore>()(
+  devtools(
   persist(
     (set, get) => ({
       contactList: new Set<string>(),
@@ -143,4 +144,4 @@ export const useContactStore = create<ContactStore>()(
       },
     }
   )
-); 
+)); 

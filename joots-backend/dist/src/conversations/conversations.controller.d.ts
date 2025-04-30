@@ -27,8 +27,12 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;
@@ -54,8 +58,12 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;
@@ -89,8 +97,12 @@ export declare class ConversationsController {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;

@@ -4,9 +4,9 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     getUsers(): Promise<{
         id: string;
+        createdAt: Date;
         avatar: string | null;
         bio: string | null;
-        createdAt: Date;
         updatedAt: Date;
         userNumber: number;
         username: string;
@@ -30,9 +30,9 @@ export declare class UsersController {
     }>;
     updateChatPreference(id: string, isAvailableForChat: boolean): Promise<{
         id: string;
+        createdAt: Date;
         avatar: string | null;
         bio: string | null;
-        createdAt: Date;
         updatedAt: Date;
         userNumber: number;
         username: string;

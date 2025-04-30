@@ -1,10 +1,8 @@
 "use client"
 
 import { useEffect, useState, use } from "react"
-import { useSession } from "next-auth/react"
-import { useParams } from "next/navigation"
 import axiosInstance from "@/app/api/axiosInstance"
-import Layout from '@/components/Layout'
+import AppLayout from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from "sonner"
 import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils'
@@ -12,6 +10,8 @@ import { Conversation } from '@/features/conversations/conversation.types'
 import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
 import { useChatStore } from '@/features/chat/stores/chatStore'
 import { useUserStore } from "@/features/user/stores/userStore"
+import { ExperienceLogo } from "@/components/ExperienceLogo"    
+
 
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,6 +19,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const user = useUserStore((state) => state.user)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
   
   useEffect(() => {
     const fetchConversation = async () => {
@@ -38,6 +39,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
         setIsLoading(false)
       }
     }
+
+
     
     if (user && resolvedParams.id) {
       fetchConversation()
@@ -81,14 +84,21 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <Layout experience="icebreaker">
+    <AppLayout>
       <ChatSocketProvider conversation={conversation}>
-        <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full">
-          <ChatContainer 
-            conversation={conversation}
-          />
-        </div>
+        <ConversationContent conversation={conversation} />
       </ChatSocketProvider>
-    </Layout>
+    </AppLayout>
   )
 } 
+
+
+function ConversationContent({ conversation }: { conversation: Conversation}) {
+
+  return (
+    <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full">
+      <ChatContainer conversation={conversation} />
+      <ExperienceLogo experience="icebreaker"/>
+    </div>
+  );
+}

@@ -78,7 +78,6 @@ export class ChatGateway extends BaseGateway {
     @MessageBody() data: { conversationId: string; content: string; userId: string }
   ) {
     const { conversationId, content, userId } = data;
-    this.logger.debug('handleSendMessage', data);
     
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
@@ -148,7 +147,6 @@ export class ChatGateway extends BaseGateway {
     @MessageBody() data: { conversationId: string; userId: string; isTyping: boolean }
   ) {
     const { conversationId, userId, isTyping } = data;
-    this.logger.debug('handleTyping', data);
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
@@ -173,13 +171,15 @@ export class ChatGateway extends BaseGateway {
   @SubscribeMessage('icebreakerReady')
   handleIcebreakerReady(
     @ConnectedSocket() client: Socket,
-    @MessageBody() conversationId: string
+    @MessageBody() data: { conversationId: string; userId: string; isIcebreakerReady: boolean  }
   ) {
-    const userId = client.data.userId;
+    const { conversationId, userId, isIcebreakerReady } = data;
+    console.log("icebreakerReady", userId, conversationId, isIcebreakerReady);
     
     this.server.to(conversationId).emit('icebreakerReady', {
       userId,
       conversationId,
+      isIcebreakerReady,
       timestamp: new Date().toISOString()
     });
     

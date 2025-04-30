@@ -5,16 +5,10 @@ import { useChatSocket } from '@/features/chat/sockets/useChatSocket';
 
 interface ChatInputProps {
   conversationId: string;
-  currentUserId: string;
-  isIcebreakerReady: boolean;
-  currentQuestion?: string;
-  onIcebreakerReady: () => void;
-  onIcebreakerResponse: (response: IcebreakerResponse) => void;
 }
 
-export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, currentQuestion, onIcebreakerReady, onIcebreakerResponse }: ChatInputProps) => {
+export const ChatInput = ({ conversationId}: ChatInputProps) => {
   const [message, setMessage] = useState('');
-  const [showIcebreakerModal, setShowIcebreakerModal] = useState(false);
   const [sendAttempted, setSendAttempted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -109,10 +103,7 @@ export const ChatInput = ({ conversationId, currentUserId, isIcebreakerReady, cu
     }
   };
 
-  const handleIcebreakerClick = () => {
-    onIcebreakerReady();
-    setShowIcebreakerModal(true);
-  };
+  
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">

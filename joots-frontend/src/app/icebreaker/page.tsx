@@ -1,12 +1,13 @@
 "use client"
 
-import Layout from "@/components/Layout"
+import AppLayout from "@/components/AppLayout"
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, Search, Plus } from "lucide-react"
 import Link from "next/link"
 import { ConversationList } from "@/features/conversations/components/ConversationList"
 import { useRandomChat } from '@/features/conversations/hooks/useRandomChat'
 import { useUserStore } from "@/features/user/stores/userStore"
+import { ExperienceLogo } from "@/components/ExperienceLogo"
 
 
 
@@ -19,7 +20,8 @@ export default function IcebreakerHome() {
   }
 
   return (
-    <Layout experience="icebreaker">
+    <AppLayout>
+      
         <div className="max-w-md w-full mx-auto bg-white">
           {/* Header */}
           <div className="sticky top-0 z-10 bg-white border-b">
@@ -59,9 +61,11 @@ export default function IcebreakerHome() {
           {/* Conversations list */}
           <div className="flex-1 overflow-y-auto">
             <ConversationList />
+
           </div>
         </div>
-    </Layout>
+        <ExperienceLogo experience="hub" />
+    </AppLayout>
   )
 }
 

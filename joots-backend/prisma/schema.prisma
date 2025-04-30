@@ -36,7 +36,7 @@ model User {
   username  String    @unique
   isOnline  Boolean     @default(false)
   isAvailableForChat Boolean @default(true)
-  groups QuestionGroup[]
+  questionGroups QuestionGroup[]
   sentMessages     Message[] @relation("SentMessages")
   conversations    ConversationParticipant[]
   contacts      UserContact[] @relation("UserContacts")
@@ -72,6 +72,10 @@ model ConversationParticipant {
   userId        String
   conversation  Conversation @relation(fields: [conversationId], references: [id])
   user          User         @relation(fields: [userId], references: [id])
+  isIcebreakerReady   Boolean  @default(false)
+  hasGivenAnswer      Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
   @@id([conversationId, userId])
   @@unique([conversationId, userId])

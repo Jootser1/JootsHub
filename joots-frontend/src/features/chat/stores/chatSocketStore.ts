@@ -10,6 +10,8 @@ interface ChatSocketStoreState {
     disconnectChatSocket: () => void;
     sendChatMessage: (conversationId: string, content: string, userId: string) => boolean | Promise<boolean>;
     sendTypingStatus: (conversationId: string, isTyping: boolean) => void;
+    getActiveConversation: () => string | null;
+    sendIcebreakerReady: (conversationId: string, isIcebreakerReady: boolean) => void;
 }
 
 export const useChatSocketStore = create<ChatSocketStoreState>((set, get) => ({
@@ -122,6 +124,19 @@ sendTypingStatus: (conversationId: string, isTyping: boolean): void => {
     const chatSocket = get().chatSocket as ChatSocketService;
     if (chatSocket?.isConnected()) {
         chatSocket.sendTypingStatus(conversationId, isTyping);
+    }
+},
+
+getActiveConversation: (): string | null => {
+    const chatSocket = get().chatSocket as ChatSocketService;
+    return chatSocket ? chatSocket.getActiveConversation() : null;
+},
+
+sendIcebreakerReady: (conversationId: string, isIcebreakerReady: boolean) => {
+    const chatSocket = get().chatSocket as ChatSocketService;
+    const userId = chatSocket.getUserId();
+    if (chatSocket?.isConnected()) {
+        chatSocket.sendIcebreakerReady(conversationId, userId, isIcebreakerReady);
     }
 },
 })); 

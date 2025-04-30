@@ -28,7 +28,7 @@ export const useChatStore = create<ChatStore>()(
       ...initialState,
       
       // Connection actions
-     
+      
       setActiveConversation: (conversationId: string | null) =>
         set({ activeConversationId: conversationId }),
       
@@ -268,15 +268,15 @@ export const useChatStore = create<ChatStore>()(
   
   initializeConversation: (conversation: Conversation) =>
     set((state) => ({
-      conversations: {
-        ...state.conversations,
-        [conversation.id]: conversation,
-      },
-      messages: {
-        ...state.messages,
-        [conversation.id]: conversation.messages || [],
-      },
-    })),
+    conversations: {
+      ...state.conversations,
+      [conversation.id]: conversation,
+    },
+    messages: {
+      ...state.messages,
+      [conversation.id]: conversation.messages || [],
+    },
+  })),
 }),
 { name: 'chat-store' }
 )

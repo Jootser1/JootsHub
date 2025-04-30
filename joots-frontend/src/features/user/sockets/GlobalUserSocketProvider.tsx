@@ -24,10 +24,11 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
   useEffect(() => {
     const setupSocket = async () => {
       if (status !== 'authenticated'|| !session?.user?.id || !session?.accessToken) {
+        
         logger.debug('GlobalUserSocketProvider: Conditions non remplies pour la connexion', { status, userId: session?.user?.id });
         return;
       }
-      
+      console.log(status)
       logger.info('GlobalUserSocketProvider: Début de la configuration du socket');
       
       try {

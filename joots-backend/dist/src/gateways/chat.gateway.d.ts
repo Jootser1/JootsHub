@@ -60,7 +60,11 @@ export declare class ChatGateway extends BaseGateway {
         success: boolean;
         error: any;
     };
-    handleIcebreakerReady(client: Socket, conversationId: string): {
+    handleIcebreakerReady(client: Socket, data: {
+        conversationId: string;
+        userId: string;
+        isIcebreakerReady: boolean;
+    }): {
         success: boolean;
     };
     handleIcebreakerResponse(client: Socket, data: {

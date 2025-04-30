@@ -63,7 +63,6 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
     }
     async handleSendMessage(client, data) {
         const { conversationId, content, userId } = data;
-        this.logger.debug('handleSendMessage', data);
         if (userId !== client.data.userId) {
             return { success: false, error: 'Non autorisé' };
         }
@@ -112,7 +111,6 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
     }
     handleTyping(client, data) {
         const { conversationId, userId, isTyping } = data;
-        this.logger.debug('handleTyping', data);
         if (userId !== client.data.userId) {
             return { success: false, error: 'Non autorisé' };
         }
@@ -130,11 +128,13 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return { success: false, error: error.message };
         }
     }
-    handleIcebreakerReady(client, conversationId) {
-        const userId = client.data.userId;
+    handleIcebreakerReady(client, data) {
+        const { conversationId, userId, isIcebreakerReady } = data;
+        console.log("icebreakerReady", userId, conversationId, isIcebreakerReady);
         this.server.to(conversationId).emit('icebreakerReady', {
             userId,
             conversationId,
+            isIcebreakerReady,
             timestamp: new Date().toISOString()
         });
         return { success: true };
@@ -189,7 +189,7 @@ __decorate([
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [socket_io_1.Socket, String]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "handleIcebreakerReady", null);
 __decorate([

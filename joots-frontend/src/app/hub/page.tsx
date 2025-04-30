@@ -3,7 +3,7 @@
 import { useEffect, useState, TouchEvent } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import Layout from "@/components/Layout";
+import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { useUserStore } from "@/features/user/stores/userStore"
@@ -159,7 +159,7 @@ export default function HubPage() {
   }
 
   return (
-    <Layout>
+    <AppLayout>
       <div className="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden touch-pan-y">
         <div 
           className="carousel-container max-w-4xl w-full transition-transform duration-500 ease-in-out transform"
@@ -260,6 +260,6 @@ export default function HubPage() {
           ))}
         </div>
       </div>
-    </Layout>
+    </AppLayout>
   );
 }

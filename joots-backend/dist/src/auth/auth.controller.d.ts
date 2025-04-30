@@ -5,9 +5,9 @@ export declare class AuthController {
     constructor(authService: AuthService);
     register(email: string, password: string): Promise<{
         id: string;
+        createdAt: Date;
         avatar: string | null;
         bio: string | null;
-        createdAt: Date;
         updatedAt: Date;
         userNumber: number;
         username: string;
@@ -19,9 +19,9 @@ export declare class AuthController {
         user: {
             email: string;
             id: string;
+            createdAt: Date;
             avatar: string | null;
             bio: string | null;
-            createdAt: Date;
             updatedAt: Date;
             userNumber: number;
             username: string;

@@ -12,7 +12,8 @@ export const useChatSocket = () => {
     sendTypingStatus,
     connectChatSocket,
     disconnectChatSocket,
-    chatSocket
+    chatSocket,
+    getActiveConversation
   } = useChatSocketStore();
   
   return {
@@ -25,6 +26,8 @@ export const useChatSocket = () => {
     sendTypingStatus,
     connectChat: connectChatSocket,
     disconnectChat: disconnectChatSocket,
+    getActiveConversation,
+    sendIcebreakerReady: useChatSocketStore().sendIcebreakerReady,
     
     // Accès direct au service si nécessaire
     service: chatSocket

@@ -26,8 +26,12 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;
@@ -53,8 +57,12 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;
@@ -86,8 +94,12 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;
@@ -103,8 +115,12 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
+            createdAt: Date;
+            updatedAt: Date;
             userId: string;
             conversationId: string;
+            isIcebreakerReady: boolean;
+            hasGivenAnswer: boolean;
         })[];
     } & {
         id: string;

@@ -62,13 +62,7 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
       <div className="flex-1 overflow-y-auto">
         <ChatMessages messages={conversation?.messages || []} conversationId={conversationId} />
       </div>
-      <ChatInput 
-        conversationId={conversationId}
-        currentUserId={user.id}
-        isIcebreakerReady={isReady}
-        onIcebreakerReady={handleReady}
-        onIcebreakerResponse={handleResponse}
-      />
+      <ChatInput conversationId={conversationId} />
     </div>
   );
 }; 
