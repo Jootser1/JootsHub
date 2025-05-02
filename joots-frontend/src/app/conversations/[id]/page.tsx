@@ -5,7 +5,7 @@ import axiosInstance from "@/app/api/axiosInstance"
 import AppLayout from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from "sonner"
-import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils'
+import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils'
 import { Conversation } from '@/features/conversations/conversation.types'
 import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
 import { useChatStore } from '@/features/chat/stores/chatStore'
@@ -73,7 +73,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     )
   }
 
-  const otherUser = getOtherParticipant(conversation, user.id)
+  const otherUser = getOtherParticipantInConversation(conversation, user.id)
 
   if (!otherUser) {
     return (

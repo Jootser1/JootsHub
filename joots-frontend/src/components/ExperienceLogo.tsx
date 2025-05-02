@@ -15,16 +15,14 @@ interface ExperienceLogoProps {
 }
 
 export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
-  const { getParticipant, activeConversationId } = useChatStore();
+  const { getParticipant, getOtherParticipant, activeConversationId } = useChatStore();
   const user = useUserStore((state) => state.user);
 
   if (!user) return null;
   if (!activeConversationId) return null;
 
-  const currentUser = useChatStore.getState().getParticipant(activeConversationId, user.id);
-  const otherParticipant = useChatStore.getState().getOtherParticipant(activeConversationId, user.id);
-  console.log("currentUser", currentUser);
-  console.log("otherParticipant", otherParticipant);
+  const currentUser = getParticipant(activeConversationId, user.id);
+  const otherParticipant = getOtherParticipant(activeConversationId, user.id);
 
   const isCurrentUserReady = currentUser?.isIcebreakerReady;
   const isOtherParticipantReady = otherParticipant?.isIcebreakerReady;
@@ -41,10 +39,9 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   const handleClick = useCallback(() => {
     if (experience !== "icebreaker") return;
 
-    const conversationId = useChatSocketStore.getState().getActiveConversation();
-    console.log("conversationId", conversationId);    
-    if (conversationId) {
-      useChatSocketStore.getState().sendIcebreakerReady(conversationId, true);
+    console.log("conversationId", activeConversationId);    
+    if (activeConversationId) {
+      useChatSocketStore.getState().sendIcebreakerReady(activeConversationId, true);
     }
   }, [experience]);
 

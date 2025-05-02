@@ -33,12 +33,12 @@ export declare class ChatGateway extends BaseGateway {
             createdAt: Date;
             sender: {
                 id: string;
-                username: string;
                 avatar: string | null;
+                username: string;
             };
             id: string;
-            senderId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;

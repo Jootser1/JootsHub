@@ -4,7 +4,7 @@ import { Conversation } from '@/features/conversations/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils'
+import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils'
 import { useContactStore } from '@/features/contacts/stores/contactStore'
 import { useUserStore } from '@/features/user/stores/userStore'
 import { ensureDate } from '@/utils/dateUtils'
@@ -20,7 +20,7 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
   
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
-  const otherUser = currentUserId ? getOtherParticipant(conversation, currentUserId) : undefined
+  const otherUser = currentUserId ? getOtherParticipantInConversation(conversation, currentUserId) : undefined
   if (!otherUser) return null;
 
   // Récupérer le dernier message s'il existe

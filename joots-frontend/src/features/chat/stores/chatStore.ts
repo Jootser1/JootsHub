@@ -3,7 +3,7 @@ import { devtools } from 'zustand/middleware';
 import { Message, ChatState, ChatStore, MessageStatus} from '@/features/chat/chat.types'; 
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 import { Conversation } from '@/features/conversations/conversation.types';
-import { getOtherParticipant, isCurrentUserSender, getUnreadCount } from '../../conversations/utils/conversationUtils';
+import { getUnreadCount, getOtherParticipantInConversation } from '../../conversations/utils/conversationUtils';
 import { ConversationParticipant } from '@/features/conversations/conversation.types';
 
 
@@ -205,7 +205,7 @@ export const useChatStore = create<ChatStore>()(
     const conversation = state.conversations[conversationId];
     if (!conversation || !conversation.icebreakerStatus.currentQuestion) return state;
     
-    const otherParticipant = getOtherParticipant(conversation, conversation.participants[0].userId);
+    const otherParticipant = getOtherParticipantInConversation(conversation, conversation.participants[0].userId);
     if (!otherParticipant) return state;
     
     const newMessage: Message = {
@@ -297,6 +297,10 @@ export const useChatStore = create<ChatStore>()(
     // Trouver l'autre participant
     const otherParticipant = conversation.participants.find(participant => participant.userId !== userId);
     return otherParticipant?.isIcebreakerReady;
+  },
+
+  getConversation: (conversationId: string) => {
+    return get().conversations[conversationId];
   },
 }),
 { name: 'chat-store' }

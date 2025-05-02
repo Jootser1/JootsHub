@@ -9,11 +9,11 @@ export declare class ConversationsService {
     private readonly userSelect;
     findAll(userId: string): Promise<({
         messages: {
-            createdAt: Date;
             id: string;
+            createdAt: Date;
             conversationId: string;
-            senderId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -26,25 +26,25 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
+            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
-            conversationId: string;
         })[];
     } & {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         updatedAt: Date;
     })[]>;
     findOne(id: string, userId: string): Promise<{
         messages: {
-            createdAt: Date;
             id: string;
+            createdAt: Date;
             conversationId: string;
-            senderId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -57,16 +57,16 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
+            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
-            conversationId: string;
         })[];
     } & {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     findConversation(userId: string, receiverId: string): Promise<{
@@ -77,11 +77,11 @@ export declare class ConversationsService {
                 username: string;
             };
         } & {
-            createdAt: Date;
             id: string;
+            createdAt: Date;
             conversationId: string;
-            senderId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -94,16 +94,16 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
+            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
-            conversationId: string;
         })[];
     } & {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     create(userId: string, receiverId: string): Promise<{
@@ -115,16 +115,16 @@ export declare class ConversationsService {
                 isOnline: boolean;
             };
         } & {
-            userId: string;
             createdAt: Date;
             updatedAt: Date;
+            userId: string;
+            conversationId: string;
             isIcebreakerReady: boolean;
             hasGivenAnswer: boolean;
-            conversationId: string;
         })[];
     } & {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         updatedAt: Date;
     }>;
     findMessages(conversationId: string, userId: string): Promise<({
@@ -134,11 +134,11 @@ export declare class ConversationsService {
             username: string;
         };
     } & {
-        createdAt: Date;
         id: string;
+        createdAt: Date;
         conversationId: string;
-        senderId: string;
         content: string;
+        senderId: string;
         editedAt: Date | null;
         isRead: boolean;
         isDeleted: boolean;

@@ -5,22 +5,32 @@ import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
 import { useIcebreaker } from '@/features/icebreakers/hooks/useIcebreaker';
-import { getOtherParticipant } from '@/features/conversations/utils/conversationUtils';
+import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { useChatStore } from '../stores/chatStore';
-
+import IcebreakerModal from '@/features/icebreakers/components/IcebreakerModal';
 
 interface ChatContainerProps {
   conversation: Conversation;
 }
 
 export const ChatContainer = ({ conversation }: ChatContainerProps) => {
-  const conversationId = useChatStore((state) => state.activeConversationId);
-  const { isReady, handleReady, handleResponse } = useIcebreaker(conversationId || '');
-  const { user } = useUserStore();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const { activeConversationId, getParticipant, getOtherParticipant} = useChatStore();
+  const user = useUserStore((state) => state.user);
 
+  if (!user?.id) return null;
+  const otherParticipant = getOtherParticipantInConversation(conversation, user.id);
+
+  const { isReady, handleReady, handleResponse } = useIcebreaker(activeConversationId || '');
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  if (!activeConversationId) return null;
+  const isCurrentUserReady = getParticipant(activeConversationId, user.id)?.isIcebreakerReady;
+  const isOtherParticipantReady = getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady;  
+
+  const [isModalOpen, setModalOpen] = useState(false);
+
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -36,9 +46,16 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
     };
   }, [conversation?.messages.length]);
 
+  // Ouvrir la modale si les deux participants sont prêts
+  useEffect(() => {
+    if (isCurrentUserReady && isOtherParticipantReady) {
+      setModalOpen(true);
+    }
+  }, [isCurrentUserReady, isOtherParticipantReady]);
 
 
-  if (!conversationId) {
+
+  if (!activeConversationId) {
     return <div className="flex items-center justify-center h-full">Conversation non trouvée</div>;
   }
 
@@ -46,7 +63,7 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
     return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
   }
   
-  const otherUser = getOtherParticipant(conversation, user.id);
+  const otherUser = getOtherParticipantInConversation(conversation, user.id);
 
   if (!otherUser) {
     return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
@@ -57,12 +74,13 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
       <ChatHeader 
         otherUser={otherUser} 
         isOnline={otherUser.isOnline} 
-        conversationId={conversationId}
+        conversationId={activeConversationId}
       />
+       <IcebreakerModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
       <div className="flex-1 overflow-y-auto">
-        <ChatMessages messages={conversation?.messages || []} conversationId={conversationId} />
+        <ChatMessages messages={conversation?.messages || []} conversationId={activeConversationId} />
       </div>
-      <ChatInput conversationId={conversationId} />
+      <ChatInput conversationId={activeConversationId} />
     </div>
   );
 }; 

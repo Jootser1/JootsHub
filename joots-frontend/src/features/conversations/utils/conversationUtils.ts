@@ -2,7 +2,7 @@ import { Conversation, ConversationParticipant } from '@/features/conversations/
 import { User } from '@/features/user/user.types';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
 
-export const getOtherParticipant = (conversation: Conversation, currentUserId: string): User | undefined => {
+export const getOtherParticipantInConversation = (conversation: Conversation, currentUserId: string): User | undefined => {
   const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId);
   if (!otherParticipant) return undefined;
   
