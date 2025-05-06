@@ -3,7 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const fs = require("fs");
 const prisma = new client_1.PrismaClient();
-const authorId = 'cm972ep2g0000iums4nxf25p0';
+console.log('As tu bien pensé à changer le userId de Jootser 1 dans ton fichier seed.ts ?');
+const authorId = 'cma9q0ey90000iuo2olvj4b6h';
 const CATEGORY_TRANSLATIONS = [
     { id: 1, fr: 'Spiritualité', en: 'Spirituality' },
     { id: 2, fr: 'News & Politique', en: 'News & Politics' },
@@ -41,7 +42,7 @@ async function main() {
         });
     }
     console.log('Seeding questions from JSON...');
-    const filePath = 'prisma/questions_structured_iso.json';
+    const filePath = 'prisma/questions_structured_output.json';
     console.log(filePath);
     const rawData = fs.readFileSync(filePath, 'utf-8');
     const groups = JSON.parse(rawData);

@@ -9,6 +9,8 @@ import { GatewaysModule } from './gateways/gateways.module';
 import { ConfigModule } from '@nestjs/config';
 import { ConversationsModule } from './conversations/conversations.module';
 import { MessagesModule } from './messages/messages.module';
+import { QuestionModule } from './questions/question.module';
+import { IcebreakerModule } from './icebreakers/icebreaker.module';
 
 @Module({
   imports: [
@@ -21,7 +23,9 @@ import { MessagesModule } from './messages/messages.module';
     LoggerModule,
     GatewaysModule,
     ConversationsModule,
-    MessagesModule
+    MessagesModule,
+    QuestionModule,
+    IcebreakerModule
   ],
   controllers: [AppController],
   providers: [AppService],

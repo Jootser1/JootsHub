@@ -19,13 +19,19 @@ const socket_io_1 = require("socket.io");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const base_gateway_1 = require("./base.gateway");
 const redis_service_1 = require("../redis/redis.service");
+const question_service_1 = require("../questions/question.service");
+const icebreaker_service_1 = require("../icebreakers/icebreaker.service");
 let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseGateway {
     prisma;
     redis;
-    constructor(prisma, redis) {
+    questionService;
+    icebreakerService;
+    constructor(prisma, redis, questionService, icebreakerService) {
         super(ChatGateway_1.name);
         this.prisma = prisma;
         this.redis = redis;
+        this.questionService = questionService;
+        this.icebreakerService = icebreakerService;
     }
     handleConnection(client) {
         const userId = client.data.userId;
@@ -135,38 +141,13 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return { success: false, error: 'Non autorisé' };
         }
         try {
-            const conversation = await this.prisma.conversation.findUnique({
-                where: { id: conversationId }
-            });
-            if (!conversation) {
-                return { success: false, error: 'Conversation non trouvée' };
-            }
-            await this.prisma.conversationParticipant.updateMany({
-                where: {
-                    conversationId: conversationId,
-                    userId: userId
-                },
-                data: {
-                    isIcebreakerReady: isIcebreakerReady
-                }
-            });
-            try {
-                await this.redis.hset(`conversation:${conversationId}:participants`, userId, JSON.stringify({
-                    isIcebreakerReady: isIcebreakerReady,
-                    timestamp: new Date().toISOString()
-                }));
-            }
-            catch (redisError) {
-                this.logger.error(`Erreur lors de la sauvegarde dans Redis: ${redisError.message}`);
-            }
+            await this.icebreakerService.setParticipantIcebreakerReady(conversationId, userId, isIcebreakerReady);
             client.join(conversationId);
-            this.server.to(conversationId).emit('icebreakerStatusUpdated', {
-                userId,
-                conversationId,
-                isIcebreakerReady,
-                timestamp: new Date().toISOString()
-            });
-            this.logger.log(`Statut de isIcebreakerReady mis à jour pour l'utilisateur ${userId} dans la conversation ${conversationId}: ${isIcebreakerReady}`);
+            this.emitIcebreakerStatusUpdate(conversationId, userId, isIcebreakerReady);
+            const allReady = await this.icebreakerService.areAllParticipantsReady(conversationId);
+            if (allReady) {
+                await this.triggerIcebreakerQuestion(conversationId, client);
+            }
             return { success: true, userId: userId, isIcebreakerReady: isIcebreakerReady };
         }
         catch (error) {
@@ -184,6 +165,39 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             timestamp: new Date().toISOString()
         });
         return { success: true };
+    }
+    async triggerIcebreakerQuestion(conversationId, client) {
+        const participants = await this.prisma.conversationParticipant.findMany({
+            where: { conversationId },
+            select: { userId: true }
+        });
+        if (participants.length < 2) {
+            this.logger.warn(`Conversation ${conversationId} does not have 2 participants.`);
+            return;
+        }
+        const [a, b] = participants;
+        const questionGroup = await this.questionService.getNextRandomQuestionGroup(a.userId, b.userId);
+        console.log('questionGroup', typeof questionGroup);
+        console.log('chatGateway', questionGroup?.id, questionGroup?.questions[0].question);
+        if (!questionGroup)
+            return;
+        await this.icebreakerService.storeCurrentQuestionGroupForAGivenConversation(conversationId, questionGroup);
+        client.join(conversationId);
+        this.server.to(conversationId).emit('icebreakerQuestionGroup', {
+            questionGroup,
+            conversationId,
+            timestamp: new Date().toISOString()
+        });
+        this.logger.log(`Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`);
+    }
+    emitIcebreakerStatusUpdate(conversationId, userId, isReady) {
+        this.server.to(conversationId).emit('icebreakerStatusUpdated', {
+            userId,
+            conversationId,
+            isIcebreakerReady: isReady,
+            timestamp: new Date().toISOString()
+        });
+        this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
     }
 };
 exports.ChatGateway = ChatGateway;
@@ -246,6 +260,8 @@ exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
         namespace: 'chat'
     }),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        redis_service_1.RedisService])
+        redis_service_1.RedisService,
+        question_service_1.QuestionService,
+        icebreaker_service_1.IcebreakerService])
 ], ChatGateway);
 //# sourceMappingURL=chat.gateway.js.map

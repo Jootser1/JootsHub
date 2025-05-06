@@ -1,5 +1,4 @@
 import { Message } from './chat';
-import { IcebreakerResponse } from './icebreaker';
 export interface ClientToServerEvents {
     joinConversation: (conversationId: string) => void;
     leaveConversation: (conversationId: string) => void;
@@ -22,10 +21,6 @@ export interface ClientToServerEvents {
         isTyping: boolean;
     }) => void;
     icebreakerReady: (conversationId: string) => void;
-    icebreakerResponse: (data: {
-        conversationId: string;
-        response: IcebreakerResponse;
-    }) => void;
 }
 export interface ServerToClientEvents {
     connect: () => void;

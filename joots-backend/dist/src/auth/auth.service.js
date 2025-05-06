@@ -12,7 +12,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
-const bcrypt = require("bcrypt");
+const argon2 = require("argon2");
 const jwt_1 = require("@nestjs/jwt");
 let AuthService = class AuthService {
     prisma;
@@ -24,7 +24,12 @@ let AuthService = class AuthService {
     async register(email, password) {
         if (!password)
             throw new Error('Password is required');
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword = await argon2.hash(password, {
+            type: argon2.argon2id,
+            memoryCost: 2 ** 16,
+            timeCost: 5,
+            parallelism: 1,
+        });
         const result = await this.prisma.$transaction(async (prisma) => {
             const user = await prisma.user.create({
                 data: {
@@ -36,6 +41,17 @@ let AuthService = class AuthService {
                         },
                     },
                 },
+            });
+            const categories = await prisma.category.findMany({
+                select: { id: true },
+            });
+            await prisma.userQuestionPreference.createMany({
+                data: categories.map((category) => ({
+                    userId: user.id,
+                    categoryId: category.id,
+                    enabled: true,
+                })),
+                skipDuplicates: true,
             });
             const username = `Jootser${user.userNumber}`;
             return prisma.user.update({
@@ -54,7 +70,7 @@ let AuthService = class AuthService {
             console.log('Utilisateur non trouvé');
             throw new common_1.UnauthorizedException('Invalid credentials');
         }
-        const passwordValid = await bcrypt.compare(password, auth.password);
+        const passwordValid = await argon2.verify(auth.password, password);
         if (!passwordValid) {
             console.log('Mot de passe invalide');
             throw new common_1.UnauthorizedException('Invalid credentials');
@@ -70,6 +86,7 @@ let AuthService = class AuthService {
             username: auth.user.username
         };
         const access_token = this.jwtService.sign(payload);
+        console.log('access_token', access_token);
         return {
             user: {
                 ...auth.user,

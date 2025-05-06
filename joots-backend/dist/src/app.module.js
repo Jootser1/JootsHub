@@ -18,6 +18,8 @@ const gateways_module_1 = require("./gateways/gateways.module");
 const config_1 = require("@nestjs/config");
 const conversations_module_1 = require("./conversations/conversations.module");
 const messages_module_1 = require("./messages/messages.module");
+const question_module_1 = require("./questions/question.module");
+const icebreaker_module_1 = require("./icebreakers/icebreaker.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -33,7 +35,9 @@ exports.AppModule = AppModule = __decorate([
             logger_module_1.LoggerModule,
             gateways_module_1.GatewaysModule,
             conversations_module_1.ConversationsModule,
-            messages_module_1.MessagesModule
+            messages_module_1.MessagesModule,
+            question_module_1.QuestionModule,
+            icebreaker_module_1.IcebreakerModule
         ],
         controllers: [app_controller_1.AppController],
         providers: [app_service_1.AppService],

@@ -26,7 +26,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
     }
     async handleConnection(client) {
         const userId = client.data.userId;
-        console.log('token', client.handshake.auth.token);
+        console.log('userId/token', userId, client.handshake.auth.token);
         if (!userId) {
             this.logger.warn(`Connexion rejetée sans ID utilisateur: ${client.id}`);
             client.disconnect();

@@ -5,7 +5,8 @@ import { authorize } from 'passport';
 import path from 'path';
 
 const prisma = new PrismaClient();
-const authorId = 'cm972ep2g0000iums4nxf25p0';
+console.log('As tu bien pensé à changer le userId de Jootser 1 dans ton fichier seed.ts ?')
+const authorId = 'cma9q0ey90000iuo2olvj4b6h';
 
 
 const CATEGORY_TRANSLATIONS = [
@@ -49,7 +50,7 @@ async function main() {
 
 
   console.log('Seeding questions from JSON...');
-  const filePath = 'prisma/questions_structured_iso.json';
+  const filePath = 'prisma/questions_structured_output.json';
   //const filePath = path.join(__dirname, 'questions_structured_iso.json');
   console.log(filePath);
   const rawData = fs.readFileSync(filePath, 'utf-8');

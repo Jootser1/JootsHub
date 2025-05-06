@@ -2,10 +2,14 @@ import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
+import { QuestionService } from '../questions/question.service';
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 export declare class ChatGateway extends BaseGateway {
     private readonly prisma;
     private readonly redis;
-    constructor(prisma: PrismaService, redis: RedisService);
+    private readonly questionService;
+    private readonly icebreakerService;
+    constructor(prisma: PrismaService, redis: RedisService, questionService: QuestionService, icebreakerService: IcebreakerService);
     handleConnection(client: Socket): void;
     handleDisconnect(client: Socket): void;
     handleJoinConversation(client: Socket, conversationId: string): {
@@ -33,12 +37,12 @@ export declare class ChatGateway extends BaseGateway {
             createdAt: Date;
             sender: {
                 id: string;
-                avatar: string | null;
                 username: string;
+                avatar: string | null;
             };
             id: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -81,4 +85,6 @@ export declare class ChatGateway extends BaseGateway {
     }): {
         success: boolean;
     };
+    private triggerIcebreakerQuestion;
+    private emitIcebreakerStatusUpdate;
 }

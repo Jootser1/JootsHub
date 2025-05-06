@@ -9,9 +9,9 @@ export interface User {
 
 export interface UserContact {
   id: string;
-  name: string;
+  username: string;
   avatar: string | null;
-  isOnline: boolean;
   bio?: string | null;
+  isOnline: boolean; 
   isAvailableForChat: boolean;
 }

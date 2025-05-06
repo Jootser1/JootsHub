@@ -8,20 +8,25 @@ import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
+import { QuestionService } from '../questions/question.service';
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 
 @WebSocketGateway({
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://joots.app' 
-      : 'http://localhost:3000',
+    ? 'https://joots.app' 
+    : 'http://localhost:3000',
     credentials: true
   },
   namespace: 'chat'
 })
+
 export class ChatGateway extends BaseGateway {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService
+    private readonly redis: RedisService,
+    private readonly questionService: QuestionService,
+    private readonly icebreakerService: IcebreakerService
   ) {
     super(ChatGateway.name);
   }
@@ -83,7 +88,7 @@ export class ChatGateway extends BaseGateway {
     if (userId !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
-
+    
     try {
       // Vérifier si la conversation existe
       const conversation = await this.prisma.conversation.findUnique({
@@ -106,7 +111,7 @@ export class ChatGateway extends BaseGateway {
           }
         }
       });
-
+      
       // Sauvegarder le message dans Redis
       try {
         await this.redis.hset(
@@ -175,65 +180,34 @@ export class ChatGateway extends BaseGateway {
   ) {
     const { conversationId, userId, isIcebreakerReady } = data;
     console.log("icebreakerReady", userId, conversationId, isIcebreakerReady);
-
+    
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
-
+    
     try {
-      // Vérifier si la conversation existe
-      const conversation = await this.prisma.conversation.findUnique({
-        where: { id: conversationId }
-      });
+      // Sauvegarder le nouveau statut dans la base de données et redis
+      await this.icebreakerService.setParticipantIcebreakerReady(conversationId, userId, isIcebreakerReady);
       
-      if (!conversation) {
-        return { success: false, error: 'Conversation non trouvée' };
-      }
-
-      // Mettre à jour le statut de isIcebreakerReady pour l'utilisateur dans la conversation
-      await this.prisma.conversationParticipant.updateMany({
-        where: {
-          conversationId: conversationId,
-          userId: userId
-        },
-        data: {
-          isIcebreakerReady: isIcebreakerReady
-        }
-      });
+      // Émettre l'événement de mise à jour du statut de l'icebreaker à tous les clients dans la conversation
+      client.join(conversationId);
+      this.emitIcebreakerStatusUpdate(conversationId, userId, isIcebreakerReady);
       
-      try {
-        await this.redis.hset(
-          `conversation:${conversationId}:participants`,
-          userId,
-          JSON.stringify({
-            isIcebreakerReady: isIcebreakerReady,
-            timestamp: new Date().toISOString()
-          })
-        );
-      } catch (redisError) {
-        // Log l'erreur Redis mais continue (non bloquant)
-        this.logger.error(`Erreur lors de la sauvegarde dans Redis: ${redisError.message}`);
+      const allReady = await this.icebreakerService.areAllParticipantsReady(conversationId);
+      
+      if (allReady) {
+        await this.triggerIcebreakerQuestion(conversationId, client);
       }
       
-      client.join(conversationId); // S'assurer que l'émetteur est dans la salle
-      this.server.to(conversationId).emit('icebreakerStatusUpdated', {
-        userId,
-        conversationId,
-        isIcebreakerReady,
-        timestamp: new Date().toISOString()
-      });
-      
-      // Log pour confirmer la mise à jour
-      this.logger.log(`Statut de isIcebreakerReady mis à jour pour l'utilisateur ${userId} dans la conversation ${conversationId}: ${isIcebreakerReady}`);
-            
       return { success: true, userId: userId, isIcebreakerReady: isIcebreakerReady };
     } catch (error) {
       this.logger.error(`Erreur lors de l'envoi du message: ${error.message}`);
       return { success: false, error: error.message };
-    }
+    } 
+    
   }
-  
+
   @SubscribeMessage('icebreakerResponse')
   handleIcebreakerResponse(
     @ConnectedSocket() client: Socket,
@@ -251,4 +225,45 @@ export class ChatGateway extends BaseGateway {
     
     return { success: true };
   }
-} 
+  
+  private async triggerIcebreakerQuestion(conversationId: string, client: Socket) {
+    const participants = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId },
+      select: { userId: true }
+    });
+    
+    if (participants.length < 2) {
+      this.logger.warn(`Conversation ${conversationId} does not have 2 participants.`);
+      return;
+    }
+    
+    const [a, b] = participants;
+    const questionGroup = await this.questionService.getNextRandomQuestionGroup(a.userId, b.userId);
+    console.log('questionGroup', typeof questionGroup);
+    console.log('chatGateway', questionGroup?.id, questionGroup?.questions[0].question)
+    
+    if (!questionGroup) return;
+    await this.icebreakerService.storeCurrentQuestionGroupForAGivenConversation(conversationId, questionGroup);
+        
+    client.join(conversationId);
+    this.server.to(conversationId).emit('icebreakerQuestionGroup', {
+      questionGroup,
+      conversationId,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.logger.log(`Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`);
+  }
+    
+  
+  private emitIcebreakerStatusUpdate(conversationId: string, userId: string, isReady: boolean) {
+    this.server.to(conversationId).emit('icebreakerStatusUpdated', {
+      userId,
+      conversationId,
+      isIcebreakerReady: isReady,
+      timestamp: new Date().toISOString()
+    });
+    
+    this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
+  }
+}

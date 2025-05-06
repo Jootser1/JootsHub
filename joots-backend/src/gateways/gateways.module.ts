@@ -6,6 +6,8 @@ import { RedisModule } from '../redis/redis.module';
 import { RedisService } from '../redis/redis.service';
 import { HeartbeatService } from './services/heartbeat.service';
 import { UserContactsService } from '../users/contacts/contacts.service';
+import { QuestionService } from '../questions/question.service';
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 @Module({
   imports: [RedisModule],
   providers: [
@@ -14,7 +16,9 @@ import { UserContactsService } from '../users/contacts/contacts.service';
     PrismaService, 
     RedisService,
     HeartbeatService, 
-    UserContactsService
+    UserContactsService,
+    QuestionService,
+    IcebreakerService
   ],
   exports: [UserGateway, ChatGateway],
 })

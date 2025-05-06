@@ -1,6 +1,6 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import * as argon2 from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
@@ -12,7 +12,12 @@ export class AuthService {
   
   async register(email: string, password: string) {
     if (!password) throw new Error('Password is required');
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await argon2.hash(password, {
+      type: argon2.argon2id,
+      memoryCost: 2 ** 16,
+      timeCost: 5,
+      parallelism: 1,
+    });
     
     // Créer l'utilisateur et l'authentification en une seule transaction
     const result = await this.prisma.$transaction(async (prisma) => {
@@ -66,7 +71,7 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
     
-    const passwordValid = await bcrypt.compare(password, auth.password);
+    const passwordValid = await argon2.verify(auth.password, password);
     if (!passwordValid) {
       console.log('Mot de passe invalide');
       throw new UnauthorizedException('Invalid credentials');
@@ -85,6 +90,7 @@ export class AuthService {
     };
     
     const access_token = this.jwtService.sign(payload);
+    console.log('access_token', access_token);
     
     return { 
       user: {
