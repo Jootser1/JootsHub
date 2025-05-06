@@ -17,7 +17,7 @@ interface ChatSocketStoreState {
 export const useChatSocketStore = create<ChatSocketStoreState>((set, get) => ({
     chatSocket: null,
     
-    connectChatSocket: async (userId: string, token: string, conversationId?: string): Promise<BaseSocketService> => {
+connectChatSocket: async (userId: string, token: string, conversationId?: string): Promise<BaseSocketService> => {
         if (typeof window === 'undefined') {
             throw new Error('Cannot connect socket on server side');
         }

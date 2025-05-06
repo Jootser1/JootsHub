@@ -5,6 +5,8 @@ import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 import { Conversation } from '@/features/conversations/conversation.types';
 import { getUnreadCount, getOtherParticipantInConversation } from '../../conversations/utils/conversationUtils';
 import { ConversationParticipant } from '@/features/conversations/conversation.types';
+import IcebreakerHome from '@/app/icebreaker/page';
+import { IcebreakerService } from '@/features/icebreakers/services/icebreakerService';
 
 
 const initialState: ChatState = {
@@ -12,12 +14,13 @@ const initialState: ChatState = {
   conversations: {},
   activeConversationId: null,
   error: null,
+  currentQuestionGroup: null,
 };
 
 const defaultIcebreakerStatus = {
   senderReady: false,
   receiverReady: false,
-  currentQuestion: undefined,
+  currentQuestionGroup: null,
 };
 
 
@@ -177,8 +180,13 @@ export const useChatStore = create<ChatStore>()(
       },
     };
   }),
+
+  fetchRandomQuestionGroup: async (conversationId: string) => {
+    const questionGroup = await IcebreakerService.fetchRandomQuestionGroup(conversationId);
+    set({ currentQuestionGroup: questionGroup });
+  },
   
-  setIcebreakerQuestion: (conversationId: string, question: string) =>
+  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) =>
     set((state) => {
     const conversation = state.conversations[conversationId];
     if (!conversation) return state;
@@ -192,56 +200,17 @@ export const useChatStore = create<ChatStore>()(
           ...conversation,
           icebreakerStatus: {
             ...currentIcebreakerStatus,
-            currentQuestion: question,
+            currentQuestionGroup: questionGroup,
           },
         },
       },
     };
   }),
+
+  getCurrentQuestionGroup: (conversationId: string) => {
+    return get().conversations[conversationId]?.icebreakerStatus?.currentQuestionGroup;
+  },
   
-  submitIcebreakerResponse: (conversationId: string, isCurrentUser: boolean, response: IcebreakerResponse
-  ) =>
-    set((state) => {
-    const conversation = state.conversations[conversationId];
-    if (!conversation || !conversation.icebreakerStatus.currentQuestion) return state;
-    
-    const otherParticipant = getOtherParticipantInConversation(conversation, conversation.participants[0].userId);
-    if (!otherParticipant) return state;
-    
-    const newMessage: Message = {
-      id: crypto.randomUUID(),
-      content: conversation.icebreakerStatus.currentQuestion,
-      senderId: isCurrentUser ? conversation.participants[0].userId : otherParticipant.id,
-      receiverId: isCurrentUser ? otherParticipant.id : conversation.participants[0].userId,
-      createdAt: new Date(),
-      status: 'sent',
-      type: 'icebreaker',
-      icebreakerData: {
-        question: conversation.icebreakerStatus.currentQuestion,
-        senderResponse: isCurrentUser ? response : 'je ne sais pas',
-        receiverResponse: !isCurrentUser ? response : 'je ne sais pas',
-      },
-    };
-    
-    return {
-      messages: {
-        ...state.messages,
-        [conversationId]: [...(state.messages[conversationId] || []), newMessage],
-      },
-      conversations: {
-        ...state.conversations,
-        [conversationId]: {
-          ...conversation,
-          lastMessage: newMessage,
-          icebreakerStatus: {
-            senderReady: false,
-            receiverReady: false,
-            currentQuestion: undefined,
-          },
-        },
-      },
-    };
-  }),
   
   resetIcebreakerStatus: (conversationId: string) =>
     set((state) => {
@@ -302,6 +271,8 @@ export const useChatStore = create<ChatStore>()(
   getConversation: (conversationId: string) => {
     return get().conversations[conversationId];
   },
+
+    
 }),
 { name: 'chat-store' }
 )

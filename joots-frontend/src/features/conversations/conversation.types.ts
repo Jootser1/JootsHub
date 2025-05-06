@@ -24,6 +24,6 @@ export interface Conversation {
     icebreakerStatus: {
       senderReady: boolean;
       receiverReady: boolean;
-      currentQuestion?: string;
+      currentQuestionGroup?: string;
     };
   }

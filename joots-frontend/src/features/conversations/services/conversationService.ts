@@ -9,7 +9,7 @@ export interface RandomChatResponse {
   };
 }
 
-export const chatService = {
+export const conversationService = {
   async startRandomChat(): Promise<RandomChatResponse> {
     try {
       // 1. Trouver un utilisateur aléatoire
@@ -39,4 +39,9 @@ export const chatService = {
       throw new Error('Une erreur est survenue lors de la création du chat');
     }
   }
+
+  
+
+
+
 }; 

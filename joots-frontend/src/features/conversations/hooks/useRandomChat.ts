@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { chatService } from '@/features/conversations/services/chatService';
+import { conversationService } from '@/features/conversations/services/conversationService';
 import { logger } from '@/utils/logger';
 
 export const useRandomChat = () => {
@@ -11,7 +11,7 @@ export const useRandomChat = () => {
   const startRandomChat = async () => {
     setIsLoading(true);
     try {
-      const { conversationId } = await chatService.startRandomChat();
+      const { conversationId } = await conversationService.startRandomChat();
       toast.success('Conversation créée ! Redirection vers le chat...');
       router.push(`/chat/${conversationId}`);
     } catch (error: any) {

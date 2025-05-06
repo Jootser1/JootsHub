@@ -94,3 +94,18 @@ export function handleIcebreakerStatusUpdatedEvent(data: any) {
   }
 }
 
+// Handler pour 'icebreakerQuestionGroup' event
+export function handleIcebreakerQuestionGroupEvent(data: any) {
+  try {
+    const conversationId = data?.conversationId;
+    const questionGroup = data?.questionGroup;
+    console.log('handleIcebreakerQuestionGroupEvent', conversationId, questionGroup);
+
+    chatStore.setCurrentQuestionGroup(conversationId, questionGroup);
+    console.log('icebreakerQuestionGroup', conversationId, questionGroup);
+
+  } catch (error) {
+    logger.error('Erreur lors du traitement de la question de l\'icebreaker:', error);
+  }
+}
+

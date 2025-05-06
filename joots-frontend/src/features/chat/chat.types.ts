@@ -24,6 +24,7 @@ export interface ChatState {
   messages: Record<string, Message[]>;
   conversations: Record<string, Conversation>;
   activeConversationId: string | null;
+  currentQuestionGroup: string | null;
   error: string | null;
 }
 
@@ -37,7 +38,7 @@ export type ChatActions = {
   updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) => void;
   markMessagesAsRead: (conversationId: string) => void;
   initializeConversation: (conversation: Conversation) => void;
-
+  fetchRandomQuestion: (conversationId: string) => void;
 
   // Conversation actions
   updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
@@ -50,6 +51,8 @@ export type ChatActions = {
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipantId: (conversationId: string, userId: string) => string | undefined;
+  getCurrentQuestionGroup: (conversationId: string) => string | null;
+  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) => void;
 }
 
 export type ChatStore = ChatState & ChatActions; 

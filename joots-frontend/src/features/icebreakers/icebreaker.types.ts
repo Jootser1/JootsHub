@@ -9,6 +9,7 @@ export type IcebreakerActions = {
       isCurrentUser: boolean, 
       response: IcebreakerResponse) => void;
     resetIcebreakerStatus: (conversationId: string) => void;
+    fetchRandomQuestion: (conversationId: string) => void;
 }
 
 export type IcebreakerStore = IcebreakerActions;

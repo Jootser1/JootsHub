@@ -1,39 +1,54 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSession } from 'next-auth/react';
 import { Conversation } from '@/features/conversations/conversation.types';
 import { ChatHeader } from './ChatHeader';
 import { ChatMessages } from './ChatMessages';
 import { ChatInput } from './ChatInput';
-import { useIcebreaker } from '@/features/icebreakers/hooks/useIcebreaker';
 import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { useChatStore } from '../stores/chatStore';
-import IcebreakerModal from '@/features/icebreakers/components/IcebreakerModal';
+import IcebreakerPopup from '@/features/icebreakers/components/IcebreakerPopup';
+  import { IcebreakerService } from '@/features/icebreakers/services/icebreakerService';
 
 interface ChatContainerProps {
   conversation: Conversation;
 }
 
 export const ChatContainer = ({ conversation }: ChatContainerProps) => {
-  const { activeConversationId, getParticipant, getOtherParticipant} = useChatStore();
+  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } = useChatStore();
   const user = useUserStore((state) => state.user);
-
-  if (!user?.id) return null;
-  const otherParticipant = getOtherParticipantInConversation(conversation, user.id);
-
-  const { isReady, handleReady, handleResponse } = useIcebreaker(activeConversationId || '');
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  if (!activeConversationId) return null;
+  if (!activeConversationId || !user?.id) return null;
   const isCurrentUserReady = getParticipant(activeConversationId, user.id)?.isIcebreakerReady;
   const isOtherParticipantReady = getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady;  
 
-  const [isModalOpen, setModalOpen] = useState(false);
-
+  const [showQuestion, setShowQuestion] = useState(false)
+  const [lastAnswer, setLastAnswer] = useState<{ questionGroupId: string, optionId: string } | null>(null)
   
+  const currentQuestionGroup = getCurrentQuestionGroup(activeConversationId)
+  console.log('currentQuestionGroup', currentQuestionGroup)
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
+
+  const handleAnswerQuestion = (questionGroupId: string, optionId: string) => {
+    // Enregistrer la dernière réponse
+    setLastAnswer({ questionGroupId, optionId })
+    IcebreakerService.submitIcebreakerResponse(user.id, questionGroupId, optionId, activeConversationId)
+    // Simuler l'envoi à un endpoint (à implémenter dans le futur)
+    console.log(`Réponse validée: Question ${questionGroupId}, Option ${optionId}`)
+    
+
+    // Dans un cas réel, vous pourriez faire quelque chose comme:
+    // 
+
+    // Fermer la question
+    setShowQuestion(false)
+  }
+
+  const handleCloseQuestion = () => {
+    setShowQuestion(false)
+  }
   
   useEffect(() => {
     scrollToBottom();
@@ -48,10 +63,10 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
 
   // Ouvrir la modale si les deux participants sont prêts
   useEffect(() => {
-    if (isCurrentUserReady && isOtherParticipantReady) {
-      setModalOpen(true);
+    if (currentQuestionGroup && isCurrentUserReady && isOtherParticipantReady) {
+      setShowQuestion(true)
     }
-  }, [isCurrentUserReady, isOtherParticipantReady]);
+  }, [isCurrentUserReady, isOtherParticipantReady, currentQuestionGroup]);
 
 
 
@@ -70,17 +85,24 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
   }
   
   return (
+    <>
+    <IcebreakerPopup
+        question={currentQuestionGroup || ''}
+        isVisible={showQuestion}
+        onAnswer={handleAnswerQuestion}
+        onClose={handleCloseQuestion}
+      />
     <div className="relative flex flex-col h-full bg-gray-50">
       <ChatHeader 
         otherUser={otherUser} 
         isOnline={otherUser.isOnline} 
         conversationId={activeConversationId}
       />
-       <IcebreakerModal isOpen={isModalOpen} onClose={() => setModalOpen(false)} />
       <div className="flex-1 overflow-y-auto">
         <ChatMessages messages={conversation?.messages || []} conversationId={activeConversationId} />
       </div>
       <ChatInput conversationId={activeConversationId} />
     </div>
+    </>
   );
 }; 
