@@ -199,6 +199,20 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
         });
         this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
     }
+    async emitIcebreakerResponsesToAllParticipants(conversationId, questionGroupId, userId1, optionId1, userId2, optionId2) {
+        console.log('emitIcebreakerResponsesToAllParticipants', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2);
+        const socketData = {
+            conversationId,
+            questionGroupId,
+            userId1,
+            optionId1,
+            userId2,
+            optionId2,
+            answeredAt: new Date().toISOString()
+        };
+        this.server.to(conversationId).emit('icebreakerResponses', socketData);
+        this.logger.log(`Responses for User ${userId1} : ${optionId1} and for ${userId2} : ${optionId2} in conversation ${conversationId}`);
+    }
 };
 exports.ChatGateway = ChatGateway;
 __decorate([

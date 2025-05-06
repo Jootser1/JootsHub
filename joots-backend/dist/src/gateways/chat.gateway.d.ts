@@ -87,4 +87,5 @@ export declare class ChatGateway extends BaseGateway {
     };
     private triggerIcebreakerQuestion;
     private emitIcebreakerStatusUpdate;
+    emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string): Promise<void>;
 }

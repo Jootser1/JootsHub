@@ -8,11 +8,15 @@ export interface ConversationParticipant {
     user: User;
     isTyping?: boolean;
     isIcebreakerReady?: boolean;
+    hasGivenAnswer?: boolean;
     icebreakerTimestamp?: string;
+    response?: {
+      questionGroupId: string;
+      optionId: string;
+      answeredAt: string;
+    } | null;
   }
  
-
-
 export interface Conversation {
     id: string;
     createdAt: Date;
@@ -21,9 +25,5 @@ export interface Conversation {
     messages: Message[];
     lastMessage?: Message;
     unreadCount: number;
-    icebreakerStatus: {
-      senderReady: boolean;
-      receiverReady: boolean;
-      currentQuestionGroup?: string;
+    currentQuestionGroup?: string;
     };
-  }

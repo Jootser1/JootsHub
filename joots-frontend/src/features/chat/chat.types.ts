@@ -48,6 +48,9 @@ export type ChatActions = {
     field: K,
     value: ConversationParticipant[K]
   ) => void;
+  setParticipantResponse: (conversationId: string, participantId: string, response: IcebreakerResponse) => void;
+  getParticipantResponse: (conversationId: string, participantId: string) => IcebreakerResponse | null;
+  resetIcebreakerStatus: (conversationId: string) => void;
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipantId: (conversationId: string, userId: string) => string | undefined;

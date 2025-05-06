@@ -1,10 +1,11 @@
 import { Controller, Get, Param, Query, UseGuards, Post, Body } from '@nestjs/common';
 import { QuestionService } from './question.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 
 @Controller('questions')
 export class QuestionController {
-  constructor(private readonly questionService: QuestionService) {}
+  constructor(private readonly questionService: QuestionService, private readonly icebreakerService: IcebreakerService) {}
   
   @Get('by-id/:id')
   async getQuestionGroup(@Param('id') id: string) {
@@ -28,11 +29,21 @@ export class QuestionController {
     }
   ) {
     const { userId, questionGroupId, optionId, conversationId } = body;
-
+    
     // Vérification des paramètres requis
     if (!userId || !questionGroupId || !optionId || !conversationId) {
       throw new Error('Les paramètres userId, questionGroupId, optionId et conversationId sont requis');
     }
-    return this.questionService.saveResponse(userId, questionGroupId, optionId, conversationId);
+    
+    // 1. Sauvegarder la réponse à la question dans la BDD
+    const savedResponse = await this.questionService.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
+    
+    // 2. Mettre à jour le statut de l'icebreaker si dans le contexte d'une conversation
+    if (conversationId) {
+      await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
+    }
+    
+    
+    return savedResponse;
   }
 }

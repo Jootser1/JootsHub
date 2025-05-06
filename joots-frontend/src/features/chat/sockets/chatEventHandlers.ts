@@ -109,3 +109,34 @@ export function handleIcebreakerQuestionGroupEvent(data: any) {
   }
 }
 
+// Handler pour 'icebreakerResponses' event
+export function handleIcebreakerResponsesEvent(data: any) {
+  console.log('handleIcebreakerResponsesEvent', data);
+  try {
+    const conversationId = data?.conversationId;
+    const questionGroupId = data?.questionGroupId;  
+    const userId1 = data?.userId1;
+    const optionId1 = data?.optionId1;
+    const userId2 = data?.userId2;
+    const optionId2 = data?.optionId2;
+
+    chatStore.resetIcebreakerStatus(conversationId);
+    chatStore.setParticipantResponse(conversationId, userId1, {
+      questionGroupId: questionGroupId,
+      optionId: optionId1,
+      answeredAt: new Date().toISOString()
+    });
+    chatStore.setParticipantResponse(conversationId, userId2, {
+      questionGroupId: questionGroupId,
+      optionId: optionId2,
+      answeredAt: new Date().toISOString()
+    });
+
+    console.log('icebreakerResponses', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2); 
+  } catch (error) {
+    logger.error('Erreur lors du traitement des réponses de l\'icebreaker:', error);
+  }
+}
+
+
+

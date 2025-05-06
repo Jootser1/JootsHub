@@ -12,13 +12,13 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.QuestionService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
-const redis_service_1 = require("../redis/redis.service");
+const icebreaker_service_1 = require("../icebreakers/icebreaker.service");
 let QuestionService = class QuestionService {
     prisma;
-    redis;
-    constructor(prisma, redis) {
+    icebreakerService;
+    constructor(prisma, icebreakerService) {
         this.prisma = prisma;
-        this.redis = redis;
+        this.icebreakerService = icebreakerService;
     }
     async getUserLastResponseToQuestion(currentUserId, questionGroupId) {
         console.log(Object.keys(this.prisma));
@@ -99,10 +99,17 @@ let QuestionService = class QuestionService {
         if (!userId || !questionGroupId || !optionId) {
             throw new Error('Les paramètres userId, questionGroupId et optionId sont requis');
         }
+        const savedResponse = await this.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
+        if (conversationId) {
+            await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
+        }
+        return savedResponse;
+    }
+    async saveUserAnswer(userId, questionGroupId, optionId, conversationId) {
         return this.prisma.userAnswer.create({
             data: {
-                userId,
-                questionGroupId,
+                userId: userId,
+                questionGroupId: questionGroupId,
                 questionOptionId: optionId,
                 answeredAt: new Date(),
                 ...(conversationId ? { conversationId } : {})
@@ -113,6 +120,6 @@ let QuestionService = class QuestionService {
 exports.QuestionService = QuestionService;
 exports.QuestionService = QuestionService = __decorate([
     (0, common_1.Injectable)(),
-    __metadata("design:paramtypes", [prisma_service_1.PrismaService, redis_service_1.RedisService])
+    __metadata("design:paramtypes", [prisma_service_1.PrismaService, icebreaker_service_1.IcebreakerService])
 ], QuestionService);
 //# sourceMappingURL=question.service.js.map

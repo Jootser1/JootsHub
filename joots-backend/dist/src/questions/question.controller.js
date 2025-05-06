@@ -16,10 +16,13 @@ exports.QuestionController = void 0;
 const common_1 = require("@nestjs/common");
 const question_service_1 = require("./question.service");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const icebreaker_service_1 = require("../icebreakers/icebreaker.service");
 let QuestionController = class QuestionController {
     questionService;
-    constructor(questionService) {
+    icebreakerService;
+    constructor(questionService, icebreakerService) {
         this.questionService = questionService;
+        this.icebreakerService = icebreakerService;
     }
     async getQuestionGroup(id) {
         return this.questionService.getQuestionGroup(id);
@@ -32,7 +35,11 @@ let QuestionController = class QuestionController {
         if (!userId || !questionGroupId || !optionId || !conversationId) {
             throw new Error('Les paramètres userId, questionGroupId, optionId et conversationId sont requis');
         }
-        return this.questionService.saveResponse(userId, questionGroupId, optionId, conversationId);
+        const savedResponse = await this.questionService.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
+        if (conversationId) {
+            await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
+        }
+        return savedResponse;
     }
 };
 exports.QuestionController = QuestionController;
@@ -62,6 +69,6 @@ __decorate([
 ], QuestionController.prototype, "postResponseToQuestion", null);
 exports.QuestionController = QuestionController = __decorate([
     (0, common_1.Controller)('questions'),
-    __metadata("design:paramtypes", [question_service_1.QuestionService])
+    __metadata("design:paramtypes", [question_service_1.QuestionService, icebreaker_service_1.IcebreakerService])
 ], QuestionController);
 //# sourceMappingURL=question.controller.js.map

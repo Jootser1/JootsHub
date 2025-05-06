@@ -90,29 +90,8 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
     <div className="max-h-[60vh] overflow-y-auto">
     <div className={cn("grid gap-2", question && question.options.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
     
-     {question?.type === 1 ? (
-       // Options par défaut pour les questions de type Oui/Non/Je ne sais pas
-       ["Oui", "Non", "Je ne sais pas"].map((text, index) => (
-         <Button
-           key={index}
-           variant={selectedOptionId === text ? "default" : "outline"}
-           className={cn(
-             "justify-start text-left transition-all",
-             isVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0",
-             selectedOptionId === text ? "bg-blue-500 text-white hover:bg-blue-600" : "",
-           )}
-           style={{
-             transitionDelay: `${index * 50}ms`,
-             transitionDuration: "500ms",
-           }}
-           onClick={() => handleOptionClick(text)}
-         >
-           {text}
-         </Button>
-       ))
-     ) : (
-       // Options pour les autres types de questions
-       question?.options.map((option: Option, index: number) => (
+    
+       {question?.options.map((option: Option, index: number) => (
          <Button
            key={option.id}
            variant={selectedOptionId === option.id ? "default" : "outline"}
@@ -130,7 +109,7 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
            {option.label}
          </Button>
        ))
-     )}
+     }
       </div>
       </div>
       

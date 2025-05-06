@@ -1,7 +1,9 @@
 import { QuestionService } from './question.service';
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 export declare class QuestionController {
     private readonly questionService;
-    constructor(questionService: QuestionService);
+    private readonly icebreakerService;
+    constructor(questionService: QuestionService, icebreakerService: IcebreakerService);
     getQuestionGroup(id: string): Promise<{
         id: string;
         type: number;
@@ -59,8 +61,8 @@ export declare class QuestionController {
         id: string;
         questionGroupId: string;
         userId: string;
-        conversationId: string | null;
         questionOptionId: string;
+        conversationId: string | null;
         answeredAt: Date;
         updatedAt: Date;
         note: string | null;

@@ -1,13 +1,20 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { IcebreakerService } from './icebreaker.service';
 import { IcebreakerController } from './icebreaker.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
 import { RedisModule } from '../redis/redis.module';  
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
+import { GatewaysModule } from '../gateways/gateways.module';
+
 @Module({
-  imports: [PrismaModule, RedisModule],
+  imports: [
+    PrismaModule, 
+    RedisModule,
+    forwardRef(() => GatewaysModule),
+  ],
   controllers: [IcebreakerController],
   providers: [IcebreakerService, RedisService, QuestionService],
+  exports: [IcebreakerService],
 })
 export class IcebreakerModule {} 

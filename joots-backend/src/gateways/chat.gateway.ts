@@ -207,7 +207,7 @@ export class ChatGateway extends BaseGateway {
     } 
     
   }
-
+  
   @SubscribeMessage('icebreakerResponse')
   handleIcebreakerResponse(
     @ConnectedSocket() client: Socket,
@@ -244,7 +244,7 @@ export class ChatGateway extends BaseGateway {
     
     if (!questionGroup) return;
     await this.icebreakerService.storeCurrentQuestionGroupForAGivenConversation(conversationId, questionGroup);
-        
+    
     client.join(conversationId);
     this.server.to(conversationId).emit('icebreakerQuestionGroup', {
       questionGroup,
@@ -254,7 +254,6 @@ export class ChatGateway extends BaseGateway {
     
     this.logger.log(`Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`);
   }
-    
   
   private emitIcebreakerStatusUpdate(conversationId: string, userId: string, isReady: boolean) {
     this.server.to(conversationId).emit('icebreakerStatusUpdated', {
@@ -265,5 +264,22 @@ export class ChatGateway extends BaseGateway {
     });
     
     this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
+  }
+  
+  
+  // Émettre la réponse de chaque utilisateur à la question par socket.io
+  public async emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string) {
+    console.log('emitIcebreakerResponsesToAllParticipants', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2);
+    const socketData = {
+      conversationId,
+      questionGroupId,
+      userId1,
+      optionId1,
+      userId2,
+      optionId2,
+      answeredAt: new Date().toISOString()
+    };
+    this.server.to(conversationId).emit('icebreakerResponses', socketData);
+    this.logger.log(`Responses for User ${userId1} : ${optionId1} and for ${userId2} : ${optionId2} in conversation ${conversationId}`);
   }
 }

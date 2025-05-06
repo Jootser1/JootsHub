@@ -2,10 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { QuestionGroupWithRelations } from '../../types/question';
-
+import { IcebreakerService } from '../icebreakers/icebreaker.service';
 @Injectable()
 export class QuestionService {
-  constructor(private readonly prisma: PrismaService, private readonly redis: RedisService) {}
+  constructor(private readonly prisma: PrismaService, private readonly icebreakerService: IcebreakerService) {}
   
   async getUserLastResponseToQuestion(currentUserId: string, questionGroupId: string) {
     console.log(Object.keys(this.prisma));
@@ -106,10 +106,23 @@ export class QuestionService {
       throw new Error('Les paramètres userId, questionGroupId et optionId sont requis');
     }
     
+    // 1. Sauvegarder la réponse à la question en BDD
+    const savedResponse = await this.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
+    
+    // 2. Mettre à jour les statuts dans Redis et émettre l'événement via le socket si dans le contexte d'une conversation
+    if (conversationId) {
+      await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
+    }
+    
+    return savedResponse;
+  }
+  
+  // Méthode spécifique pour enregistrer la réponse en BDD
+  async saveUserAnswer(userId: string, questionGroupId: string, optionId: string, conversationId: string) {
     return this.prisma.userAnswer.create({
       data: {
-        userId,
-        questionGroupId,
+        userId: userId,
+        questionGroupId: questionGroupId,
         questionOptionId: optionId,
         answeredAt: new Date(),
         ...(conversationId ? { conversationId } : {})

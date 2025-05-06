@@ -1,8 +1,11 @@
-export type IcebreakerResponse = 'oui' | 'non' | 'je ne sais pas';
+export type IcebreakerResponse = {
+    questionGroupId: string;
+    optionId: string;
+    answeredAt: string;
+}
 
 
 export type IcebreakerActions = {
-    setIcebreakerReady: (conversationId: string, isCurrentUser: boolean) => void;
     setIcebreakerQuestion: (conversationId: string, question: string) => void;
     submitIcebreakerResponse: (
       conversationId: string, 

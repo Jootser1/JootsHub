@@ -13,14 +13,16 @@ const question_controller_1 = require("./question.controller");
 const prisma_module_1 = require("../../prisma/prisma.module");
 const redis_module_1 = require("../redis/redis.module");
 const redis_service_1 = require("../redis/redis.service");
+const icebreaker_service_1 = require("../icebreakers/icebreaker.service");
+const gateways_module_1 = require("../gateways/gateways.module");
 let QuestionModule = class QuestionModule {
 };
 exports.QuestionModule = QuestionModule;
 exports.QuestionModule = QuestionModule = __decorate([
     (0, common_1.Module)({
-        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule],
+        imports: [prisma_module_1.PrismaModule, redis_module_1.RedisModule, (0, common_1.forwardRef)(() => gateways_module_1.GatewaysModule)],
         controllers: [question_controller_1.QuestionController],
-        providers: [question_service_1.QuestionService, redis_service_1.RedisService],
+        providers: [question_service_1.QuestionService, redis_service_1.RedisService, icebreaker_service_1.IcebreakerService],
     })
 ], QuestionModule);
 //# sourceMappingURL=question.module.js.map
