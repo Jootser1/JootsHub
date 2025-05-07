@@ -5,8 +5,7 @@ import { useContactStore } from '@/features/contacts/stores/contactStore';
 import { createUserEventRegistry } from './userEventRegistry';
 import { io } from 'socket.io-client';
 
-const userStore = useUserStore.getState();
-const contactStore = useContactStore.getState();
+
 
 export class UserSocketService extends BaseSocketService {
   private static instance: UserSocketService | null = null;
@@ -16,27 +15,6 @@ export class UserSocketService extends BaseSocketService {
     super('user');
   }
 
-  connect(userId: string, token: string): void {
-    logger.info(`BaseSocketService: Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
-    
-    this.userId = userId;
-    this.token = token;
-    
-    this.closeExistingSocketConnection();
-    
-    const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-    
-    this.socket = io(`${BASE_URL}/${this.namespace}`, {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      auth: { userId, token },
-      transports: ['websocket', 'polling']
-    });
-    
-    this.setupEventListeners();
-  }
 
   static getInstance(): UserSocketService {
     if (!UserSocketService.instance) {
@@ -46,6 +24,10 @@ export class UserSocketService extends BaseSocketService {
   }
 
   public registerEvents() {
+    if (!this.socket) {
+      logger.warn('Impossible d\'enregistrer les événements user: socket non initialisé');
+      return;
+    }
     if (!this.userId) return;
     
     const eventRegistry = createUserEventRegistry(this.userId);
@@ -54,7 +36,7 @@ export class UserSocketService extends BaseSocketService {
         handler(data);
       });
     })
-    logger.info('Enregistrement des événements socket pour', this.userId);
+    logger.info('Enregistrement des événements socket user pour', this.userId);
   }
 
   public unregisterEvents() {
@@ -62,7 +44,9 @@ export class UserSocketService extends BaseSocketService {
     logger.info('Désenregistrement des événements socket pour', this.userId);
   }
 
-  public updateUserStatus(userId: string, isOnline: boolean): void {
+  public updateUserStatus(userId: string, isOnline: boolean): void {    
+    const userStore = useUserStore.getState();
+    const contactStore = useContactStore.getState();
     if (!this.socket?.connected) {
       logger.warn('userSocketService: Impossible de mettre à jour le statut: non connecté');
       return;

@@ -135,6 +135,7 @@ export class UserGateway extends BaseGateway {
     contactIds.forEach(contactId => {
       client.leave(`user-status-${contactId}`);
     });
+    this.logger.debug(`3. Utilisateur ${client.id} a quitté les rooms de contacts: ${contactIds.join(', ')}`);
   }
 
   @SubscribeMessage('pong')

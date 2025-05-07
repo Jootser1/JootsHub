@@ -1,13 +1,11 @@
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef } from 'react';
 import { Message } from '@/features/chat/chat.types';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ensureDate } from '@/utils/dateUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
-import { useChatStore } from '@/features/chat/stores/chatStore';
-import { logger } from '@/utils/logger';
 import { useConversationMessages } from '@/features/chat/hooks/useConversationMessages';
-
+import { useChatStore } from '@/features/chat/stores/chatStore';
 interface ChatMessagesProps {
   messages: Message[];
   conversationId?: string;
@@ -15,14 +13,12 @@ interface ChatMessagesProps {
 
 export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMessagesProps) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const { user } = useUserStore();
-  const messages =useChatStore((state) => state.messages);
-  const storeMessages = useConversationMessages(conversationId);
   
-  // Combiner les messages du props et du store pour assurer la compatibilité
+  // N'utiliser qu'une seule source de messages
+  const storeMessages = useChatStore.getState().getMessagesFromConversation(conversationId || '');
+  // Si les messages du store sont disponibles, les utiliser, sinon utiliser les props
   const displayMessages = storeMessages.length > 0 ? storeMessages : propMessages;
-
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

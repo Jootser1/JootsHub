@@ -1,14 +1,10 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Message, ChatState, ChatStore, MessageStatus} from '@/features/chat/chat.types'; 
-import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 import { Conversation } from '@/features/conversations/conversation.types';
 import { getUnreadCount, getOtherParticipantInConversation } from '../../conversations/utils/conversationUtils';
-import { ConversationParticipant } from '@/features/conversations/conversation.types';
-import IcebreakerHome from '@/app/icebreaker/page';
-import { IcebreakerService } from '@/features/icebreakers/services/icebreakerService';
-
-
+import axiosInstance from '@/app/api/axiosInstance';
+import { logger } from '@/utils/logger';
 const initialState: ChatState = {
   messages: {},
   conversations: {},
@@ -107,6 +103,27 @@ export const useChatStore = create<ChatStore>()(
         },
       };
     }),
+    
+    // Get messages from a specific conversation
+    getMessagesFromConversation: (conversationId: string) => {
+      return get().messages[conversationId] || [];
+    },
+
+    loadAllConversations: async () => {
+      try {
+        const response = await axiosInstance.get('/conversations');
+        set((state) => {
+          const newConversations = { ...state.conversations };
+          response.data.forEach((conversation: any) => {
+            newConversations[conversation.id] = conversation;
+          });
+          return { conversations: newConversations };
+        });
+        logger.info(`${response.data.length} conversation(s) récupérées depuis la bdd et syncstore`);
+      } catch (error) {
+        logger.error('Erreur lors du chargement des conversations vers le ChatStore', error);
+      }
+    },
     
     // Conversation actions
     updateConversation: (conversationId: string, updates: Partial<Conversation>) =>

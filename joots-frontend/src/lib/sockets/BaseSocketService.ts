@@ -16,20 +16,29 @@ export abstract class BaseSocketService {
   protected namespace: string;
   protected connectionListeners: Set<(status: boolean) => void> = new Set();
   protected reconnectTimer: NodeJS.Timeout | null = null;
-
+  
   constructor(namespace: string) {
     this.namespace = namespace;
   }
   
   connect(userId: string, token: string): void {
+    if (this.socket) {
+      if (this.socket.connected) {
+        logger.info(`BaseSocketService: Socket déjà connecté pour ${this.namespace}`);
+        return;
+      }
+    }
     
     this.userId = userId;
     this.token = token;
     
-    this.closeExistingSocketConnection();
-    
+    if (this.socket && !this.socket.connected) {
+      this.socket.removeAllListeners();
+      this.socket = null;
+    }
+            
     const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-    
+
     this.socket = io(`${BASE_URL}/${this.namespace}`, {
       reconnection: true,
       reconnectionAttempts: 5,
@@ -37,12 +46,11 @@ export abstract class BaseSocketService {
       timeout: 10000,
       auth: { userId, token },
       transports: ['websocket', 'polling']
-    });
-    
+    });    
     this.setupEventListeners();
   }
-
-
+  
+  
   
   disconnect(): void {
     this.closeExistingSocketConnection();
@@ -54,6 +62,7 @@ export abstract class BaseSocketService {
       this.socket.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
+      logger.info(`4. Socket ${this.namespace} déconnecté et events désenregistrés`);
     }
     
     if (this.reconnectTimer) {
@@ -64,9 +73,9 @@ export abstract class BaseSocketService {
   
   protected setupEventListeners(): void {
     if (!this.socket) return;
-
+    
     this.socket.on('connect', () => {
-      logger.info(`Socket ${this.namespace} connecté`);
+      logger.info(`Socket ${this.namespace} connecté pour userId: ${this.userId}`);
       this.notifySocketConnectionChange(true);
     });
     
@@ -79,7 +88,7 @@ export abstract class BaseSocketService {
       logger.error(`Erreur de connexion ${this.namespace}: ${error.message}`);
       this.scheduleReconnect();
     });
-
+    
     this.socket.on('ping', () => {
       this.socket?.emit('pong');
     });
@@ -109,7 +118,7 @@ export abstract class BaseSocketService {
   isConnected(): boolean {
     return !!this.socket?.connected;
   }
-
+  
   // Méthodes communes pour la gestion des événements
   protected emit(event: string, data?: any): void {
     if (!this.socket?.connected) {
@@ -118,7 +127,7 @@ export abstract class BaseSocketService {
     }
     this.socket.emit(event, data);
   }
-
+  
   protected onEvent<T>(eventName: string, callback: (data: T) => void): () => void {
     if (!this.socket) return () => {};
     
@@ -132,7 +141,7 @@ export abstract class BaseSocketService {
       this.socket?.off(eventName, callback);
     };
   }
-
+  
   protected registerSocketEvents(socket: Socket, events: SocketEvent[]) {
     events.forEach(({ eventName, callback }) => {
       socket.on(eventName, callback);
@@ -144,16 +153,16 @@ export abstract class BaseSocketService {
       socket.off(eventName, callback);
     });
   }
-
+  
   // Getters
   getSocket(): Socket | null {
     return this.socket;
   }
-
+  
   getUserId(): string | null {
     return this.userId;
   }
-
+  
   get connected(): boolean {
     return this.isConnected();
   }

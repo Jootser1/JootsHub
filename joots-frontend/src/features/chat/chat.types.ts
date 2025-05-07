@@ -35,6 +35,7 @@ export type ChatActions = {
 
   // Message actions
   addMessage: (conversationId: string, message: Message) => void;
+  getMessagesFromConversation: (conversationId: string) => Message[];
   updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) => void;
   markMessagesAsRead: (conversationId: string) => void;
   initializeConversation: (conversation: Conversation) => void;

@@ -1,11 +1,9 @@
-import { IcebreakerLogo } from "./icebreaker-logo"
-import { Button } from "./ui/button"
 import Image from 'next/image';
-import { ChatSocketService } from "@/features/chat/sockets/chatSocketService";
 import { useUserStore } from "@/features/user/stores/userStore";
 import { useChatStore } from '@/features/chat/stores/chatStore'
 import { useCallback, useEffect } from "react";
-import { useChatSocketStore } from "@/features/chat/stores/chatSocketStore";
+import { useSocketManager } from "@/hooks/useSocketManager";
+
 type Experience = "hub" | "icebreaker" | "socioscopy" | "revelio"
 
 
@@ -17,6 +15,7 @@ interface ExperienceLogoProps {
 export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   const { getParticipant, getOtherParticipant, activeConversationId } = useChatStore();
   const user = useUserStore((state) => state.user);
+  const socketManager = useSocketManager();
 
   if (!user) return null;
   if (!activeConversationId) return null;
@@ -41,7 +40,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
 
     console.log("conversationId", activeConversationId);    
     if (activeConversationId) {
-      useChatSocketStore.getState().sendIcebreakerReady(activeConversationId, true);
+      socketManager.sendIcebreakerReady(activeConversationId, true);
     }
   }, [experience]);
 

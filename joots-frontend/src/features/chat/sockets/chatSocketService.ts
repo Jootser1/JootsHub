@@ -5,78 +5,13 @@ import { chatEventRegistry } from './chatEventRegistry';
 import { io } from 'socket.io-client';
 export class ChatSocketService extends BaseSocketService {
   private static instance: ChatSocketService | null = null;
-  private activeConversation: string | null = null;
+  private activeConversations: Set<string> = new Set<string>();
   private pingInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super('chat');
   }
 
-  connect(userId: string, token: string): void {
-    logger.info(`BaseSocketService: Tentative de connexion sur ${this.namespace} pour l'utilisateur ${userId}`);
-    
-    if (this.socket) {
-      if (this.socket.connected) {
-        logger.info(`BaseSocketService: Socket déjà connecté pour ${this.namespace}`);
-        return;
-      }
-    }
-
-    this.userId = userId;
-    this.token = token;
-    
-    if (this.socket && !this.socket.connected) {
-      this.socket.removeAllListeners();
-      this.socket = null;
-    }
-    
-    const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000';
-    logger.info(`BaseSocketService: Connexion à ${BASE_URL}/${this.namespace}`);
-    this.socket = io(`${BASE_URL}/${this.namespace}`, {
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 10000,
-      auth: { userId, token },
-      transports: ['websocket', 'polling']
-    });
-    
-    this.setupEventListeners();
-    this.startPingInterval();
-  }
-
-  private startPingInterval() {
-    // Arrêter l'intervalle existant si présent
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-    }
-    
-    // Créer un nouvel intervalle qui envoie un ping toutes les 30 secondes
-    this.pingInterval = setInterval(() => {
-      if (this.socket?.connected) {
-        this.socket.emit('ping');
-        logger.debug('Ping envoyé pour maintenir la connexion active');
-      } else {
-        // Si le socket est déconnecté, essayer de reconnecter
-        logger.warn('Socket déconnecté lors du ping. Tentative de reconnexion...');
-        if (this.userId && this.token) {
-          this.connect(this.userId, this.token);
-        } else {
-          logger.warn('Impossible de reconnecter: informations d\'authentification manquantes');
-        }
-      }
-    }, 30000); // 30 secondes
-  }
-
-  disconnect(): void {
-    // Arrêter l'intervalle de ping avant de déconnecter
-    if (this.pingInterval) {
-      clearInterval(this.pingInterval);
-      this.pingInterval = null;
-    }
-    
-    super.disconnect();
-  }
 
   static getInstance(): ChatSocketService {
     if (!ChatSocketService.instance) {
@@ -95,28 +30,11 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
-    logger.info('Enregistrement des événements chat');
+    logger.info('Enregistrement des événements socket chat pour', this.userId);
     Object.entries(chatEventRegistry).forEach(([event, handler]) => {
       this.onEvent(event, handler);
     });
-    
-    // Enregistrer des événements spécifiques de Socket.IO pour le débuggage
-    this.socket.on('connect', () => {
-      logger.info('Socket chat connecté');
-    });
-    
-    this.socket.on('disconnect', (reason) => {
-      logger.info(`Socket chat déconnecté: ${reason}`);
-      if (this.activeConversation) {
-        logger.info(`Déconnecté de la conversation: ${this.activeConversation}`);
-        this.activeConversation = null;
-      }
-    });
-    
-    this.socket.on('error', (error) => {
-      logger.error(`Erreur socket chat: ${error}`);
-    });
-  }
+  }    
 
   public unregisterEvents() {
     if (!this.socket) return;
@@ -126,11 +44,11 @@ export class ChatSocketService extends BaseSocketService {
       this.socket?.off(event);
     });
     
-    // Quitter la conversation active si elle existe
-    if (this.activeConversation) {
-      this.leaveConversation(this.activeConversation);
-      this.activeConversation = null;
-    }
+    // Quitter toutes les conversations actives
+    this.activeConversations.forEach(conversationId => {
+      this.socket?.emit('leaveConversation', conversationId);
+    });
+    this.activeConversations.clear();
     
     logger.info('Événements chat désenregistrés');
   }
@@ -141,14 +59,12 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
-    // Quitter la conversation actuelle si elle existe et est différente
-    if (this.activeConversation && this.activeConversation !== conversationId) {
-      this.leaveConversation(this.activeConversation);
+    // Rejoindre la nouvelle conversation si pas déjà active
+    if (!this.activeConversations.has(conversationId)) {
+      this.socket.emit('joinConversation', conversationId);
+      this.activeConversations.add(conversationId);
+      logger.info(`Conversation rejointe: ${conversationId}`);
     }
-    
-    this.socket.emit('joinConversation', conversationId);
-    this.activeConversation = conversationId;
-    logger.info(`Conversation rejointe: ${conversationId}`);
   }
   
   leaveConversation(conversationId: string): void {
@@ -157,13 +73,42 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
-    this.socket.emit('leaveConversation', conversationId);
-    if (this.activeConversation === conversationId) {
-      this.activeConversation = null;
+    if (this.activeConversations.has(conversationId)) {
+      this.socket.emit('leaveConversation', conversationId);
+      this.activeConversations.delete(conversationId);
+      logger.info(`Conversation quittée: ${conversationId}`);
     }
-    logger.info(`Conversation quittée: ${conversationId}`);
+  }
+
+  leaveAllConversations(): void {
+    if (!this.socket?.connected) {
+      logger.warn('Impossible de quitter les conversations: non connecté');
+      return;
+    }
+    
+    for (const conversationId of this.activeConversations) {
+      this.socket.emit('leaveConversation', conversationId);
+    }
+    this.activeConversations.clear();
+    logger.info('Toutes les conversations quittées');
   }
   
+  joinAllConversations(conversationIds: string[]): void {
+    if (!this.socket?.connected) {
+      logger.warn('Impossible de rejoindre les conversations: non connecté');
+      return;
+    }
+
+    for (const conversationId of conversationIds) {
+      if (!this.activeConversations.has(conversationId)) {
+        this.socket.emit('joinConversation', conversationId);
+        this.activeConversations.add(conversationId);
+      }
+    }
+    
+    logger.info(`${conversationIds.length} conversations rejointes`);
+  }
+
   sendMessage = (conversationId: string, content: string, userId: string) => {
     if (!this.socket?.connected) {
       logger.warn('Socket chat déconnecté. Tentative de reconnexion...');
@@ -186,7 +131,7 @@ export class ChatSocketService extends BaseSocketService {
               if (this.socket?.connected) {
                 try {
                   // S'assurer que l'utilisateur est dans la conversation
-                  if (this.activeConversation !== conversationId) {
+                  if (!this.activeConversations.has(conversationId)) {
                     this.joinConversation(conversationId);
                   }
                   this.socket.emit('sendMessage', { conversationId, content, userId });
@@ -216,6 +161,11 @@ export class ChatSocketService extends BaseSocketService {
     }
     
     try {
+      // S'assurer que l'utilisateur est dans la conversation avant d'envoyer
+      if (!this.activeConversations.has(conversationId)) {
+        this.joinConversation(conversationId);
+      }
+      
       this.socket.emit('sendMessage', { conversationId, content, userId });
       logger.info(`Message envoyé dans la conversation ${conversationId}`);
       return true;
@@ -231,6 +181,11 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
+    // S'assurer que l'utilisateur est dans la conversation avant d'envoyer le statut
+    if (!this.activeConversations.has(conversationId)) {
+      this.joinConversation(conversationId);
+    }
+    
     this.socket.emit('typing', { 
       conversationId, 
       userId: this.userId,
@@ -243,14 +198,24 @@ export class ChatSocketService extends BaseSocketService {
       logger.warn('Impossible d\'envoyer le statut de Icebreaker ready: non connecté');
       return;
     }
+    
+    // S'assurer que l'utilisateur est dans la conversation avant d'envoyer
+    if (!this.activeConversations.has(conversationId)) {
+      this.joinConversation(conversationId);
+    }
+    
     this.socket.emit('icebreakerReady', { 
       conversationId, 
       userId: userId,
       isIcebreakerReady 
     });
   }
+
+  getActiveConversations(): string[] {
+    return Array.from(this.activeConversations);
+  }
   
-  getActiveConversation(): string | null {
-    return this.activeConversation;
+  isInConversation(conversationId: string): boolean {
+    return this.activeConversations.has(conversationId);
   }
 }

@@ -37,12 +37,12 @@ export declare class ChatGateway extends BaseGateway {
             createdAt: Date;
             sender: {
                 id: string;
-                username: string;
                 avatar: string | null;
+                username: string;
             };
             id: string;
-            senderId: string;
             content: string;
+            senderId: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
@@ -88,4 +88,6 @@ export declare class ChatGateway extends BaseGateway {
     private triggerIcebreakerQuestion;
     private emitIcebreakerStatusUpdate;
     emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string): Promise<void>;
+    private joinUserConversations;
+    private synchronizeConversationState;
 }

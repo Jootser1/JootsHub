@@ -7,12 +7,20 @@ import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from "sonner"
 import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils'
 import { Conversation } from '@/features/conversations/conversation.types'
-import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
 import { useChatStore } from '@/features/chat/stores/chatStore'
 import { useUserStore } from "@/features/user/stores/userStore"
-import { ExperienceLogo } from "@/components/ExperienceLogo"    
+import { ExperienceLogo } from "@/components/ExperienceLogo"
+import { ChatSocketHandler } from '@/features/chat/components/ChatSocketHandler'
 
-
+// Définition du composant de contenu de conversation
+function ConversationContent({ conversation }: { conversation: Conversation}) {
+  return (
+    <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full">
+      <ChatContainer conversation={conversation} />
+      <ExperienceLogo experience="icebreaker"/>
+    </div>
+  );
+}
 
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
@@ -85,20 +93,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <AppLayout>
-      <ChatSocketProvider conversation={conversation}>
+      <ChatSocketHandler conversationId={conversation.id}>
         <ConversationContent conversation={conversation} />
-      </ChatSocketProvider>
+      </ChatSocketHandler>
     </AppLayout>
   )
-} 
-
-
-function ConversationContent({ conversation }: { conversation: Conversation}) {
-
-  return (
-    <div className="max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full">
-      <ChatContainer conversation={conversation} />
-      <ExperienceLogo experience="icebreaker"/>
-    </div>
-  );
 }

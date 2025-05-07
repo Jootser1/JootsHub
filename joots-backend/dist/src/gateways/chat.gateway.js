@@ -41,6 +41,9 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return;
         }
         this.logger.log(`Client chat connecté: ${client.id} (${userId})`);
+        this.joinUserConversations(client, userId).catch(error => {
+            this.logger.error(`Erreur lors de la jointure des conversations: ${error.message}`);
+        });
     }
     handleDisconnect(client) {
         this.logger.log(`Client chat déconnecté: ${client.id}`);
@@ -212,6 +215,89 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
         };
         this.server.to(conversationId).emit('icebreakerResponses', socketData);
         this.logger.log(`Responses for User ${userId1} : ${optionId1} and for ${userId2} : ${optionId2} in conversation ${conversationId}`);
+    }
+    async joinUserConversations(client, userId) {
+        try {
+            const conversations = await this.prisma.conversationParticipant.findMany({
+                where: { userId },
+                select: {
+                    conversationId: true,
+                    conversation: {
+                        include: {
+                            participants: true
+                        }
+                    }
+                }
+            });
+            this.logger.log(`Rejoindre ${conversations.length} conversations pour l'utilisateur ${userId}`);
+            for (const convo of conversations) {
+                const conversationId = convo.conversationId;
+                client.join(conversationId);
+                await this.synchronizeConversationState(client, conversationId, userId, convo.conversation.participants);
+            }
+        }
+        catch (error) {
+            this.logger.error(`Erreur lors de la récupération des conversations: ${error.message}`);
+            throw error;
+        }
+    }
+    async synchronizeConversationState(client, conversationId, userId, participants) {
+        try {
+            const questionGroupKey = `conversation:${conversationId}:icebreaker:questionGroup`;
+            const questionGroup = await this.redis.get(questionGroupKey);
+            if (questionGroup) {
+                client.emit('icebreakerQuestionGroup', {
+                    questionGroup: JSON.parse(questionGroup),
+                    conversationId,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            for (const participant of participants) {
+                client.emit('icebreakerStatusUpdated', {
+                    userId: participant.userId,
+                    conversationId,
+                    isIcebreakerReady: participant.isIcebreakerReady,
+                    timestamp: new Date().toISOString()
+                });
+            }
+            if (participants.length === 2) {
+                const user1 = participants[0].userId;
+                const user2 = participants[1].userId;
+                const response1Key = `icebreaker:response:${conversationId}:${user1}`;
+                const response2Key = `icebreaker:response:${conversationId}:${user2}`;
+                const response1 = await this.redis.get(response1Key);
+                const response2 = await this.redis.get(response2Key);
+                if (response1 && response2) {
+                    const parsedResponse1 = JSON.parse(response1);
+                    const parsedResponse2 = JSON.parse(response2);
+                    client.emit('icebreakerResponses', {
+                        conversationId,
+                        questionGroupId: parsedResponse1.questionGroupId,
+                        userId1: user1,
+                        optionId1: parsedResponse1.optionId,
+                        userId2: user2,
+                        optionId2: parsedResponse2.optionId,
+                        answeredAt: new Date().toISOString()
+                    });
+                }
+            }
+            const otherParticipant = participants.find(p => p.userId !== userId);
+            if (otherParticipant) {
+                const typingKey = `conversation:${conversationId}:typing:${otherParticipant.userId}`;
+                const isTyping = await this.redis.get(typingKey);
+                if (isTyping) {
+                    client.emit('typing', {
+                        conversationId,
+                        userId: otherParticipant.userId,
+                        isTyping: true,
+                        timestamp: new Date().toISOString()
+                    });
+                }
+            }
+        }
+        catch (error) {
+            this.logger.warn(`Erreur lors de la synchronisation de la conversation ${conversationId}: ${error.message}`);
+        }
     }
 };
 exports.ChatGateway = ChatGateway;

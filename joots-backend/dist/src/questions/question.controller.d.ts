@@ -16,17 +16,17 @@ export declare class QuestionController {
     } | null>;
     getNextRandomQuestionGroup(userId1: string, userId2: string): Promise<({
         questions: {
-            id: string;
             question: string;
-            groupId: string;
+            id: string;
             locale: string;
+            groupId: string;
         }[];
         options: {
             id: string;
-            groupId: string;
             locale: string;
             label: string;
             order: number;
+            groupId: string;
         }[];
         categories: ({
             category: {
@@ -39,8 +39,8 @@ export declare class QuestionController {
                 id: number;
             };
         } & {
-            questionGroupId: string;
             categoryId: number;
+            questionGroupId: string;
         })[];
     } & {
         id: string;
@@ -59,12 +59,12 @@ export declare class QuestionController {
         conversationId: string;
     }): Promise<{
         id: string;
-        questionGroupId: string;
-        userId: string;
-        questionOptionId: string;
-        conversationId: string | null;
-        answeredAt: Date;
         updatedAt: Date;
+        userId: string;
+        conversationId: string | null;
+        questionGroupId: string;
+        questionOptionId: string;
+        answeredAt: Date;
         note: string | null;
         isFlagged: boolean;
     }>;

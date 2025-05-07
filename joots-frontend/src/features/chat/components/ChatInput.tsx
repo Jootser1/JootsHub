@@ -1,8 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 import { useUserStore } from '@/features/user/stores/userStore';
-import { useChatSocket } from '@/features/chat/sockets/useChatSocket';
-
+import { useSocketManager } from '@/hooks/useSocketManager';
 interface ChatInputProps {
   conversationId: string;
 }
@@ -14,7 +12,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useUserStore();
-  const { isConnected, sendMessage, sendTypingStatus } = useChatSocket();
+  const { isChatConnected, sendChatMessage, sendTypingStatus } = useSocketManager();
   
 
   
@@ -62,7 +60,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
     e.preventDefault();
     if (!message.trim()) return;
     
-    if (!isConnected) {
+    if (!isChatConnected) {
       setSendAttempted(true);
       setTimeout(() => setSendAttempted(false), 3000);
       return;
@@ -70,7 +68,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
 
     if (user?.id) {
       try {
-        const sendResult = sendMessage(conversationId, message.trim(), user.id);
+        const sendResult = sendChatMessage(conversationId, message.trim(), user.id);
         
         // Si le résultat est une promesse (cas de reconnexion)
         if (sendResult instanceof Promise) {
@@ -107,7 +105,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
 
   return (
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
-      {sendAttempted && !isConnected && (
+      {sendAttempted && !isChatConnected && (
         <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm">
           Impossible d'envoyer le message : connexion au chat non établie. Veuillez réessayer dans quelques instants.
         </div>
@@ -119,10 +117,10 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
             type="text"
             value={message}
             onChange={handleInputChange}
-            placeholder={isConnected ? "Écrivez votre message..." : "Reconnexion en cours..."}
-            className={`w-full rounded-lg border ${!isConnected ? 'border-orange-300 bg-orange-50' : 'border-gray-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
+            placeholder={isChatConnected ? "Écrivez votre message..." : "Reconnexion en cours..."}
+            className={`w-full rounded-lg border ${!isChatConnected ? 'border-orange-300 bg-orange-50' : 'border-gray-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
-          {!isConnected && (
+          {!isChatConnected && (
             <span className="absolute right-2 top-1/2 transform -translate-y-1/2 flex items-center">
               <span className="animate-pulse h-2 w-2 bg-orange-500 rounded-full mr-1"></span>
             </span>
@@ -130,7 +128,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
         </div>
         <button
           type="submit"
-          disabled={!message.trim() || !isConnected}
+          disabled={!message.trim() || !isChatConnected}
           className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Envoyer

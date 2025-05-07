@@ -1,34 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { User } from '@/features/user/user.types';
 import { devtools } from 'zustand/middleware';
-interface ContactStore {
-  // Liste des utilisateurs avec qui on a une conversation
-  contactList: Set<string>;
+import axiosInstance from '@/app/api/axiosInstance';
+import { logger } from '@/utils/logger';
+import { ContactStore } from '@/features/contacts/contacts.types';
 
-  // État en ligne - uniquement pour les contacts
-  onlineContacts: Set<string>;
-  
-  // Cache des utilisateurs - uniquement pour les contacts
-  userCache: Record<string, User & { lastSeen: number }>;
-  
-  // Gestion des contacts
-  addContact: (userId: string) => void;
-  removeContact: (userId: string) => void;
-  isContact: (userId: string) => boolean;
-  
-  // Gestion des états en ligne
-  setUserOnlineStatus: (userId: string, isOnline: boolean) => void;
-  isUserOnline: (userId: string) => boolean;
-  
-  // Gestion du cache utilisateurs
-  cacheUser: (user: User) => void;
-  getCachedUser: (userId: string) => (User & { lastSeen: number }) | undefined;
-  
-  // Synchronisation et nettoyage
-  syncWithConversations: (participantIds: string[]) => void;
-  purgeCacheOlderThan: (timestamp: number) => void;
-}
 
 export const useContactStore = create<ContactStore>()(
   devtools(
@@ -61,6 +37,31 @@ export const useContactStore = create<ContactStore>()(
             userCache: remainingUserCache
           };
         }),
+      
+      resetContacts: () => {
+        set({
+          contactList: new Set<string>(),
+          onlineContacts: new Set<string>(),
+          userCache: {}
+        });
+      },
+
+      loadContacts: async () => {
+        try {
+          const response = await axiosInstance.get('/users/me/contacts');
+          set((state) => {
+            const newContactList = new Set(state.contactList);
+            response.data.forEach((contact: any) => {
+              newContactList.add(contact.contact.id);
+            });
+            return { contactList: newContactList };
+          });
+          logger.info(`${response.data.length} contact(s) récupérés depuis la bdd et syncstore`);
+        } catch (error) {
+          logger.error('Erreur lors du chargement des contacts vers le ContactStore', error);
+        }
+      },
+
       isContact: (userId) => get().contactList.has(userId),
       
       // Fonctions d'état en ligne - uniquement pour les contacts

@@ -105,6 +105,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
         contactIds.forEach(contactId => {
             client.leave(`user-status-${contactId}`);
         });
+        this.logger.debug(`3. Utilisateur ${client.id} a quitté les rooms de contacts: ${contactIds.join(', ')}`);
     }
     async handlePong(client) {
         const userId = client.data.userId;
