@@ -53,13 +53,16 @@ class SocketManager {
       throw new Error('No credentials set for socket connection');
     }
     
-    // Initialisation - utiliser le singleton
-    if (!this.userSocket?.isConnected()) {
-      this.userSocket = UserSocketService.getInstance();
-      this.userSocket.connect(this.userId, this.token);
-      await waitForConnection(this.userSocket);
-      this.userSocket.registerEvents();
+    // Si déjà connecté, retourner l'instance existante sans log redondant
+    if (this.userSocket?.isConnected()) {
+      return this.userSocket;
     }
+    
+    // Initialisation - utiliser le singleton
+    this.userSocket = UserSocketService.getInstance();
+    this.userSocket.connect(this.userId, this.token);
+    await waitForConnection(this.userSocket);
+    this.userSocket.registerEvents();
     
     if (!this.userSocket?.isConnected()) {
       logger.warn("SocketManager: Impossible d'établir une connexion socket User");
@@ -69,8 +72,8 @@ class SocketManager {
     try {
       await this.setupUserRooms();
           
-    // Mettre à jour le statut
-    this.userSocket?.updateUserStatus(this.userId, true);
+      // Mettre à jour le statut
+      this.userSocket?.updateUserStatus(this.userId, true);
     } catch (error) {
       logger.error("Erreur lors de la configuration des rooms:", error);
     }
@@ -89,19 +92,32 @@ class SocketManager {
       throw new Error('No credentials set for socket connection');
     }
     
-    // Initialisation - utiliser le singleton
-    if (!this.chatSocket?.isConnected()) {
-      this.chatSocket = ChatSocketService.getInstance();
-      this.chatSocket.connect(this.userId, this.token);
-      await waitForConnection(this.chatSocket);
-      this.chatSocket.registerEvents();
+    // Si déjà connecté, retourner l'instance existante sans log redondant
+    if (this.chatSocket?.isConnected()) {
+      // Si conversationIds fournis, les joindre
+      if (conversationIds && conversationIds.length > 0) {
+        const existingConversations = this.chatSocket.getActiveConversations();
+        const newConversations = conversationIds.filter(id => !existingConversations.includes(id));
+        
+        if (newConversations.length > 0) {
+          this.chatSocket.joinAllConversations(newConversations);
+          logger.info(`SocketManager: ${newConversations.length} nouvelles conversations rejointes`);
+        }
+      }
+      
+      return this.chatSocket;
     }
+    
+    // Initialisation - utiliser le singleton
+    this.chatSocket = ChatSocketService.getInstance();
+    this.chatSocket.connect(this.userId, this.token);
+    await waitForConnection(this.chatSocket);
+    this.chatSocket.registerEvents();
     
     if (!this.chatSocket?.isConnected()) {
       logger.warn("SocketManager: Impossible d'établir une connexion socket chat");
       return this.chatSocket;
     }
-    
     
     if (conversationIds && conversationIds.length > 0) {
       const chatService = this.chatSocket;

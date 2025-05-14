@@ -13,6 +13,30 @@ export function useSocketManager() {
   const [isUserConnected, setIsUserConnected] = useState(socketManager.isUserSocketConnected());
   const [isChatConnected, setIsChatConnected] = useState(socketManager.isChatSocketConnected());
   
+  // Synchronisation de l'état avec l'état réel des sockets
+  useEffect(() => {
+    // Vérifier l'état actuel
+    const updateConnectionState = () => {
+      const currentUserConnected = socketManager.isUserSocketConnected();
+      const currentChatConnected = socketManager.isChatSocketConnected();
+
+      if (currentUserConnected !== isUserConnected) {
+        setIsUserConnected(currentUserConnected);
+      }
+
+      if (currentChatConnected !== isChatConnected) {
+        setIsChatConnected(currentChatConnected);
+      }
+    };
+
+    // Vérifier immédiatement
+    updateConnectionState();
+
+    // Vérifier périodiquement
+    const intervalId = setInterval(updateConnectionState, 2000);
+    
+    return () => clearInterval(intervalId);
+  }, []);
   
   // Connexion du socket utilisateur
   const connectUserSocket = useCallback(async (userId: string, token: string) => {
@@ -62,23 +86,39 @@ export function useSocketManager() {
   // Connexion avec toutes les conversations de l'utilisateur
   const connectWithAllUserConversations = useCallback(async (userId: string, token: string) => {
     try {
-      // Récupérer les conversations de l'utilisateur
-      const conversationIds = await fetchUserConversations();
+      // Enregistrer l'état actuel des connexions
+      const isUserAlreadyConnected = socketManager.isUserSocketConnected();
+      const isChatAlreadyConnected = socketManager.isChatSocketConnected();
       
-      // Connexion du socket chat avec ces conversations
-      socketManager.setCredentials(userId, token);
-      const chatSocket = await socketManager.connectChatSocket(conversationIds);
+      // 1. S'assurer que le socket utilisateur est connecté
+      if (!isUserAlreadyConnected) {
+        socketManager.setCredentials(userId, token);
+        await socketManager.connectUserSocket();
+        setIsUserConnected(true);
+      }
 
-      const isConnected = chatSocket.isConnected();
-      setIsChatConnected(isConnected);
-      
-      logger.info(`useSocketManager: Socket connecté avec ${conversationIds.length} conversations: ${isConnected}`);
-      return isConnected;
+      // 2. S'assurer que le socket chat est connecté avec toutes les conversations
+      if (!isChatAlreadyConnected) {
+        // Récupérer les conversations de l'utilisateur
+        const conversationIds = await fetchUserConversations();
+        
+        // Connexion du socket chat avec ces conversations
+        const chatSocket = await socketManager.connectChatSocket(conversationIds);
+        const isConnected = chatSocket.isConnected();
+        setIsChatConnected(isConnected);
+        
+        logger.info(`useSocketManager: Socket connecté avec ${conversationIds.length} conversations: ${isConnected}`);
+        return isConnected;
+      } else {
+        // Si déjà connecté, synchroniser l'état local
+        setIsChatConnected(true);
+        return true;
+      }
     } catch (error) {
       logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error);
       return false;
     }
-  }, [fetchUserConversations, isChatConnected]);
+  }, [fetchUserConversations]);
   
   // Déconnexion des sockets
   const disconnectUserSocket = useCallback(() => {
@@ -101,8 +141,13 @@ export function useSocketManager() {
   const joinConversation = useCallback((conversationId: string) => {
     const chatSocket = socketManager.getChatSocket();
     if (chatSocket?.isConnected()) {
-      chatSocket.joinConversation(conversationId);
-      logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+      // Vérifier si déjà dans la conversation avant de rejoindre
+      if (!isConversationActive(conversationId)) {
+        chatSocket.joinConversation(conversationId);
+        logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+      } else {
+        logger.info(`useSocketManager: Déjà dans la conversation: ${conversationId}`);
+      }
     } else {
       logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
     }

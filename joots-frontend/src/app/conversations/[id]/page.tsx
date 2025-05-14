@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, use } from "react"
+import { useEffect, useState, use, useRef } from "react"
 import axiosInstance from "@/app/api/axiosInstance"
 import AppLayout from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
@@ -27,20 +27,26 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const user = useUserStore((state) => state.user)
   const [conversation, setConversation] = useState<Conversation | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-
+  const fetchAttemptedRef = useRef(false);
+  const conversationInitializedRef = useRef(false);
   
   useEffect(() => {
     const fetchConversation = async () => {
+      // Éviter les appels multiples
+      if (fetchAttemptedRef.current) return;
+      fetchAttemptedRef.current = true;
+      
       try {
         const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
         const conversationData = response.data;
         setConversation(conversationData);
         
-        // Ajout de la conversation entière au chatStore
-        if (conversationData) {
+        // Ajout de la conversation entière au chatStore, une seule fois
+        if (conversationData && !conversationInitializedRef.current) {
+          conversationInitializedRef.current = true;
           useChatStore.getState().initializeConversation(conversationData);
+          useChatStore.getState().setActiveConversation(conversationData.id);
         }
-        useChatStore.getState().setActiveConversation(conversationData.id);
       } catch (error: any) {
         toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
       } finally {
@@ -48,14 +54,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       }
     }
 
-
-    
-    if (user && resolvedParams.id) {
+    if (user && resolvedParams.id && !fetchAttemptedRef.current) {
       fetchConversation()
     }
   }, [user, resolvedParams.id])
-  
-  
   
   if (isLoading) {
     return (

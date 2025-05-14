@@ -51,13 +51,14 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
       return (
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
         <button className="w-18 h-18 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-300 hover:shadow-xl transition duration-300">
-          <Image 
-            src="/joots_logo.png"
-            alt="Icebreaker"
-            width={45}
-            height={45}
-            className="absolute bottom-3"
-          />
+          <div className="absolute bottom-3">
+            <Image 
+              src="/joots_logo.png"
+              alt="Icebreaker"
+              width={45}
+              height={45}
+            />
+          </div>
         </button>
       </div>
       )
@@ -65,13 +66,14 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
       return (
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2">
         <button onClick={handleClick} className="w-18 h-18 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-300 hover:shadow-xl transition duration-300">
-          <Image 
-            src={imageSrc}
-            alt="Icebreaker"
-            width={45}
-            height={45}
-            className="absolute bottom-3"
-          />
+          <div className="absolute bottom-3">
+            <Image 
+              src={imageSrc}
+              alt="Icebreaker"
+              width={45}
+              height={45}
+            />
+          </div>
         </button>
       </div>
       )

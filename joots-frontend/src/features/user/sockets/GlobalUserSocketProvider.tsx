@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useState, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { logger } from '@/utils/logger';
@@ -27,6 +27,7 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
   const [isLoading, setIsLoading] = useState(true);
   const { user, syncUserData } = useUserStore();
   const socketManager = useSocketManager();
+  const setupDoneRef = useRef(false);
 
   const connectUserSocket = useCallback(async (userId: string, token: string): Promise<boolean> => {
     try {
@@ -40,6 +41,9 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
 
   useEffect(() => {
     const setupSocket = async () => {
+      // Éviter les configurations multiples
+      if (setupDoneRef.current) return;
+      
       if (status !== 'authenticated'|| !session?.user?.id || !session?.accessToken) {
         logger.debug('GlobalUserSocketProvider: Conditions non remplies pour la connexion', { status, userId: session?.user?.id });
         return;
@@ -63,8 +67,11 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         // Connexion du socket utilisateur
         const success = await connectUserSocket(session.user.id, session.accessToken);
         logger.info(`(Re)Connexion socket utilisateur ${success ? 'réussie' : 'échouée'}`);
+        
+        setupDoneRef.current = true;
       } catch (error) {
         logger.error("Erreur lors de la configuration du socket:", error);
+      } finally {
         setIsLoading(false);
       }
     };
@@ -85,7 +92,17 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
     
     window.addEventListener('beforeunload', handleBeforeUnload);
     window.addEventListener('visibilitychange', handleVisibilityChange);
-    logger.debug('Dependance', { userId: session?.user?.id, status, socketManager });
+    
+    // Mettre à jour les états réels des sockets
+    const socketInfo = { 
+      userId: session?.user?.id, 
+      status, 
+      socketManager: {
+        isUserConnected: socketManager.isUserConnected,
+        isChatConnected: socketManager.isChatConnected
+      }
+    };
+    logger.debug('Dependance', socketInfo);
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
@@ -97,7 +114,7 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         socketManager.disconnectAll();
       }
     };
-  }, [session?.user?.id, status, socketManager.isUserConnected]);
+  }, [session?.user?.id, status]);
   
   const contextValue = {
     isLoading,
