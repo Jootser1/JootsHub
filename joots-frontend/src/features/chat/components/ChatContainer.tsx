@@ -25,7 +25,6 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
   const [lastAnswer, setLastAnswer] = useState<{ questionGroupId: string, optionId: string } | null>(null)
   
   const currentQuestionGroup = getCurrentQuestionGroup(activeConversationId)
-  console.log('currentQuestionGroup', currentQuestionGroup)
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

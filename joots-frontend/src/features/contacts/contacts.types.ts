@@ -10,6 +10,9 @@ export interface ContactStore {
   // Cache des utilisateurs - uniquement pour les contacts
   userCache: Record<string, User & { lastSeen: number }>;
   
+  // Timestamp de la dernière synchronisation avec la base de données
+  lastSyncTime?: number;
+  
   // Gestion des contacts
   addContact: (userId: string) => void;
   removeContact: (userId: string) => void;

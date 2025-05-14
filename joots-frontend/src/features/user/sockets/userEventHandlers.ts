@@ -11,7 +11,7 @@ export function handleUserStatusChange(data: UserStatusChange, currentUserId?: s
   
   // Si c'est l'utilisateur actuel, mettre à jour son statut
   if (data.userId === currentUserId) {
-    userStore.updateUserStatus(data.isOnline);
+    userStore.setUserStatus(data.isOnline);
     logger.debug('L\'utilisateur actif se met à jour dans le user store', { data });
   }
   

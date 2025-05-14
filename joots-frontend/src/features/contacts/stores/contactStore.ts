@@ -13,6 +13,7 @@ export const useContactStore = create<ContactStore>()(
       contactList: new Set<string>(),
       onlineContacts: new Set<string>(),
       userCache: {},
+      lastSyncTime: 0,
       
       // Fonctions de gestion des contacts
       addContact: (userId) => 
@@ -42,7 +43,8 @@ export const useContactStore = create<ContactStore>()(
         set({
           contactList: new Set<string>(),
           onlineContacts: new Set<string>(),
-          userCache: {}
+          userCache: {},
+          lastSyncTime: 0
         });
       },
 
@@ -54,7 +56,10 @@ export const useContactStore = create<ContactStore>()(
             response.data.forEach((contact: any) => {
               newContactList.add(contact.contact.id);
             });
-            return { contactList: newContactList };
+            return { 
+              contactList: newContactList,
+              lastSyncTime: Date.now()
+            };
           });
           logger.info(`${response.data.length} contact(s) récupérés depuis la bdd et syncstore`);
         } catch (error) {
@@ -132,6 +137,7 @@ export const useContactStore = create<ContactStore>()(
         contactList: Array.from(state.contactList),
         onlineContacts: Array.from(state.onlineContacts),
         userCache: state.userCache,
+        lastSyncTime: state.lastSyncTime,
       }),
       onRehydrateStorage: () => (state) => {
         if (state) {

@@ -16,4 +16,7 @@ export declare class UserGateway extends BaseGateway {
         contactIds: string[];
     }): Promise<void>;
     handlePong(client: Socket): Promise<void>;
+    handleUpdateUserStatus(client: Socket, payload: {
+        isOnline: boolean;
+    }): Promise<void>;
 }

@@ -89,6 +89,7 @@ export class UserGateway extends BaseGateway {
     }
   }
 
+  
   private async notifyContactsStatusChange(userId: string, isOnline: boolean) {
   
     try {
@@ -143,6 +144,41 @@ export class UserGateway extends BaseGateway {
     const userId = client.data.userId;
     if (userId) {
       await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+    }
+  }
+  
+  @SubscribeMessage('updateUserStatus')
+  async handleUpdateUserStatus(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() payload: { isOnline: boolean }
+  ) {
+    const userId = client.data.userId;
+    if (!userId) return;
+    
+    const { isOnline } = payload;
+    
+    try {
+      // Mettre à jour le statut dans la BDD
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: { isOnline }
+      });
+      
+      // Mettre à jour Redis
+      if (isOnline) {
+        await this.redis.sadd('online_users', userId);
+      } else {
+        await this.redis.srem('online_users', userId);
+      }
+      await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+      this.logger.log(`[Redis] ${userId} : Statut utilisateur mis à jour : ${isOnline}`);
+      
+      // Notifier les contacts
+      await this.notifyContactsStatusChange(userId, isOnline);
+      
+      this.logger.log(`[User Socket ${client.id}] ${userId} : Statut mis à jour manuellement: ${isOnline ? 'en ligne' : 'hors ligne'}`);
+    } catch (error) {
+      this.logger.error(`[User Socket ${client.id}] Erreur lors de la mise à jour du statut: ${error.message}`);
     }
   }
 } 

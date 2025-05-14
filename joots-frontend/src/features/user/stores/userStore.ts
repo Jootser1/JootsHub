@@ -17,7 +17,7 @@ interface UserStore {
   setMobileMenuOpen: (open: boolean) => void;
   
   // User status
-  updateUserStatus: (isOnline: boolean, source?: 'socket' | 'redis') => void;
+  setUserStatus: (isOnline: boolean, source?: 'socket' | 'redis') => void;
   updateChatAvailability: (isAvailable: boolean) => void;
   syncUserData: () => Promise<void>;
 }
@@ -44,7 +44,7 @@ export const useUserStore = create<UserStore>()(
         setMobileMenuOpen: (open) => set({ mobileMenuOpen: open }),
         
         // User status
-        updateUserStatus: (isOnline, source = 'socket') => {
+        setUserStatus: (isOnline, source = 'socket') => {
           set((state) => {
             if (!state.user) return state;
             

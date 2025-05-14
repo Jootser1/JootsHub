@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, ReactNode, useEffect, useState } from 'react';
+import { createContext, useContext, ReactNode, useEffect, useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { logger } from '@/utils/logger';
@@ -19,26 +19,32 @@ const GlobalUserSocketContext = createContext<GlobalUserSocketContextType>({
   isChatConnected: false
 });
 
+// Constante pour définir le délai de rafraîchissement des contacts (15 minutes)
+const CONTACT_REFRESH_INTERVAL = 15 * 60 * 1000;
+
 export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) => {
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const { user, syncUserData } = useUserStore();
   const socketManager = useSocketManager();
-  
+
+  const connectUserSocket = useCallback(async (userId: string, token: string): Promise<boolean> => {
+    try {
+      await socketManager.connectUserSocket(userId, token);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }, [socketManager]);
+
+
   useEffect(() => {
     const setupSocket = async () => {
       if (status !== 'authenticated'|| !session?.user?.id || !session?.accessToken) {
         logger.debug('GlobalUserSocketProvider: Conditions non remplies pour la connexion', { status, userId: session?.user?.id });
         return;
       }
-      
-      // Vérifier si le socket est déjà connecté
-      if (socketManager.isUserConnected) {
-        setIsLoading(false);
-        logger.debug('GlobalUserSocketProvider: Socket déjà connecté');
-        return;
-      }
-            
+                  
       try {
         // Récupération des données utilisateur depuis bdd et sync userStore
         if (!user) {
@@ -46,11 +52,17 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         }
 
         //Récupération des données Contacts depuis bdd et Mise à jour des contacts dans ContactStore
-        await useContactStore.getState().loadContacts();
+        const contactStore = useContactStore.getState();
+        const lastSyncTime = contactStore.lastSyncTime || 0;
+        const shouldRefresh = Date.now() - lastSyncTime > CONTACT_REFRESH_INTERVAL;
+        
+        if (contactStore.contactList.size === 0 || shouldRefresh) {
+          await contactStore.loadContacts();
+        }
         
         // Connexion du socket utilisateur
-        await socketManager.connectUserSocket(session.user.id, session.accessToken);
-        setIsLoading(false);
+        const success = await connectUserSocket(session.user.id, session.accessToken);
+        logger.info(`(Re)Connexion socket utilisateur ${success ? 'réussie' : 'échouée'}`);
       } catch (error) {
         logger.error("Erreur lors de la configuration du socket:", error);
         setIsLoading(false);

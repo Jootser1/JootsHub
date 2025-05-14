@@ -30,7 +30,6 @@ export class ChatSocketService extends BaseSocketService {
       return;
     }
     
-    logger.info('Enregistrement des événements socket chat pour', this.userId);
     Object.entries(chatEventRegistry).forEach(([event, handler]) => {
       this.onEvent(event, handler);
     });

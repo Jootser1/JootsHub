@@ -26,38 +26,51 @@ export interface ChatState {
   activeConversationId: string | null;
   currentQuestionGroup: string | null;
   error: string | null;
+  userId?: string;
+  token?: string;
+  conversationsIds: string[];
 }
 
 export type ChatActions = {
-  // Connection actions
+  // Connection context
   setActiveConversation: (conversationId: string | null) => void;
   setError: (error: string | null) => void;
-
-  // Message actions
+  
+  // Conversation lifecycle
+  loadAllConversations: () => Promise<void>;
+  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
+  initializeConversation: (conversation: Conversation) => void;
+  
+  // Message lifecycle
   addMessage: (conversationId: string, message: Message) => void;
-  getMessagesFromConversation: (conversationId: string) => Message[];
   updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) => void;
   markMessagesAsRead: (conversationId: string) => void;
-  initializeConversation: (conversation: Conversation) => void;
-  fetchRandomQuestion: (conversationId: string) => void;
-
-  // Conversation actions
-  getConversation: (conversationId: string) => Conversation | undefined;
-  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
-  updateParticipantField: <K extends keyof ConversationParticipant>(
+  
+  // Participants
+  updateParticipantField: (
     conversationId: string,
     participantId: string,
-    field: K,
-    value: ConversationParticipant[K]
-  ) => void;
-  setParticipantResponse: (conversationId: string, participantId: string, response: IcebreakerResponse) => void;
-  getParticipantResponse: (conversationId: string, participantId: string) => IcebreakerResponse | null;
+    field: 'isIcebreakerReady' | 'hasGivenAnswer' | 'isTyping',
+    value: boolean
+  ) => void;  
+  
+  // Icebreaker
   resetIcebreakerStatus: (conversationId: string) => void;
+  
+  // Helpers
+  getMessagesFromConversation: (conversationId: string) => Message[];
+  getConversation: (conversationId: string) => Conversation | undefined;
+  getCurrentQuestionGroup: (conversationId: string) => string | null;
+  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) => void;
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined;
   getOtherParticipantId: (conversationId: string, userId: string) => string | undefined;
-  getCurrentQuestionGroup: (conversationId: string) => string | null;
-  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) => void;
-}
+  getOtherParticipantIcebreakerStatus: (conversationId: string, userId: string) => boolean | undefined;
+  getParticipantResponse: (conversationId: string, participantId: string) => IcebreakerResponse | null;
+  
+  
+  // Conversation actions
+  setConversationsIds: (conversationIds: string[]) => void;
+};
 
 export type ChatStore = ChatState & ChatActions; 

@@ -22,11 +22,9 @@ export abstract class BaseSocketService {
   }
   
   connect(userId: string, token: string): void {
-    if (this.socket) {
-      if (this.socket.connected) {
+    if (this.socket && this.socket.connected) {
         logger.info(`BaseSocketService: Socket déjà connecté pour ${this.namespace}`);
         return;
-      }
     }
     
     this.userId = userId;

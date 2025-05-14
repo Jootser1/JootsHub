@@ -3,7 +3,7 @@ import { socketManager } from '@/lib/sockets/socketManager';
 import { logger } from '@/utils/logger';
 import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
 import axiosInstance from '@/app/api/axiosInstance';
-
+import { useChatStore } from '@/features/chat/stores/chatStore';
 /**
  * Hook personnalisé pour accéder aux fonctionnalités du socketManager
  * Remplace les stores chatSocketStore et userSocketStore
@@ -43,8 +43,14 @@ export function useSocketManager() {
   // Récupération des conversations de l'utilisateur
   const fetchUserConversations = useCallback(async () => {
     try {
+      let conversationIds = useChatStore.getState().conversationsIds;
+      if (conversationIds.length > 0) {
+        return conversationIds;
+      }
       const response = await axiosInstance.get('/conversations');
-      const conversationIds = response.data.map((conv: any) => conv.id);
+      conversationIds = response.data.map((conv: any) => conv.id);
+      const chatStore = useChatStore.getState();
+      chatStore.setConversationsIds(conversationIds);
       logger.info(`${conversationIds.length} conversation(s) récupérées depuis la bdd`);
       return conversationIds;
     } catch (error) {

@@ -4,7 +4,7 @@ import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
 import { waitForConnection } from '@/utils/socketUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
-
+import { useChatStore } from '@/features/chat/stores/chatStore';
 /**
 * Gestionnaire global de sockets pour toute l'application
 * Implémenté comme un singleton accessible partout
@@ -61,14 +61,16 @@ class SocketManager {
       this.userSocket.registerEvents();
     }
     
-    if (!this.chatSocket?.isConnected()) {
+    if (!this.userSocket?.isConnected()) {
       logger.warn("SocketManager: Impossible d'établir une connexion socket User");
       return this.userSocket;
     }
     
     try {
-      logger.info('SocketManager: Configuration des rooms utilisateur');
-      await this.setupUserRooms(this.userSocket);
+      await this.setupUserRooms();
+          
+    // Mettre à jour le statut
+    this.userSocket?.updateUserStatus(this.userId, true);
     } catch (error) {
       logger.error("Erreur lors de la configuration des rooms:", error);
     }
@@ -131,7 +133,7 @@ class SocketManager {
         // 2. Mise à jour du statut utilisateur (hors ligne)
         if (userId) {
           logger.info('2. Passe le statut utilisateur de ${userId} à offline dans le UserStore');
-          useUserStore.getState().updateUserStatus(false);
+          useUserStore.getState().setUserStatus(false);
           this.userSocket.updateUserStatus(userId, false);
           logger.info('Socket utilisateur nettoyé, utilisateur marqué hors ligne');
         }
@@ -180,7 +182,7 @@ class SocketManager {
   }
   
   //Configure les rooms de contacts pour l'utilisateur
-  private async setupUserRooms(socketService: UserSocketService): Promise<void> {
+  private async setupUserRooms(): Promise<void> {
     if (!this.userId) return;
     
     // Récupérer les contacts
@@ -189,14 +191,10 @@ class SocketManager {
     
     // Rejoindre les rooms
     if (contactIds.length > 0) {
-      socketService.joinContactsRooms(contactIds);
-      logger.info(`Rooms des contacts rejointes: ${contactIds.length}`);
-      logger.info('Contact store:', { contactsArray: contactIds });
+      this.userSocket?.joinContactsRooms(contactIds);
+      logger.info(`[UserSocket] ${this.userId} a rejoint ${contactIds.length} Contact Rooms`);
+
     }
-    
-    // Mettre à jour le statut
-    socketService.updateUserStatus(this.userId, true);
-    logger.info('Statut utilisateur mis à jour dans redis via socket');
   }
   
   //Récupère l'instance du socket utilisateur
