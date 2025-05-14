@@ -42,6 +42,7 @@ export type ChatActions = {
   fetchRandomQuestion: (conversationId: string) => void;
 
   // Conversation actions
+  getConversation: (conversationId: string) => Conversation | undefined;
   updateConversation: (conversationId: string, updates: Partial<Conversation>) => void;
   updateParticipantField: <K extends keyof ConversationParticipant>(
     conversationId: string,

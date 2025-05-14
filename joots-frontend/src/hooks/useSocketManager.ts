@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { socketManager } from '@/lib/sockets/socketManager';
 import { logger } from '@/utils/logger';
 import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
@@ -13,10 +13,6 @@ export function useSocketManager() {
   const [isUserConnected, setIsUserConnected] = useState(socketManager.isUserSocketConnected());
   const [isChatConnected, setIsChatConnected] = useState(socketManager.isChatSocketConnected());
   
-  // Méthodes d'authentification et de connexion
-  const setCredentials = useCallback((userId: string, token: string) => {
-    socketManager.setCredentials(userId, token);
-  }, []);
   
   // Connexion du socket utilisateur
   const connectUserSocket = useCallback(async (userId: string, token: string) => {
@@ -36,32 +32,11 @@ export function useSocketManager() {
     try {
       socketManager.setCredentials(userId, token);
       const chatSocket = await socketManager.connectChatSocket(conversationIds);
-      setIsChatConnected(chatSocket.isConnected());
+
       return chatSocket;
     } catch (error) {
       logger.error('useSocketManager: Erreur lors de la connexion du socket chat', error);
       throw error;
-    }
-  }, []);
-  
-  // Connexion avec toutes les conversations de l'utilisateur
-  const connectWithAllUserConversations = useCallback(async (userId: string, token: string) => {
-    try {
-      // Récupérer les conversations de l'utilisateur
-      const conversationIds = await fetchUserConversations();
-      
-      // Connexion du socket chat avec ces conversations
-      socketManager.setCredentials(userId, token);
-      const chatSocket = await socketManager.connectChatSocket(conversationIds);
-      
-      const isConnected = chatSocket.isConnected();
-      setIsChatConnected(isConnected);
-      
-      logger.info(`useSocketManager: Socket connecté avec ${conversationIds.length} conversations: ${isConnected}`);
-      return isConnected;
-    } catch (error) {
-      logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error);
-      return false;
     }
   }, []);
   
@@ -77,6 +52,27 @@ export function useSocketManager() {
       return [];
     }
   }, []);
+  
+  // Connexion avec toutes les conversations de l'utilisateur
+  const connectWithAllUserConversations = useCallback(async (userId: string, token: string) => {
+    try {
+      // Récupérer les conversations de l'utilisateur
+      const conversationIds = await fetchUserConversations();
+      
+      // Connexion du socket chat avec ces conversations
+      socketManager.setCredentials(userId, token);
+      const chatSocket = await socketManager.connectChatSocket(conversationIds);
+
+      const isConnected = chatSocket.isConnected();
+      setIsChatConnected(isConnected);
+      
+      logger.info(`useSocketManager: Socket connecté avec ${conversationIds.length} conversations: ${isConnected}`);
+      return isConnected;
+    } catch (error) {
+      logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error);
+      return false;
+    }
+  }, [fetchUserConversations, isChatConnected]);
   
   // Déconnexion des sockets
   const disconnectUserSocket = useCallback(() => {
@@ -195,7 +191,6 @@ export function useSocketManager() {
     isChatConnected,
     
     // Méthodes d'authentification et de connexion
-    setCredentials,
     connectUserSocket,
     connectChatSocket,
     connectWithAllUserConversations,

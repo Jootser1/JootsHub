@@ -84,14 +84,14 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
     </div>
     
     <div className="mb-4">
-    <h3 className="text-lg font-semibold">{question?.questions[0].question}</h3>
+    <h3 className="text-lg font-semibold">{question?.questions && question.questions.length > 0 ? question.questions[0].question : 'Chargement de la question...'}</h3>
     </div>
     
     <div className="max-h-[60vh] overflow-y-auto">
     <div className={cn("grid gap-2", question && question.options.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
     
     
-       {question?.options.map((option: Option, index: number) => (
+       {question?.options && question.options.length > 0 && question?.options.map((option: Option, index: number) => (
          <Button
            key={option.id}
            variant={selectedOptionId === option.id ? "default" : "outline"}

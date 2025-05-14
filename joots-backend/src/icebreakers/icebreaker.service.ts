@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { QuestionGroupWithRelations } from '../../types/question';
 import { ChatGateway } from '../gateways/chat.gateway';
+import { MessagesService } from '../messages/messages.service';
 
 @Injectable()
 export class IcebreakerService {
@@ -10,6 +11,7 @@ export class IcebreakerService {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     @Inject(forwardRef(() => ChatGateway)) private readonly chatGateway: ChatGateway,
+    private readonly messagesService: MessagesService,
   ) {}
   
   async setParticipantIcebreakerReady(conversationId: string, userId: string, isIcebreakerReady: boolean) {
@@ -30,9 +32,9 @@ export class IcebreakerService {
     return participants.every(p => p.isIcebreakerReady);
   }
   
-  async areAllParticipantsHaveGivenAnswer(conversationId: string): Promise<boolean> {
+  async areAllParticipantsHaveGivenAnswer(conversationId: string): Promise<{allParticipantsHaveGivenAnswer: boolean, userAId: string, userBId: string}> {
     const participants = await this.prisma.conversationParticipant.findMany({ where: { conversationId } });
-    return participants.every(p => p.hasGivenAnswer);
+    return {allParticipantsHaveGivenAnswer: participants.every(p => p.hasGivenAnswer), userAId: participants[0].userId, userBId: participants[1].userId};
   }
   
   async storeCurrentQuestionGroupForAGivenConversation(conversationId: string, questionGroup: QuestionGroupWithRelations) {
@@ -75,10 +77,58 @@ export class IcebreakerService {
     });
     
     // Vérifier si tous les participants ont donné une réponse
-    const allParticipantsHaveGivenAnswer = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+    const {allParticipantsHaveGivenAnswer, userAId, userBId} = await this.areAllParticipantsHaveGivenAnswer(conversationId);
     
     // Mettre à jour isIcebreakerReady et hasGivenAnswer à false pour les deux participants
     if (allParticipantsHaveGivenAnswer) {
+
+      const userAnswers = await this.prisma.userAnswer.findMany({
+        where: {
+          conversationId,
+          questionGroupId
+        },
+        include: {
+          questionOption: {
+            select: {
+              label: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              username: true
+            }
+          },
+          questionGroup: {
+            include: {
+              questions: {
+                where: {
+                  locale: 'fr_FR'
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (userAnswers.length !== 2) {
+        console.warn(`La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`);
+        return;
+      }
+
+      const userAnswerA = userAnswers[0];
+      const userAnswerB = userAnswers[1];
+
+      const questionLabel = userAnswerA.questionOption.label; // Supposons que les deux utilisateurs ont répondu à la même question
+
+      console.log(`Question: ${questionLabel}`);
+      console.log(`Utilisateur A: ${userAnswerA.user.username}, Réponse: ${userAnswerA.questionOption.label}`);
+      console.log(`Utilisateur B: ${userAnswerB.user.username}, Réponse: ${userAnswerB.questionOption.label}`);
+
+
+
+      //const savedResponse = await this.messagesService.addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB);
+
       await this.prisma.conversationParticipant.updateMany({
         where: {
           conversationId

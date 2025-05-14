@@ -26,9 +26,8 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
     }
     async handleConnection(client) {
         const userId = client.data.userId;
-        console.log('userId/token', userId, client.handshake.auth.token);
         if (!userId) {
-            this.logger.warn(`Connexion rejetée sans ID utilisateur: ${client.id}`);
+            this.logger.warn(`[User Socket ${client.id}] Connexion rejetée sans ID utilisateur`);
             client.disconnect();
             return;
         }
@@ -39,7 +38,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
             });
             await this.redis.sadd('online_users', userId);
             await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
-            this.logger.log(`Utilisateur connecté: ${userId}`);
+            this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur connecté`);
             const contacts = await this.prisma.userContact.findMany({
                 where: { userId: userId },
                 select: { contactId: true }
@@ -50,7 +49,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
             await this.notifyContactsStatusChange(userId, true);
         }
         catch (error) {
-            this.logger.error(`Erreur lors de la connexion: ${error.message}`);
+            this.logger.error(`[User Socket ${client.id}] Erreur lors de la connexion: ${error.message}`);
         }
     }
     async handleDisconnect(client) {
@@ -65,10 +64,10 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
             await this.redis.srem('online_users', userId);
             await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
             await this.notifyContactsStatusChange(userId, false);
-            this.logger.log(`Utilisateur déconnecté: ${userId}`);
+            this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
         }
         catch (error) {
-            this.logger.error(`Erreur lors de la déconnexion: ${error.message}`);
+            this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de la déconnexion: ${error.message}`);
         }
     }
     async notifyContactsStatusChange(userId, isOnline) {
@@ -87,10 +86,10 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
                 isOnline,
                 timestamp: new Date().toISOString()
             });
-            this.logger.debug(`Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié aux contacts de ${user?.username || userId}`);
+            this.logger.debug(`[User Socket] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
         }
         catch (error) {
-            this.logger.error(`Erreur lors de la notification des contacts: ${error.message}`);
+            this.logger.error(`[User Socket] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
         }
     }
     async handleJoinContactsRooms(client, payload) {
@@ -105,7 +104,7 @@ let UserGateway = UserGateway_1 = class UserGateway extends base_gateway_1.BaseG
         contactIds.forEach(contactId => {
             client.leave(`user-status-${contactId}`);
         });
-        this.logger.debug(`3. Utilisateur ${client.id} a quitté les rooms de contacts: ${contactIds.join(', ')}`);
+        this.logger.debug(`[User Socket] ${client.data.userId} : a quitté les rooms de contacts: ${contactIds.join(', ')}`);
     }
     async handlePong(client) {
         const userId = client.data.userId;

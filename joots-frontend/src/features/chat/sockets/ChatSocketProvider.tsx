@@ -13,16 +13,16 @@ interface ChatSocketProviderProps {
  //Composant qui établit et maintient une connexion socket chat pour l'utilisateur connecté
 export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
     const { data: session, status } = useSession();
-    const socketManager = useSocketManager();
+    const socketMan = useSocketManager();
 
     // Fonction mémorisée pour connecter le socket chat
     const connectChat = useCallback(async (userId: string, token: string) => {
         try {
-            await socketManager.connectWithAllUserConversations(userId, token);
+            await socketMan.connectWithAllUserConversations(userId, token);
         } catch (error) {
             logger.error("Erreur lors de l'initialisation du socket chat:", error);
         }
-    }, [socketManager]);
+    }, [socketMan]);
 
     // Effet principal pour établir la connexion socket
     useEffect(() => {
@@ -33,7 +33,7 @@ export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
             }
             
             // Vérifier si le socket est déjà connecté
-            if (socketManager.isChatConnected) {
+            if (socketMan.isChatConnected) {
                 logger.debug('ChatSocketProvider: Socket chat déjà connecté');
                 return;
             }
@@ -49,8 +49,7 @@ export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
         session?.user?.id, 
         session?.accessToken, 
         status,
-        connectChat,
-        socketManager.isChatConnected
+        socketMan.isChatConnected
     ]);
     
     // Rendre simplement les enfants

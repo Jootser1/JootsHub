@@ -61,7 +61,7 @@ export class ChatSocketService extends BaseSocketService {
     
     // Rejoindre la nouvelle conversation si pas déjà active
     if (!this.activeConversations.has(conversationId)) {
-      this.socket.emit('joinConversation', conversationId);
+      this.socket.emit('joinConversation', { conversationId, userId: this.userId });
       this.activeConversations.add(conversationId);
       logger.info(`Conversation rejointe: ${conversationId}`);
     }
@@ -74,7 +74,7 @@ export class ChatSocketService extends BaseSocketService {
     }
     
     if (this.activeConversations.has(conversationId)) {
-      this.socket.emit('leaveConversation', conversationId);
+      this.socket.emit('leaveConversation', { conversationId, userId: this.userId });
       this.activeConversations.delete(conversationId);
       logger.info(`Conversation quittée: ${conversationId}`);
     }
@@ -101,7 +101,7 @@ export class ChatSocketService extends BaseSocketService {
 
     for (const conversationId of conversationIds) {
       if (!this.activeConversations.has(conversationId)) {
-        this.socket.emit('joinConversation', conversationId);
+        this.socket.emit('joinConversation', { conversationId, userId: this.userId });
         this.activeConversations.add(conversationId);
       }
     }

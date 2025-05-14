@@ -12,14 +12,20 @@ export declare class ChatGateway extends BaseGateway {
     constructor(prisma: PrismaService, redis: RedisService, questionService: QuestionService, icebreakerService: IcebreakerService);
     handleConnection(client: Socket): void;
     handleDisconnect(client: Socket): void;
-    handleJoinConversation(client: Socket, conversationId: string): {
+    handleJoinConversation(client: Socket, data: {
+        conversationId: string;
+        userId: string;
+    }): {
         success: boolean;
         error?: undefined;
     } | {
         success: boolean;
         error: any;
     };
-    handleLeaveConversation(client: Socket, conversationId: string): {
+    handleLeaveConversation(client: Socket, data: {
+        conversationId: string;
+        userId: string;
+    }): {
         success: boolean;
         error?: undefined;
     } | {
@@ -37,15 +43,20 @@ export declare class ChatGateway extends BaseGateway {
             createdAt: Date;
             sender: {
                 id: string;
-                avatar: string | null;
                 username: string;
+                avatar: string | null;
             };
             id: string;
-            content: string;
             senderId: string;
+            content: string;
             editedAt: Date | null;
             isRead: boolean;
             isDeleted: boolean;
+            messageType: import("@prisma/client").$Enums.MessageType;
+            userAId: string | null;
+            userAAnswer: string | null;
+            userBId: string | null;
+            userBAnswer: string | null;
         };
         error?: undefined;
     } | {
@@ -79,14 +90,8 @@ export declare class ChatGateway extends BaseGateway {
         userId?: undefined;
         isIcebreakerReady?: undefined;
     }>;
-    handleIcebreakerResponse(client: Socket, data: {
-        conversationId: string;
-        response: any;
-    }): {
-        success: boolean;
-    };
-    private triggerIcebreakerQuestion;
     private emitIcebreakerStatusUpdate;
+    private triggerIcebreakerQuestion;
     emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string): Promise<void>;
     private joinUserConversations;
     private synchronizeConversationState;

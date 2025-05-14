@@ -14,15 +14,12 @@ export const waitForConnection = async (socketService: BaseSocketService, timeou
         const checkConnection = (status: boolean) => {
             if (status === true) {
                 if (timeoutId) clearTimeout(timeoutId);
-                cleanup();
                 resolve();
             }
         };
         
-        const cleanup = socketService.onSocketConnectionChange(checkConnection);
         
         timeoutId = setTimeout(() => {
-            cleanup();
             resolve();
             logger.warn('Timeout en attendant la connexion socket');
         }, timeoutMs);

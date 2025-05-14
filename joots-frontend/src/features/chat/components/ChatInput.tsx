@@ -10,21 +10,11 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
   const [sendAttempted, setSendAttempted] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
   const { user } = useUserStore();
   const { isChatConnected, sendChatMessage, sendTypingStatus } = useSocketManager();
   
 
   
-
-  // Ajuster automatiquement la hauteur du textarea
-  const adjustTextareaHeight = () => {
-    const textarea = inputRef.current;
-    if (textarea) {
-      textarea.style.height = 'auto';
-      textarea.style.height = `${Math.min(textarea.scrollHeight, 100)}px`;
-    }
-  };
 
   useEffect(() => {
     return () => {

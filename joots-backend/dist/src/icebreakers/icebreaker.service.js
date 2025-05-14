@@ -17,14 +17,17 @@ const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../prisma/prisma.service");
 const redis_service_1 = require("../redis/redis.service");
 const chat_gateway_1 = require("../gateways/chat.gateway");
+const messages_service_1 = require("../messages/messages.service");
 let IcebreakerService = class IcebreakerService {
     prisma;
     redis;
     chatGateway;
-    constructor(prisma, redis, chatGateway) {
+    messagesService;
+    constructor(prisma, redis, chatGateway, messagesService) {
         this.prisma = prisma;
         this.redis = redis;
         this.chatGateway = chatGateway;
+        this.messagesService = messagesService;
     }
     async setParticipantIcebreakerReady(conversationId, userId, isIcebreakerReady) {
         await this.prisma.conversationParticipant.updateMany({
@@ -39,7 +42,7 @@ let IcebreakerService = class IcebreakerService {
     }
     async areAllParticipantsHaveGivenAnswer(conversationId) {
         const participants = await this.prisma.conversationParticipant.findMany({ where: { conversationId } });
-        return participants.every(p => p.hasGivenAnswer);
+        return { allParticipantsHaveGivenAnswer: participants.every(p => p.hasGivenAnswer), userAId: participants[0].userId, userBId: participants[1].userId };
     }
     async storeCurrentQuestionGroupForAGivenConversation(conversationId, questionGroup) {
         try {
@@ -74,8 +77,46 @@ let IcebreakerService = class IcebreakerService {
                 hasGivenAnswer: true
             }
         });
-        const allParticipantsHaveGivenAnswer = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+        const { allParticipantsHaveGivenAnswer, userAId, userBId } = await this.areAllParticipantsHaveGivenAnswer(conversationId);
         if (allParticipantsHaveGivenAnswer) {
+            const userAnswers = await this.prisma.userAnswer.findMany({
+                where: {
+                    conversationId,
+                    questionGroupId
+                },
+                include: {
+                    questionOption: {
+                        select: {
+                            label: true
+                        }
+                    },
+                    user: {
+                        select: {
+                            id: true,
+                            username: true
+                        }
+                    },
+                    questionGroup: {
+                        include: {
+                            questions: {
+                                where: {
+                                    locale: 'fr_FR'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            if (userAnswers.length !== 2) {
+                console.warn(`La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`);
+                return;
+            }
+            const userAnswerA = userAnswers[0];
+            const userAnswerB = userAnswers[1];
+            const questionLabel = userAnswerA.questionOption.label;
+            console.log(`Question: ${questionLabel}`);
+            console.log(`Utilisateur A: ${userAnswerA.user.username}, Réponse: ${userAnswerA.questionOption.label}`);
+            console.log(`Utilisateur B: ${userAnswerB.user.username}, Réponse: ${userAnswerB.questionOption.label}`);
             await this.prisma.conversationParticipant.updateMany({
                 where: {
                     conversationId
@@ -123,6 +164,7 @@ exports.IcebreakerService = IcebreakerService = __decorate([
     __param(2, (0, common_1.Inject)((0, common_1.forwardRef)(() => chat_gateway_1.ChatGateway))),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
         redis_service_1.RedisService,
-        chat_gateway_1.ChatGateway])
+        chat_gateway_1.ChatGateway,
+        messages_service_1.MessagesService])
 ], IcebreakerService);
 //# sourceMappingURL=icebreaker.service.js.map

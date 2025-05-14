@@ -25,7 +25,7 @@ export class QuestionController {
       userId: string;
       questionGroupId: string;
       optionId: string;
-      conversationId: string;
+      conversationId?: string;
     }
   ) {
     const { userId, questionGroupId, optionId, conversationId } = body;

@@ -18,7 +18,6 @@ let UserContactsService = class UserContactsService {
         this.prisma = prisma;
     }
     async getUserContacts(userId) {
-        console.log(`Recherche des contacts pour l'utilisateur ${userId}`);
         const contacts = await this.prisma.userContact.findMany({
             where: { userId },
             include: {
@@ -32,8 +31,7 @@ let UserContactsService = class UserContactsService {
                 }
             }
         });
-        console.log(`Nombre de contacts trouvés: ${contacts.length}`);
-        console.log('Contacts bruts:', JSON.stringify(contacts, null, 2));
+        console.log(`[Contacts Service] ${userId} : ${contacts.length} contacts trouvés`);
         if (contacts.length === 0) {
             const user = await this.prisma.user.findUnique({
                 where: { id: userId }

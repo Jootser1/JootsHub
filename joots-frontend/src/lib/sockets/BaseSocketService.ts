@@ -50,8 +50,6 @@ export abstract class BaseSocketService {
     this.setupEventListeners();
   }
   
-  
-  
   disconnect(): void {
     this.closeExistingSocketConnection();
     this.connectionListeners.clear();
@@ -76,12 +74,11 @@ export abstract class BaseSocketService {
     
     this.socket.on('connect', () => {
       logger.info(`Socket ${this.namespace} connecté pour userId: ${this.userId}`);
-      this.notifySocketConnectionChange(true);
     });
     
     this.socket.on('disconnect', (reason) => {
       logger.warn(`Socket ${this.namespace} déconnecté: ${reason}`);
-      this.notifySocketConnectionChange(false);
+
     });
     
     this.socket.on('connect_error', (error) => {
@@ -103,18 +100,7 @@ export abstract class BaseSocketService {
       // La reconnexion est gérée automatiquement par Socket.IO
     }, 5000);
   }
-  
-  onSocketConnectionChange(callback: (status: boolean) => void): () => void {
-    this.connectionListeners.add(callback);
-    return () => {
-      this.connectionListeners.delete(callback);
-    };
-  }
-  
-  protected notifySocketConnectionChange(status: boolean): void {
-    this.connectionListeners.forEach(listener => listener(status));
-  }
-  
+    
   isConnected(): boolean {
     return !!this.socket?.connected;
   }

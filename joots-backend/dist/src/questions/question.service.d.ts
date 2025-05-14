@@ -8,16 +8,16 @@ export declare class QuestionService {
     getUserLastResponseToQuestion(currentUserId: string, questionGroupId: string): Promise<({
         questionOption: {
             id: string;
-            locale: string;
+            locale: import("@prisma/client").$Enums.LocaleCode;
+            groupId: string;
             label: string;
             order: number;
-            groupId: string;
         };
     } & {
         id: string;
+        conversationId: string | null;
         updatedAt: Date;
         userId: string;
-        conversationId: string | null;
         questionGroupId: string;
         questionOptionId: string;
         answeredAt: Date;
@@ -26,9 +26,9 @@ export declare class QuestionService {
     }) | null>;
     getQuestionGroup(questionGroupId: string): Promise<{
         id: string;
+        createdAt: Date;
         type: number;
         authorId: string;
-        createdAt: Date;
         isModerated: boolean;
         moderatedAt: Date | null;
         pinned: boolean;
@@ -37,9 +37,9 @@ export declare class QuestionService {
     getNextRandomQuestionGroup(userId1: string, userId2: string): Promise<QuestionGroupWithRelations | null>;
     saveResponse(userId: string, questionGroupId: string, optionId: string, conversationId: string): Promise<{
         id: string;
+        conversationId: string | null;
         updatedAt: Date;
         userId: string;
-        conversationId: string | null;
         questionGroupId: string;
         questionOptionId: string;
         answeredAt: Date;
@@ -48,9 +48,9 @@ export declare class QuestionService {
     }>;
     saveUserAnswer(userId: string, questionGroupId: string, optionId: string, conversationId: string): Promise<{
         id: string;
+        conversationId: string | null;
         updatedAt: Date;
         userId: string;
-        conversationId: string | null;
         questionGroupId: string;
         questionOptionId: string;
         answeredAt: Date;

@@ -35,34 +35,34 @@ export class ChatGateway extends BaseGateway {
     const userId = client.data.userId;
     
     if (!userId) {
-      this.logger.warn(`Connexion chat rejetée sans ID utilisateur: ${client.id}`);
+      this.logger.warn(`[Chat Socket ${client.id}] Connexion chat rejetée sans ID utilisateur`);
       client.disconnect();
       return;
     }
     
-    this.logger.log(`Client chat connecté: ${client.id} (${userId})`);
+    this.logger.log(`[Chat Socket ${client.id}] ${userId} : Connexion chat réussie`);
 
     // Rejoindre automatiquement toutes les conversations de l'utilisateur
     this.joinUserConversations(client, userId).catch(error => {
-      this.logger.error(`Erreur lors de la jointure des conversations: ${error.message}`);
+      this.logger.error(`[Chat Socket ${client.id}] Erreur lors de la jointure des conversations: ${error.message}`);
     });
   }
   
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client chat déconnecté: ${client.id}`);
+    this.logger.log(`[Chat Socket ${client.id}] ${client.data.userId} : Déconnexion chat réussie`);
   }
   
   @SubscribeMessage('joinConversation')
   handleJoinConversation(
     @ConnectedSocket() client: Socket,
-    @MessageBody() conversationId: string
+    @MessageBody() data: { conversationId: string, userId: string }
   ) {
     try {
-      client.join(conversationId);
-      this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
+      client.join(data.conversationId);
+      this.logger.debug(`[Chat Socket ${client.id}] ${data.userId} : a rejoint la conversation ${data.conversationId}`);
       return { success: true };
     } catch (error) {
-      this.logger.error(`Erreur lors de la jonction à la conversation ${conversationId}:`, error);
+      this.logger.error(`[Chat Socket ${client.id}] ${data.userId} : Erreur lors de la jonction à la conversation ${data.conversationId}:`, error);
       return { success: false, error: error.message };
     }
   }
@@ -70,14 +70,14 @@ export class ChatGateway extends BaseGateway {
   @SubscribeMessage('leaveConversation')
   handleLeaveConversation(
     @ConnectedSocket() client: Socket,
-    @MessageBody() conversationId: string
+    @MessageBody() data: { conversationId: string, userId: string }
   ) {
     try {
-      client.leave(conversationId);
-      this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
+      client.leave(data.conversationId);
+      this.logger.debug(`[Chat Socket ${client.id}] ${data.userId} : a quitté la conversation ${data.conversationId}`);
       return { success: true };
     } catch (error) {
-      this.logger.error(`Erreur lors du départ de la conversation ${conversationId}:`, error);
+      this.logger.error(`[Chat Socket ${client.id}] ${data.userId} : Erreur lors du départ de la conversation ${data.conversationId}:`, error);
       return { success: false, error: error.message };
     }
   }
@@ -178,6 +178,7 @@ export class ChatGateway extends BaseGateway {
     }
   }
   
+
   @SubscribeMessage('icebreakerReady')
   async handleIcebreakerReady(
     @ConnectedSocket() client: Socket,
@@ -212,23 +213,17 @@ export class ChatGateway extends BaseGateway {
     } 
     
   }
-  
-  @SubscribeMessage('icebreakerResponse')
-  handleIcebreakerResponse(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { conversationId: string; response: any }
-  ) {
-    const userId = client.data.userId;
-    const { conversationId, response } = data;
-    
-    this.server.to(conversationId).emit('icebreakerResponse', {
+ 
+
+  private emitIcebreakerStatusUpdate(conversationId: string, userId: string, isReady: boolean) {
+    this.server.to(conversationId).emit('icebreakerStatusUpdated', {
       userId,
       conversationId,
-      response,
+      isIcebreakerReady: isReady,
       timestamp: new Date().toISOString()
     });
     
-    return { success: true };
+    this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
   }
   
   private async triggerIcebreakerQuestion(conversationId: string, client: Socket) {
@@ -259,18 +254,6 @@ export class ChatGateway extends BaseGateway {
     
     this.logger.log(`Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`);
   }
-  
-  private emitIcebreakerStatusUpdate(conversationId: string, userId: string, isReady: boolean) {
-    this.server.to(conversationId).emit('icebreakerStatusUpdated', {
-      userId,
-      conversationId,
-      isIcebreakerReady: isReady,
-      timestamp: new Date().toISOString()
-    });
-    
-    this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
-  }
-  
   
   // Émettre la réponse de chaque utilisateur à la question par socket.io
   public async emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string) {
@@ -304,7 +287,7 @@ export class ChatGateway extends BaseGateway {
         }
       });
 
-      this.logger.log(`Rejoindre ${conversations.length} conversations pour l'utilisateur ${userId}`);
+      this.logger.log(`[Chat Socket ${client.id}] ${userId} devrait rejoindre ${conversations.length} conversations`);
       
       // Rejoindre chaque conversation
       for (const convo of conversations) {

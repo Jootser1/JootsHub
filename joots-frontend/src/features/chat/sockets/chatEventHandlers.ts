@@ -54,7 +54,7 @@ export function handleTypingEvent(data: any) {
 
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isTyping', isTyping);
-      logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`);
+      //logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`);
     }
   } catch (error) {
     logger.error('Erreur lors du traitement du statut de frappe:', error);
@@ -120,7 +120,9 @@ export function handleIcebreakerResponsesEvent(data: any) {
     const userId2 = data?.userId2;
     const optionId2 = data?.optionId2;
 
-    chatStore.resetIcebreakerStatus(conversationId);
+    console.log('chatStore', chatStore.getConversation(conversationId));
+    console.log('chatStore.getCurrentQuestionGroup', chatStore.getCurrentQuestionGroup(conversationId));
+    
     chatStore.setParticipantResponse(conversationId, userId1, {
       questionGroupId: questionGroupId,
       optionId: optionId1,
@@ -131,6 +133,7 @@ export function handleIcebreakerResponsesEvent(data: any) {
       optionId: optionId2,
       answeredAt: new Date().toISOString()
     });
+    chatStore.resetIcebreakerStatus(conversationId);
 
     console.log('icebreakerResponses', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2); 
   } catch (error) {

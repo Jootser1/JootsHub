@@ -41,6 +41,39 @@ let MessagesService = class MessagesService {
         });
         return { success: true };
     }
+    async addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB) {
+        const [answerA, answerB] = await Promise.all([
+            this.prisma.userAnswer.findUnique({
+                where: { id: userAnswerA.id },
+                include: {
+                    user: true,
+                    questionOption: true
+                }
+            }),
+            this.prisma.userAnswer.findUnique({
+                where: { id: userAnswerB.id },
+                include: {
+                    user: true,
+                    questionOption: true
+                }
+            })
+        ]);
+        if (!answerA || !answerB) {
+            throw new common_1.NotFoundException('Réponses non trouvées');
+        }
+        await this.prisma.message.create({
+            data: {
+                senderId: 'JOOTS',
+                conversationId,
+                messageType: 'ANSWER',
+                content: questionLabel,
+                userAId: answerA.user.id,
+                userAAnswer: answerA.questionOption.label,
+                userBId: answerB.user.id,
+                userBAnswer: answerB.questionOption.label,
+            }
+        });
+    }
 };
 exports.MessagesService = MessagesService;
 exports.MessagesService = MessagesService = __decorate([

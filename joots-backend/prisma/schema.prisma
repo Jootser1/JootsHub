@@ -6,13 +6,26 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "./node_modules/.prisma/client"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+enum UserRole {
+  USER
+  LISTENER
+}
+
+enum LocaleCode {
+  fr_FR      
+  en_US    
+}
+
+
+
 
 model Auth {
   id           String   @id @default(cuid())
@@ -26,15 +39,21 @@ model Auth {
   userId       String   @unique
 }
 
+
+
+
+
 model User {
   id                  String                    @id @default(cuid())
   avatar              String?
   bio                 String?
+  languages           String[]                  @default(["fr_FR"])
   createdAt           DateTime                  @default(now())
   updatedAt           DateTime                  @default(now()) @updatedAt
   auth                Auth?
   userNumber          Int                       @unique @default(autoincrement())
   username            String                    @unique
+  role                UserRole                  @default(USER)
   isOnline            Boolean                   @default(false)
   isAvailableForChat  Boolean                   @default(true)
   questionGroups      QuestionGroup[]
@@ -67,6 +86,9 @@ model Conversation {
   createdAt    DateTime                  @default(now())
   updatedAt    DateTime                  @updatedAt
   messages     Message[]
+  level        Int                       @default(1)
+  ProgressPoint Int                     @default(0)
+  locale      LocaleCode @default(fr_FR)
   participants ConversationParticipant[]
   UserAnswer   UserAnswer[]
 }
@@ -85,6 +107,12 @@ model ConversationParticipant {
   @@unique([conversationId, userId])
 }
 
+
+enum MessageType {
+  TEXT      // messages classiques
+  ANSWER    // carte de réponse des deux utilisateurs à une question
+}
+
 model Message {
   id             String       @id @default(uuid())
   senderId       String
@@ -96,9 +124,16 @@ model Message {
   conversationId String
   conversation   Conversation @relation(fields: [conversationId], references: [id])
   sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  messageType    MessageType @default(TEXT)
+  userAId        String?
+  userAAnswer    String?
+  userBId        String?
+  userBAnswer    String?
+
 
   @@index([conversationId])
   @@index([senderId])
+  @@index([messageType])
 }
 
 model QuestionGroup {
@@ -121,7 +156,7 @@ model QuestionGroup {
 model Question {
   id       String @id @default(uuid())
   groupId  String
-  locale   String // 'fr_FR', 'en_US', etc.
+  locale   LocaleCode @default(fr_FR)
   question String
 
   group QuestionGroup @relation(fields: [groupId], references: [id])
@@ -132,7 +167,7 @@ model Question {
 model QuestionOption {
   id      String       @id @default(uuid())
   groupId String
-  locale  String
+  locale  LocaleCode @default(fr_FR)
   label   String
   order   Int
   answers UserAnswer[]
@@ -151,7 +186,7 @@ model Category {
 
 model CategoryTranslation {
   categoryId Int
-  locale     String
+  locale     LocaleCode @default(fr_FR)
   label      String
 
   category Category @relation(fields: [categoryId], references: [id])

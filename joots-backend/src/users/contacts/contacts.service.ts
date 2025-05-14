@@ -11,7 +11,6 @@ export class UserContactsService {
    * Récupère tous les contacts d'un utilisateur
    */
   async getUserContacts(userId: string): Promise<{ contact: { id: string; username: string; avatar: string | null; isOnline: boolean } }[]> {
-    console.log(`Recherche des contacts pour l'utilisateur ${userId}`);
     const contacts = await this.prisma.userContact.findMany({
       where: { userId },
       include: {
@@ -26,8 +25,7 @@ export class UserContactsService {
       }
     });
 
-    console.log(`Nombre de contacts trouvés: ${contacts.length}`);
-    console.log('Contacts bruts:', JSON.stringify(contacts, null, 2));
+    console.log(`[Contacts Service] ${userId} : ${contacts.length} contacts trouvés`);
 
     // Si contacts est vide, tentons de vérifier si l'utilisateur existe au moins
     if (contacts.length === 0) {

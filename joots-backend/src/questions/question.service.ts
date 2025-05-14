@@ -62,7 +62,7 @@ export class QuestionService {
       include: {
         questions: {
           where: {
-            locale: 'fr',
+            locale: 'fr_FR',
           },
         },
         categories: {
@@ -80,7 +80,7 @@ export class QuestionService {
         },
         options: {
           where: {
-            locale: 'fr',
+            locale: 'fr_FR',
           },
         },
       },

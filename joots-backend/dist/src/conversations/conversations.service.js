@@ -191,7 +191,7 @@ let ConversationsService = class ConversationsService {
                 createdAt: 'asc',
             },
         });
-        return messages;
+        return messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
     }
 };
 exports.ConversationsService = ConversationsService;

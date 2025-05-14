@@ -36,37 +36,37 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
     handleConnection(client) {
         const userId = client.data.userId;
         if (!userId) {
-            this.logger.warn(`Connexion chat rejetée sans ID utilisateur: ${client.id}`);
+            this.logger.warn(`[Chat Socket ${client.id}] Connexion chat rejetée sans ID utilisateur`);
             client.disconnect();
             return;
         }
-        this.logger.log(`Client chat connecté: ${client.id} (${userId})`);
+        this.logger.log(`[Chat Socket ${client.id}] ${userId} : Connexion chat réussie`);
         this.joinUserConversations(client, userId).catch(error => {
-            this.logger.error(`Erreur lors de la jointure des conversations: ${error.message}`);
+            this.logger.error(`[Chat Socket ${client.id}] Erreur lors de la jointure des conversations: ${error.message}`);
         });
     }
     handleDisconnect(client) {
-        this.logger.log(`Client chat déconnecté: ${client.id}`);
+        this.logger.log(`[Chat Socket ${client.id}] ${client.data.userId} : Déconnexion chat réussie`);
     }
-    handleJoinConversation(client, conversationId) {
+    handleJoinConversation(client, data) {
         try {
-            client.join(conversationId);
-            this.logger.debug(`Client ${client.id} a rejoint la conversation ${conversationId}`);
+            client.join(data.conversationId);
+            this.logger.debug(`[Chat Socket ${client.id}] ${data.userId} : a rejoint la conversation ${data.conversationId}`);
             return { success: true };
         }
         catch (error) {
-            this.logger.error(`Erreur lors de la jonction à la conversation ${conversationId}:`, error);
+            this.logger.error(`[Chat Socket ${client.id}] ${data.userId} : Erreur lors de la jonction à la conversation ${data.conversationId}:`, error);
             return { success: false, error: error.message };
         }
     }
-    handleLeaveConversation(client, conversationId) {
+    handleLeaveConversation(client, data) {
         try {
-            client.leave(conversationId);
-            this.logger.debug(`Client ${client.id} a quitté la conversation ${conversationId}`);
+            client.leave(data.conversationId);
+            this.logger.debug(`[Chat Socket ${client.id}] ${data.userId} : a quitté la conversation ${data.conversationId}`);
             return { success: true };
         }
         catch (error) {
-            this.logger.error(`Erreur lors du départ de la conversation ${conversationId}:`, error);
+            this.logger.error(`[Chat Socket ${client.id}] ${data.userId} : Erreur lors du départ de la conversation ${data.conversationId}:`, error);
             return { success: false, error: error.message };
         }
     }
@@ -158,16 +158,14 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             return { success: false, error: error.message };
         }
     }
-    handleIcebreakerResponse(client, data) {
-        const userId = client.data.userId;
-        const { conversationId, response } = data;
-        this.server.to(conversationId).emit('icebreakerResponse', {
+    emitIcebreakerStatusUpdate(conversationId, userId, isReady) {
+        this.server.to(conversationId).emit('icebreakerStatusUpdated', {
             userId,
             conversationId,
-            response,
+            isIcebreakerReady: isReady,
             timestamp: new Date().toISOString()
         });
-        return { success: true };
+        this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
     }
     async triggerIcebreakerQuestion(conversationId, client) {
         const participants = await this.prisma.conversationParticipant.findMany({
@@ -192,15 +190,6 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
             timestamp: new Date().toISOString()
         });
         this.logger.log(`Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`);
-    }
-    emitIcebreakerStatusUpdate(conversationId, userId, isReady) {
-        this.server.to(conversationId).emit('icebreakerStatusUpdated', {
-            userId,
-            conversationId,
-            isIcebreakerReady: isReady,
-            timestamp: new Date().toISOString()
-        });
-        this.logger.log(`Status updated for user ${userId} in conversation ${conversationId}: ready=${isReady}`);
     }
     async emitIcebreakerResponsesToAllParticipants(conversationId, questionGroupId, userId1, optionId1, userId2, optionId2) {
         console.log('emitIcebreakerResponsesToAllParticipants', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2);
@@ -229,7 +218,7 @@ let ChatGateway = ChatGateway_1 = class ChatGateway extends base_gateway_1.BaseG
                     }
                 }
             });
-            this.logger.log(`Rejoindre ${conversations.length} conversations pour l'utilisateur ${userId}`);
+            this.logger.log(`[Chat Socket ${client.id}] ${userId} devrait rejoindre ${conversations.length} conversations`);
             for (const convo of conversations) {
                 const conversationId = convo.conversationId;
                 client.join(conversationId);
@@ -306,7 +295,7 @@ __decorate([
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [socket_io_1.Socket, String]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "handleJoinConversation", null);
 __decorate([
@@ -314,7 +303,7 @@ __decorate([
     __param(0, (0, websockets_1.ConnectedSocket)()),
     __param(1, (0, websockets_1.MessageBody)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [socket_io_1.Socket, String]),
+    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", void 0)
 ], ChatGateway.prototype, "handleLeaveConversation", null);
 __decorate([
@@ -341,14 +330,6 @@ __decorate([
     __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
     __metadata("design:returntype", Promise)
 ], ChatGateway.prototype, "handleIcebreakerReady", null);
-__decorate([
-    (0, websockets_1.SubscribeMessage)('icebreakerResponse'),
-    __param(0, (0, websockets_1.ConnectedSocket)()),
-    __param(1, (0, websockets_1.MessageBody)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [socket_io_1.Socket, Object]),
-    __metadata("design:returntype", void 0)
-], ChatGateway.prototype, "handleIcebreakerResponse", null);
 exports.ChatGateway = ChatGateway = ChatGateway_1 = __decorate([
     (0, websockets_1.WebSocketGateway)({
         cors: {

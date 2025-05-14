@@ -6,9 +6,9 @@ export declare class QuestionController {
     constructor(questionService: QuestionService, icebreakerService: IcebreakerService);
     getQuestionGroup(id: string): Promise<{
         id: string;
+        createdAt: Date;
         type: number;
         authorId: string;
-        createdAt: Date;
         isModerated: boolean;
         moderatedAt: Date | null;
         pinned: boolean;
@@ -16,22 +16,22 @@ export declare class QuestionController {
     } | null>;
     getNextRandomQuestionGroup(userId1: string, userId2: string): Promise<({
         questions: {
-            question: string;
             id: string;
-            locale: string;
+            locale: import("@prisma/client").$Enums.LocaleCode;
+            question: string;
             groupId: string;
         }[];
         options: {
             id: string;
-            locale: string;
+            locale: import("@prisma/client").$Enums.LocaleCode;
+            groupId: string;
             label: string;
             order: number;
-            groupId: string;
         }[];
         categories: ({
             category: {
                 translations: {
-                    locale: string;
+                    locale: import("@prisma/client").$Enums.LocaleCode;
                     label: string;
                     categoryId: number;
                 }[];
@@ -39,14 +39,14 @@ export declare class QuestionController {
                 id: number;
             };
         } & {
-            categoryId: number;
             questionGroupId: string;
+            categoryId: number;
         })[];
     } & {
         id: string;
+        createdAt: Date;
         type: number;
         authorId: string;
-        createdAt: Date;
         isModerated: boolean;
         moderatedAt: Date | null;
         pinned: boolean;
@@ -56,12 +56,12 @@ export declare class QuestionController {
         userId: string;
         questionGroupId: string;
         optionId: string;
-        conversationId: string;
+        conversationId?: string;
     }): Promise<{
         id: string;
+        conversationId: string | null;
         updatedAt: Date;
         userId: string;
-        conversationId: string | null;
         questionGroupId: string;
         questionOptionId: string;
         answeredAt: Date;

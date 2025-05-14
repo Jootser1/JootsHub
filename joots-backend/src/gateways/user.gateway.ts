@@ -28,10 +28,9 @@ export class UserGateway extends BaseGateway {
 
   async handleConnection(client: Socket) {
     const userId = client.data.userId;
-    console.log('userId/token', userId, client.handshake.auth.token);
     
     if (!userId) {
-      this.logger.warn(`Connexion rejetée sans ID utilisateur: ${client.id}`);
+      this.logger.warn(`[User Socket ${client.id}] Connexion rejetée sans ID utilisateur`);
       client.disconnect();
       return;
     }
@@ -46,7 +45,7 @@ export class UserGateway extends BaseGateway {
       // Mettre à jour Redis
       await this.redis.sadd('online_users', userId);
       await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
-      this.logger.log(`Utilisateur connecté: ${userId}`);
+      this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur connecté`);
       
       // Récupérer les contacts de l'utilisateur et rejoindre leurs rooms
       const contacts = await this.prisma.userContact.findMany({
@@ -62,7 +61,7 @@ export class UserGateway extends BaseGateway {
       await this.notifyContactsStatusChange(userId, true);
       
     } catch (error) {
-      this.logger.error(`Erreur lors de la connexion: ${error.message}`);
+      this.logger.error(`[User Socket ${client.id}] Erreur lors de la connexion: ${error.message}`);
     }
   }
 
@@ -84,13 +83,14 @@ export class UserGateway extends BaseGateway {
       // Notifier les contacts via les rooms
       await this.notifyContactsStatusChange(userId, false);
       
-      this.logger.log(`Utilisateur déconnecté: ${userId}`);
+      this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
     } catch (error) {
-      this.logger.error(`Erreur lors de la déconnexion: ${error.message}`);
+      this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de la déconnexion: ${error.message}`);
     }
   }
 
   private async notifyContactsStatusChange(userId: string, isOnline: boolean) {
+  
     try {
       // Récupérer les contacts de l'utilisateur
       const contacts = await this.prisma.userContact.findMany({
@@ -112,9 +112,9 @@ export class UserGateway extends BaseGateway {
         timestamp: new Date().toISOString()
       });
 
-      this.logger.debug(`Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié aux contacts de ${user?.username || userId}`);
+      this.logger.debug(`[User Socket] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
     } catch (error) {
-      this.logger.error(`Erreur lors de la notification des contacts: ${error.message}`);
+      this.logger.error(`[User Socket] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
     }
   }
 
@@ -135,7 +135,7 @@ export class UserGateway extends BaseGateway {
     contactIds.forEach(contactId => {
       client.leave(`user-status-${contactId}`);
     });
-    this.logger.debug(`3. Utilisateur ${client.id} a quitté les rooms de contacts: ${contactIds.join(', ')}`);
+    this.logger.debug(`[User Socket] ${client.data.userId} : a quitté les rooms de contacts: ${contactIds.join(', ')}`);
   }
 
   @SubscribeMessage('pong')

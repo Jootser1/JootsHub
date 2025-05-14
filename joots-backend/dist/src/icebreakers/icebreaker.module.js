@@ -15,6 +15,7 @@ const redis_module_1 = require("../redis/redis.module");
 const redis_service_1 = require("../redis/redis.service");
 const question_service_1 = require("../questions/question.service");
 const gateways_module_1 = require("../gateways/gateways.module");
+const messages_service_1 = require("../messages/messages.service");
 let IcebreakerModule = class IcebreakerModule {
 };
 exports.IcebreakerModule = IcebreakerModule;
@@ -26,7 +27,7 @@ exports.IcebreakerModule = IcebreakerModule = __decorate([
             (0, common_1.forwardRef)(() => gateways_module_1.GatewaysModule),
         ],
         controllers: [icebreaker_controller_1.IcebreakerController],
-        providers: [icebreaker_service_1.IcebreakerService, redis_service_1.RedisService, question_service_1.QuestionService],
+        providers: [icebreaker_service_1.IcebreakerService, redis_service_1.RedisService, question_service_1.QuestionService, messages_service_1.MessagesService],
         exports: [icebreaker_service_1.IcebreakerService],
     })
 ], IcebreakerModule);

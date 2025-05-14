@@ -4,12 +4,14 @@ export declare class UsersController {
     constructor(usersService: UsersService);
     getUsers(): Promise<{
         id: string;
-        createdAt: Date;
         avatar: string | null;
         bio: string | null;
+        languages: string[];
+        createdAt: Date;
         updatedAt: Date;
         userNumber: number;
         username: string;
+        role: import("@prisma/client").$Enums.UserRole;
         isOnline: boolean;
         isAvailableForChat: boolean;
     }[]>;
@@ -30,12 +32,14 @@ export declare class UsersController {
     }>;
     updateChatPreference(id: string, isAvailableForChat: boolean): Promise<{
         id: string;
-        createdAt: Date;
         avatar: string | null;
         bio: string | null;
+        languages: string[];
+        createdAt: Date;
         updatedAt: Date;
         userNumber: number;
         username: string;
+        role: import("@prisma/client").$Enums.UserRole;
         isOnline: boolean;
         isAvailableForChat: boolean;
     }>;

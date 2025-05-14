@@ -2,9 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const client_1 = require("@prisma/client");
 const fs = require("fs");
+const argon2 = require("argon2");
 const prisma = new client_1.PrismaClient();
-console.log('As tu bien pensé à changer le userId de Jootser 1 dans ton fichier seed.ts ?');
-const authorId = 'cma9q0ey90000iuo2olvj4b6h';
 const CATEGORY_TRANSLATIONS = [
     { id: 1, fr: 'Spiritualité', en: 'Spirituality' },
     { id: 2, fr: 'News & Politique', en: 'News & Politics' },
@@ -20,6 +19,45 @@ const CATEGORY_TRANSLATIONS = [
     { id: 12, fr: 'Sport', en: 'Sport' },
 ];
 async function main() {
+    console.log('Création de Jootser 1...');
+    const hashedPassword = await argon2.hash('bobby1');
+    const jootser1 = await prisma.user.create({
+        data: {
+            username: 'Jootser1',
+            avatar: null,
+            bio: 'Utilisateur de test Jootser 1',
+            role: 'LISTENER',
+            isOnline: false,
+            isAvailableForChat: true,
+            auth: {
+                create: {
+                    email: 'jootser1@joots.com',
+                    password: hashedPassword
+                }
+            }
+        },
+    });
+    console.log(`Jootser 1 créé avec succès. ID utilisateur: ${jootser1.id}`);
+    const hashedPassword2 = await argon2.hash('bobby2');
+    const jootser2 = await prisma.user.create({
+        data: {
+            username: 'Jootser2',
+            avatar: null,
+            bio: 'Utilisateur de test Jootser 1',
+            role: 'USER',
+            isOnline: false,
+            isAvailableForChat: true,
+            auth: {
+                create: {
+                    email: 'jootser2@joots.com',
+                    password: hashedPassword2
+                }
+            }
+        },
+    });
+    console.log(`Jootser 2 créé avec succès. ID utilisateur: ${jootser2.id}`);
+    console.log('Cleaning existing data...');
+    await prisma.questionOption.deleteMany();
     console.log('Cleaning existing data...');
     await prisma.questionOption.deleteMany();
     await prisma.question.deleteMany();
@@ -51,7 +89,7 @@ async function main() {
             data: {
                 id: group.id,
                 type: group.type,
-                authorId: authorId,
+                authorId: jootser1.id,
                 isModerated: group.isModerated,
                 moderatedAt: group.moderatedAt && !isNaN(Date.parse(group.moderatedAt))
                     ? new Date(group.moderatedAt)

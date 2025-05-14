@@ -10,14 +10,14 @@ export class ConversationsService {
     private readonly userGateway: UserGateway,
     private readonly userContactsService: UserContactsService,
   ) {}
-
+  
   private readonly userSelect = {
     id: true,
     username: true,
     avatar: true,
     isOnline: true,
   };
-
+  
   async findAll(userId: string) {
     try {
       return await this.prisma.conversation.findMany({
@@ -44,7 +44,7 @@ export class ConversationsService {
       throw error;
     }
   }
-
+  
   async findOne(id: string, userId: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -64,14 +64,14 @@ export class ConversationsService {
         },
       },
     });
-
+    
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée');
     }
-
+    
     return conversation;
   }
-
+  
   async findConversation(userId: string, receiverId: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -81,7 +81,7 @@ export class ConversationsService {
         ],
       },
       include: {
-          participants: {
+        participants: {
           include: {
             user: { select: this.userSelect },
           },
@@ -101,24 +101,24 @@ export class ConversationsService {
         },
       },
     });
-
+    
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée');
     }
-
+    
     return conversation;
   }
-
+  
   async create(userId: string, receiverId: string) {
     const [user1, user2] = await Promise.all([
       this.prisma.user.findUnique({ where: { id: userId } }),
       this.prisma.user.findUnique({ where: { id: receiverId } }),
     ]);
-
+    
     if (!user1 || !user2) {
       throw new NotFoundException('Un ou les deux utilisateurs sont introuvables');
     }
-
+    
     const existingConversation = await this.prisma.conversation.findFirst({
       where: {
         AND: [
@@ -134,17 +134,17 @@ export class ConversationsService {
         },
       },
     });
-
+    
     if (existingConversation) {
       return existingConversation;
     }
-
+    
     // Créer les contacts réciproques
     await Promise.all([
       this.userContactsService.addUserContact(userId, receiverId),
       this.userContactsService.addUserContact(receiverId, userId)
     ]);
-
+    
     return this.prisma.conversation.create({
       data: {
         participants: {
@@ -163,7 +163,7 @@ export class ConversationsService {
       },
     });
   }
-
+  
   async findMessages(conversationId: string, userId: string) {
     // Vérifier que l'utilisateur a accès à la conversation
     const conversation = await this.prisma.conversation.findFirst({
@@ -174,11 +174,11 @@ export class ConversationsService {
         },
       },
     });
-
+    
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
     }
-
+    
     // Récupérer les messages avec les informations de l'expéditeur
     const messages = await this.prisma.message.findMany({
       where: {
@@ -197,7 +197,9 @@ export class ConversationsService {
         createdAt: 'asc',
       },
     });
+    
+    return messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    
 
-    return messages;
   }
 }

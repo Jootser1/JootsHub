@@ -22,15 +22,9 @@ export class ConversationsController {
     return this.conversationsService.findAll(req.user.sub);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    if (!req.user?.sub) {
-      throw new UnauthorizedException('User not authenticated');
-    }
-    return this.conversationsService.findOne(id, req.user.sub);
-  }
+  
 
-  @Get(':id/messages')
+  @Get('/messages/:id')
   findMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
@@ -44,5 +38,13 @@ export class ConversationsController {
       throw new UnauthorizedException('User not authenticated');
     }
     return this.conversationsService.create(req.user.sub, body.receiverId);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    if (!req.user?.sub) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    return this.conversationsService.findOne(id, req.user.sub);
   }
 }

@@ -45,51 +45,37 @@ class SocketManager {
   
   // Connecte et configure le socket utilisateur
   public async connectUserSocket(): Promise<UserSocketService> {
-    if (!this.userId || !this.token) {
-      throw new Error('No credentials set for socket connection');
-    }
-    
-    // Réutiliser le socket s'il existe déjà et est connecté
-    if (this.userSocket?.isConnected()) {
-      logger.info('SocketManager: User socket already connected, reusing');
-      return this.userSocket;
-    }
-    
     if (typeof window === 'undefined') {
       throw new Error('Cannot connect socket on server side');
     }
     
-    // Initialisation
-    const userSocketService = UserSocketService.getInstance();
-    userSocketService.connect(this.userId, this.token);
-    
-    // Attendre la connexion avec un timeout de sécurité
-    if (!userSocketService.isConnected()) {
-      await waitForConnection(userSocketService);
+    if (!this.userId || !this.token) {
+      throw new Error('No credentials set for socket connection');
     }
     
-    // Enregistrer les événements
-    if (userSocketService.isConnected()) {
-      userSocketService.registerEvents();
+    // Initialisation - utiliser le singleton
+    if (!this.userSocket?.isConnected()) {
+      this.userSocket = UserSocketService.getInstance();
+      this.userSocket.connect(this.userId, this.token);
+      await waitForConnection(this.userSocket);
+      this.userSocket.registerEvents();
     }
     
-    // Configuration post-connexion
-    if (userSocketService.isConnected()) {
-      try {
-        logger.info('SocketManager: Configuration des rooms utilisateur');
-        await this.setupUserRooms(userSocketService);
-      } catch (error) {
-        logger.error("Erreur lors de la configuration des rooms:", error);
-      }
-    } else {
-      logger.warn('SocketManager: Socket utilisateur toujours non connecté après attente');
+    if (!this.chatSocket?.isConnected()) {
+      logger.warn("SocketManager: Impossible d'établir une connexion socket User");
+      return this.userSocket;
     }
     
-    this.userSocket = userSocketService;
+    try {
+      logger.info('SocketManager: Configuration des rooms utilisateur');
+      await this.setupUserRooms(this.userSocket);
+    } catch (error) {
+      logger.error("Erreur lors de la configuration des rooms:", error);
+    }
+
     logger.info('SocketManager: Socket utilisateur configuré avec succès');
-    return userSocketService;
+    return this.userSocket;
   }
-  
   
   //Connecte et configure le socket de chat
   public async connectChatSocket(conversationIds?: string[]): Promise<ChatSocketService> {
@@ -101,47 +87,27 @@ class SocketManager {
       throw new Error('No credentials set for socket connection');
     }
     
-
-    // Réutiliser le socket s'il existe déjà et est connecté
-    if (this.chatSocket?.isConnected()) {
-      logger.info('SocketManager: Chat socket already connected, reusing');
-      
-      // Si nous avons déjà un socket connecté et des conversations spécifiées, les rejoindre si nécessaire
-      if (conversationIds && conversationIds.length > 0) {
-        const chatService = this.chatSocket;
-        chatService.joinAllConversations(conversationIds);
-      }
-      
+    // Initialisation - utiliser le singleton
+    if (!this.chatSocket?.isConnected()) {
+      this.chatSocket = ChatSocketService.getInstance();
+      this.chatSocket.connect(this.userId, this.token);
+      await waitForConnection(this.chatSocket);
+      this.chatSocket.registerEvents();
+    }
+    
+    if (!this.chatSocket?.isConnected()) {
+      logger.warn("SocketManager: Impossible d'établir une connexion socket chat");
       return this.chatSocket;
     }
     
-    // Initialisation - utiliser le singleton
-    const chatSocketService = ChatSocketService.getInstance();
     
-    // Connecter seulement si pas déjà connecté
-    if (!chatSocketService.isConnected()) {
-      chatSocketService.connect(this.userId, this.token);
-      
-      // Attendre la connexion avec un timeout de sécurité
-      await waitForConnection(chatSocketService);
+    if (conversationIds && conversationIds.length > 0) {
+      const chatService = this.chatSocket;
+      chatService.joinAllConversations(conversationIds);
     }
     
-    // Enregistrer les événements si connecté
-    if (chatSocketService.isConnected()) {
-      chatSocketService.registerEvents();
-      
-      // Rejoindre les conversations si spécifiées
-      if (conversationIds && conversationIds.length > 0) {
-        chatSocketService.joinAllConversations(conversationIds);
-      }
-    } else {
-      logger.warn("SocketManager: Impossible d'établir une connexion socket chat");
-      return chatSocketService;
-    }
-    
-    this.chatSocket = chatSocketService;
     logger.info('SocketManager: Socket chat configuré avec succès');
-    return chatSocketService;
+    return this.chatSocket;
   }
   
   public disconnectUserSocket(): void {

@@ -1,3 +1,5 @@
+"use client";
+
 import Image from 'next/image';
 import { useUserStore } from "@/features/user/stores/userStore";
 import { useChatStore } from '@/features/chat/stores/chatStore'
@@ -42,7 +44,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
     if (activeConversationId) {
       socketManager.sendIcebreakerReady(activeConversationId, true);
     }
-  }, [experience]);
+  }, [isCurrentUserReady, isOtherParticipantReady, experience]);
 
   switch (experience) {
     case "hub":
@@ -54,7 +56,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
             alt="Icebreaker"
             width={45}
             height={45}
-            className="align-center content-center absolute bottom-3"
+            className="absolute bottom-3"
           />
         </button>
       </div>
@@ -68,7 +70,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
             alt="Icebreaker"
             width={45}
             height={45}
-            className="align-center content-center absolute bottom-3"
+            className="absolute bottom-3"
           />
         </button>
       </div>

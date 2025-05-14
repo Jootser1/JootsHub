@@ -63,7 +63,7 @@ let QuestionService = class QuestionService {
             include: {
                 questions: {
                     where: {
-                        locale: 'fr',
+                        locale: 'fr_FR',
                     },
                 },
                 categories: {
@@ -81,7 +81,7 @@ let QuestionService = class QuestionService {
                 },
                 options: {
                     where: {
-                        locale: 'fr',
+                        locale: 'fr_FR',
                     },
                 },
             },

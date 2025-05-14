@@ -27,12 +27,6 @@ let ConversationsController = class ConversationsController {
         }
         return this.conversationsService.findAll(req.user.sub);
     }
-    findOne(id, req) {
-        if (!req.user?.sub) {
-            throw new common_1.UnauthorizedException('User not authenticated');
-        }
-        return this.conversationsService.findOne(id, req.user.sub);
-    }
     findMessages(id, req) {
         if (!req.user?.sub) {
             throw new common_1.UnauthorizedException('User not authenticated');
@@ -45,6 +39,12 @@ let ConversationsController = class ConversationsController {
         }
         return this.conversationsService.create(req.user.sub, body.receiverId);
     }
+    findOne(id, req) {
+        if (!req.user?.sub) {
+            throw new common_1.UnauthorizedException('User not authenticated');
+        }
+        return this.conversationsService.findOne(id, req.user.sub);
+    }
 };
 exports.ConversationsController = ConversationsController;
 __decorate([
@@ -55,15 +55,7 @@ __decorate([
     __metadata("design:returntype", void 0)
 ], ConversationsController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
-    __param(1, (0, common_1.Req)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
-    __metadata("design:returntype", void 0)
-], ConversationsController.prototype, "findOne", null);
-__decorate([
-    (0, common_1.Get)(':id/messages'),
+    (0, common_1.Get)('/messages/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
@@ -78,6 +70,14 @@ __decorate([
     __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", void 0)
 ], ConversationsController.prototype, "create", null);
+__decorate([
+    (0, common_1.Get)(':id'),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", void 0)
+], ConversationsController.prototype, "findOne", null);
 exports.ConversationsController = ConversationsController = __decorate([
     (0, common_1.Controller)('conversations'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
