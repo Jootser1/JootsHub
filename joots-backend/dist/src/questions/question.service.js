@@ -99,13 +99,13 @@ let QuestionService = class QuestionService {
         if (!userId || !questionGroupId || !optionId) {
             throw new Error('Les paramètres userId, questionGroupId et optionId sont requis');
         }
-        const savedResponse = await this.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
+        const savedResponse = await this.saveUserAnswerInDB(userId, questionGroupId, optionId, conversationId);
         if (conversationId) {
             await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
         }
         return savedResponse;
     }
-    async saveUserAnswer(userId, questionGroupId, optionId, conversationId) {
+    async saveUserAnswerInDB(userId, questionGroupId, optionId, conversationId) {
         return this.prisma.userAnswer.create({
             data: {
                 userId: userId,

@@ -45,9 +45,9 @@ export declare class ChatGateway extends BaseGateway {
                 id: string;
                 username: string;
                 avatar: string | null;
-            };
+            } | null;
             id: string;
-            senderId: string;
+            senderId: string | null;
             content: string;
             editedAt: Date | null;
             isRead: boolean;
@@ -92,7 +92,11 @@ export declare class ChatGateway extends BaseGateway {
     }>;
     private emitIcebreakerStatusUpdate;
     private triggerIcebreakerQuestion;
-    emitIcebreakerResponsesToAllParticipants(conversationId: string, questionGroupId: string, userId1: string, optionId1: string, userId2: string, optionId2: string): Promise<void>;
+    emitIcebreakerResponsesToAllParticipants(conversationId: string, questionLabel: string, user1: string, response1: string, user2: string, response2: string): Promise<void>;
     private joinUserConversations;
     private synchronizeConversationState;
+    private synchronizeIcebreakerQuestion;
+    private synchronizeParticipantStatuses;
+    private synchronizeIcebreakerResponses;
+    private synchronizeTypingStatus;
 }

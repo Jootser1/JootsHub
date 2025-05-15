@@ -18,5 +18,18 @@ export declare class IcebreakerService {
     }>;
     storeCurrentQuestionGroupForAGivenConversation(conversationId: string, questionGroup: QuestionGroupWithRelations): Promise<void>;
     processIcebreakersPostResponses(userId: string, questionGroupId: string, optionId: string, conversationId: string): Promise<void>;
-    emitResponsesToAllParticipants(conversationId: string, questionGroupId: string): Promise<void>;
+    private saveCurrentUserResponseInRedis;
+    private updateParticipantsHasGivenAnswerStatus;
+    private processCompletedIcebreaker;
+    private getUserAnswers;
+    private formatUserAnswersForAddIcebreakerMessage;
+    private addIcebreakerMessage;
+    private resetIcebreakerStatus;
+    emitResponsesToAllParticipants(conversationId: string, questionLabel: string, userAnswerA: {
+        userId: string;
+        questionOption: string;
+    }, userAnswerB: {
+        userId: string;
+        questionOption: string;
+    }): Promise<void>;
 }

@@ -12,17 +12,17 @@ export declare class ConversationsController {
         messages: {
             id: string;
             createdAt: Date;
-            senderId: string;
+            conversationId: string;
+            isRead: boolean;
             content: string;
             editedAt: Date | null;
-            isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
             messageType: import("@prisma/client").$Enums.MessageType;
             userAId: string | null;
             userAAnswer: string | null;
             userBId: string | null;
             userBAnswer: string | null;
+            senderId: string | null;
         }[];
         participants: ({
             user: {
@@ -43,30 +43,30 @@ export declare class ConversationsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        locale: import("@prisma/client").$Enums.LocaleCode;
         level: number;
         ProgressPoint: number;
-        locale: import("@prisma/client").$Enums.LocaleCode;
     })[]>;
     findMessages(id: string, req: AuthenticatedRequest): Promise<({
         sender: {
             id: string;
             avatar: string | null;
             username: string;
-        };
+        } | null;
     } & {
         id: string;
         createdAt: Date;
-        senderId: string;
+        conversationId: string;
+        isRead: boolean;
         content: string;
         editedAt: Date | null;
-        isRead: boolean;
         isDeleted: boolean;
-        conversationId: string;
         messageType: import("@prisma/client").$Enums.MessageType;
         userAId: string | null;
         userAAnswer: string | null;
         userBId: string | null;
         userBAnswer: string | null;
+        senderId: string | null;
     })[]>;
     create(body: {
         receiverId: string;
@@ -90,25 +90,25 @@ export declare class ConversationsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        locale: import("@prisma/client").$Enums.LocaleCode;
         level: number;
         ProgressPoint: number;
-        locale: import("@prisma/client").$Enums.LocaleCode;
     }>;
     findOne(id: string, req: AuthenticatedRequest): Promise<{
         messages: {
             id: string;
             createdAt: Date;
-            senderId: string;
+            conversationId: string;
+            isRead: boolean;
             content: string;
             editedAt: Date | null;
-            isRead: boolean;
             isDeleted: boolean;
-            conversationId: string;
             messageType: import("@prisma/client").$Enums.MessageType;
             userAId: string | null;
             userAAnswer: string | null;
             userBId: string | null;
             userBAnswer: string | null;
+            senderId: string | null;
         }[];
         participants: ({
             user: {
@@ -129,9 +129,9 @@ export declare class ConversationsController {
         id: string;
         createdAt: Date;
         updatedAt: Date;
+        locale: import("@prisma/client").$Enums.LocaleCode;
         level: number;
         ProgressPoint: number;
-        locale: import("@prisma/client").$Enums.LocaleCode;
     }>;
 }
 export {};

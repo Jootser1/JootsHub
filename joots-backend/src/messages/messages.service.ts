@@ -1,6 +1,11 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { UserAnswer } from '@prisma/client';
+
+// Définir l'interface UserAnswer à l'extérieur de la classe
+interface IcebreakerUserAnswer {
+  userId: string;
+  questionOption: string;
+}
 
 @Injectable()
 export class MessagesService {
@@ -36,41 +41,23 @@ export class MessagesService {
     return { success: true };
   }
   
-  
-  async addIcebreakerMessage(conversationId: string, questionLabel: string, userAnswerA: UserAnswer, userAnswerB: UserAnswer) {
+  async addIcebreakerMessage(conversationId: string, questionLabel: string, userAnswerA: IcebreakerUserAnswer, userAnswerB: IcebreakerUserAnswer) {
     // Récupérer les UserAnswer avec leurs relations
-    const [answerA, answerB] = await Promise.all([
-      this.prisma.userAnswer.findUnique({
-        where: { id: userAnswerA.id },
-        include: {
-          user: true,
-          questionOption: true
-        }
-      }),
-      this.prisma.userAnswer.findUnique({
-        where: { id: userAnswerB.id },
-        include: {
-          user: true,
-          questionOption: true
-        }
-      })
-    ]);
+    console.log("userAnswerA", userAnswerA);
+    console.log("userAnswerB", userAnswerB);
 
-    if (!answerA || !answerB) {
-      throw new NotFoundException('Réponses non trouvées');
-    }
-
+    
     await this.prisma.message.create({
       data: {
-        senderId: 'JOOTS',
         conversationId,
         messageType: 'ANSWER',
         content: questionLabel,
-        userAId: answerA.user.id,
-        userAAnswer: answerA.questionOption.label,
-        userBId: answerB.user.id,
-        userBAnswer: answerB.questionOption.label,
+        userAId: userAnswerA.userId,
+        userAAnswer: userAnswerA.questionOption,
+        userBId: userAnswerB.userId,
+        userBAnswer: userAnswerB.questionOption,
       }
     });
+    
   }
 }

@@ -106,6 +106,8 @@ export const useChatStore = create<ChatStore>()(
             };
           }),
 
+        
+
         updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) =>
           set((state) => {
             const conversationMessages = state.messages[conversationId];

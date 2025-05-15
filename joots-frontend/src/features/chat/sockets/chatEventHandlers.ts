@@ -113,29 +113,20 @@ export function handleIcebreakerQuestionGroupEvent(data: any) {
 export function handleIcebreakerResponsesEvent(data: any) {
   console.log('handleIcebreakerResponsesEvent', data);
   try {
-    const conversationId = data?.conversationId;
-    const questionGroupId = data?.questionGroupId;  
-    const userId1 = data?.userId1;
-    const optionId1 = data?.optionId1;
-    const userId2 = data?.userId2;
-    const optionId2 = data?.optionId2;
+    const message = {
+      content: data?.questionLabel,
+      type: 'ANSWER',
+      responses: [
+        { userId: data?.user1, optionId: data?.response1 },
+        { userId: data?.user2, optionId: data?.response2 }
+      ],
+      timestamp: new Date().toISOString()
+    };
 
-    console.log('chatStore', chatStore.getConversation(conversationId));
-    console.log('chatStore.getCurrentQuestionGroup', chatStore.getCurrentQuestionGroup(conversationId));
-    
-    chatStore.setParticipantResponse(conversationId, userId1, {
-      questionGroupId: questionGroupId,
-      optionId: optionId1,
-      answeredAt: new Date().toISOString()
-    });
-    chatStore.setParticipantResponse(conversationId, userId2, {
-      questionGroupId: questionGroupId,
-      optionId: optionId2,
-      answeredAt: new Date().toISOString()
-    });
-    chatStore.resetIcebreakerStatus(conversationId);
+    chatStore.addMessage(data?.conversationId, message);    
+    chatStore.resetIcebreakerStatus(data?.conversationId);
 
-    console.log('icebreakerResponses', conversationId, questionGroupId, userId1, optionId1, userId2, optionId2); 
+
   } catch (error) {
     logger.error('Erreur lors du traitement des réponses de l\'icebreaker:', error);
   }

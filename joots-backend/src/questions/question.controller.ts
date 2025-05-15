@@ -18,32 +18,5 @@ export class QuestionController {
     return this.questionService.getNextRandomQuestionGroup(userId1, userId2);
   }
   
-  @Post('response')
-  @UseGuards(JwtAuthGuard)
-  async postResponseToQuestion(
-    @Body() body: {
-      userId: string;
-      questionGroupId: string;
-      optionId: string;
-      conversationId?: string;
-    }
-  ) {
-    const { userId, questionGroupId, optionId, conversationId } = body;
-    
-    // Vérification des paramètres requis
-    if (!userId || !questionGroupId || !optionId || !conversationId) {
-      throw new Error('Les paramètres userId, questionGroupId, optionId et conversationId sont requis');
-    }
-    
-    // 1. Sauvegarder la réponse à la question dans la BDD
-    const savedResponse = await this.questionService.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
-    
-    // 2. Mettre à jour le statut de l'icebreaker si dans le contexte d'une conversation
-    if (conversationId) {
-      await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
-    }
-    
-    
-    return savedResponse;
-  }
+  
 }

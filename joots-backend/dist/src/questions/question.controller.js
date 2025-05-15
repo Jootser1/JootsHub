@@ -30,17 +30,6 @@ let QuestionController = class QuestionController {
     async getNextRandomQuestionGroup(userId1, userId2) {
         return this.questionService.getNextRandomQuestionGroup(userId1, userId2);
     }
-    async postResponseToQuestion(body) {
-        const { userId, questionGroupId, optionId, conversationId } = body;
-        if (!userId || !questionGroupId || !optionId || !conversationId) {
-            throw new Error('Les paramètres userId, questionGroupId, optionId et conversationId sont requis');
-        }
-        const savedResponse = await this.questionService.saveUserAnswer(userId, questionGroupId, optionId, conversationId);
-        if (conversationId) {
-            await this.icebreakerService.processIcebreakersPostResponses(userId, questionGroupId, optionId, conversationId);
-        }
-        return savedResponse;
-    }
 };
 exports.QuestionController = QuestionController;
 __decorate([
@@ -59,14 +48,6 @@ __decorate([
     __metadata("design:paramtypes", [String, String]),
     __metadata("design:returntype", Promise)
 ], QuestionController.prototype, "getNextRandomQuestionGroup", null);
-__decorate([
-    (0, common_1.Post)('response'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
-    __param(0, (0, common_1.Body)()),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
-    __metadata("design:returntype", Promise)
-], QuestionController.prototype, "postResponseToQuestion", null);
 exports.QuestionController = QuestionController = __decorate([
     (0, common_1.Controller)('questions'),
     __metadata("design:paramtypes", [question_service_1.QuestionService, icebreaker_service_1.IcebreakerService])

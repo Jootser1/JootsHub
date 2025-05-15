@@ -56,16 +56,30 @@ export class IcebreakerService {
   }
   
   async processIcebreakersPostResponses(userId: string, questionGroupId: string, optionId: string, conversationId: string) {
-    // Sauvegarder dans Redis
-    const redisKey = `icebreaker:response:${conversationId}:${userId}`;
+    // Save User Responses in redis
+    await this.saveCurrentUserResponseInRedis(userId, questionGroupId, optionId, conversationId);
+
+    // Update participant status has given answer in DB
+    await this.updateParticipantsHasGivenAnswerStatus(conversationId, userId);
+    
+    const {allParticipantsHaveGivenAnswer} = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+    
+    if (allParticipantsHaveGivenAnswer) {
+      await this.processCompletedIcebreaker(conversationId, questionGroupId);
+    }
+  }
+
+  private async saveCurrentUserResponseInRedis(userId: string, questionGroupId: string, optionId: string, conversationId: string) {
+    const redisKey = `icebreaker:${conversationId}:responses:${userId}`;
     await this.redis.set(redisKey, JSON.stringify({
       userId,
       questionGroupId,
       optionId,
       answeredAt: new Date().toISOString()
     }), 86400); // Expire après 24 heures
-    
-    // Mettre à jour le statut du participant
+  }
+
+  private async updateParticipantsHasGivenAnswerStatus(conversationId: string, userId: string) {
     await this.prisma.conversationParticipant.updateMany({
       where: {
         conversationId,
@@ -75,120 +89,116 @@ export class IcebreakerService {
         hasGivenAnswer: true
       }
     });
+  }
+
+  private async processCompletedIcebreaker(conversationId: string, questionGroupId: string) {
+    const userAnswers = await this.getUserAnswers(conversationId, questionGroupId);
     
-    // Vérifier si tous les participants ont donné une réponse
-    const {allParticipantsHaveGivenAnswer, userAId, userBId} = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+    if (userAnswers.length !== 2) {
+      console.warn(`La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`);
+      return;
+    }
+
+    const {userAnswerA, userAnswerB, questionLabel} = this.formatUserAnswersForAddIcebreakerMessage(userAnswers);
     
-    // Mettre à jour isIcebreakerReady et hasGivenAnswer à false pour les deux participants
-    if (allParticipantsHaveGivenAnswer) {
+    await this.addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB);
+    await this.resetIcebreakerStatus(conversationId);
+    await this.emitResponsesToAllParticipants(conversationId, questionLabel, userAnswerA, userAnswerB);
+  }
 
-      const userAnswers = await this.prisma.userAnswer.findMany({
-        where: {
-          conversationId,
-          questionGroupId
-        },
-        include: {
-          questionOption: {
-            select: {
-              label: true
-            }
+  private async getUserAnswers(conversationId: string, questionGroupId: string) {
+    return await this.prisma.userAnswer.findMany({
+      where: {
+        conversationId,
+        questionGroupId
+      },
+      select: {
+        userId: true,
+        questionOption: {
+          select: {
+            label: true,
           },
-          user: {
-            select: {
-              id: true,
-              username: true
-            }
-          },
-          questionGroup: {
-            include: {
-              questions: {
-                where: {
-                  locale: 'fr_FR'
-                }
-              }
-            }
-          }
-        }
-      });
-
-      if (userAnswers.length !== 2) {
-        console.warn(`La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`);
-        return;
-      }
-
-      const userAnswerA = userAnswers[0];
-      const userAnswerB = userAnswers[1];
-
-      const questionLabel = userAnswerA.questionOption.label; // Supposons que les deux utilisateurs ont répondu à la même question
-
-      console.log(`Question: ${questionLabel}`);
-      console.log(`Utilisateur A: ${userAnswerA.user.username}, Réponse: ${userAnswerA.questionOption.label}`);
-      console.log(`Utilisateur B: ${userAnswerB.user.username}, Réponse: ${userAnswerB.questionOption.label}`);
-
-
-
-      //const savedResponse = await this.messagesService.addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB);
-
-      await this.prisma.conversationParticipant.updateMany({
-        where: {
-          conversationId
         },
-        data: {
-          isIcebreakerReady: false,
-          hasGivenAnswer: false
-        }
-      });
-      
-      // Mettre à jour Redis pour indiquer que l'icebreaker est prêt
-      const redisIcebreakerKey = `icebreaker:ready:${conversationId}`;
-      await this.redis.set(redisIcebreakerKey, JSON.stringify({
+        questionGroup: {
+          select: {
+            questions: {
+              take: 1,
+              select: {
+                question: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  }
+
+
+  private formatUserAnswersForAddIcebreakerMessage(userAnswers: any[]) {
+    const userAnswerA = {
+      userId: userAnswers[0].userId, 
+      questionOption: userAnswers[0].questionOption.label
+    };
+    const userAnswerB = {
+      userId: userAnswers[1].userId, 
+      questionOption: userAnswers[1].questionOption.label
+    };
+    const questionLabel = userAnswers[0].questionGroup.questions[0].question;
+
+    return { userAnswerA, userAnswerB, questionLabel };
+  }
+
+  private async addIcebreakerMessage(
+    conversationId: string, 
+    questionLabel: string, 
+    userAnswerA: { userId: string, questionOption: string }, 
+    userAnswerB: { userId: string, questionOption: string }
+  ) {
+    await this.messagesService.addIcebreakerMessage(
+      conversationId, 
+      questionLabel, 
+      userAnswerA, 
+      userAnswerB
+    );
+  }
+
+  // Reset icebreaker status in prisma and redis
+  private async resetIcebreakerStatus(conversationId: string) {
+    // Mettre à jour la base de données
+    await this.prisma.conversationParticipant.updateMany({
+      where: { conversationId },
+      data: {
         isIcebreakerReady: false,
         hasGivenAnswer: false
-      }), 86400); // Expire après 24 heures
-    
-      // Émettre les réponses à tous les participants
-      await this.emitResponsesToAllParticipants(conversationId, questionGroupId);
-    }
-  }
-  
-  async emitResponsesToAllParticipants(conversationId: string, questionGroupId: string) {
-    // Récupérer tous les participants de la conversation
-    const participants = await this.prisma.conversationParticipant.findMany({
-      where: { conversationId },
-      select: { userId: true }
+      }
     });
     
-    if (participants.length !== 2) {
-      console.warn(`La conversation ${conversationId} n'a pas exactement 2 participants.`);
-      return;
-    }
+    // Mettre à jour Redis
+    const redisIcebreakerKey = `icebreaker:ready:${conversationId}`;
+    await this.redis.set(redisIcebreakerKey, JSON.stringify({
+      isIcebreakerReady: false,
+      hasGivenAnswer: false
+    }), 86400); // Expire après 24 heures
+  }
+  
+  async emitResponsesToAllParticipants(conversationId: string, questionLabel: string, userAnswerA: { userId: string, questionOption: string }, userAnswerB: { userId: string, questionOption: string }) {
+ 
     
     // Récupérer les réponses des deux participants depuis Redis
-    const user1 = participants[0].userId;
-    const user2 = participants[1].userId;
-    
-    const response1Key = `icebreaker:response:${conversationId}:${user1}`;
-    const response2Key = `icebreaker:response:${conversationId}:${user2}`;
-    
-    const response1 = await this.redis.get(response1Key);
-    const response2 = await this.redis.get(response2Key);
-    
-    if (!response1 || !response2) {
-      console.warn(`Réponses incomplètes pour la conversation ${conversationId}`);
-      return;
-    }
-    
-    const parsedResponse1 = JSON.parse(response1);
-    const parsedResponse2 = JSON.parse(response2);
+    const user1 = userAnswerA.userId;
+    const user2 = userAnswerB.userId;
+      
+    const response1 = userAnswerA.questionOption;
+    const response2 = userAnswerB.questionOption;
     
     // Appeler la méthode du ChatGateway
     await this.chatGateway.emitIcebreakerResponsesToAllParticipants(
       conversationId,
-      questionGroupId,
+      questionLabel,
       user1,
-      parsedResponse1.optionId,
+      response1,
       user2,
-      parsedResponse2.optionId
+      response2
     );
   }
 }

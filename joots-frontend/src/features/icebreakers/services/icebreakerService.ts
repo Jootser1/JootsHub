@@ -25,7 +25,7 @@ export class IcebreakerService {
     static async submitIcebreakerResponse(userId: string, questionGroupId: string, optionId: string, conversationId: string) {
         try {
             console.log('submitIcebreakerResponse', userId, questionGroupId, optionId, conversationId);
-            await axiosInstance.post('/questions/response', {                
+            await axiosInstance.post('/icebreakers/response', {                
                 userId,
                 questionGroupId,
                 optionId,

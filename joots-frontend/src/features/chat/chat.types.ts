@@ -67,7 +67,7 @@ export type ChatActions = {
   getOtherParticipantId: (conversationId: string, userId: string) => string | undefined;
   getOtherParticipantIcebreakerStatus: (conversationId: string, userId: string) => boolean | undefined;
   getParticipantResponse: (conversationId: string, participantId: string) => IcebreakerResponse | null;
-  
+  setParticipantResponse: (conversationId: string, participantId: string, response: IcebreakerResponse) => void;
   
   // Conversation actions
   setConversationsIds: (conversationIds: string[]) => void;

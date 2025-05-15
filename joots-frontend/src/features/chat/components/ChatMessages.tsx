@@ -55,6 +55,16 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
               }`}
             >
               <p className="text-sm">{message.content}</p>
+              {message.responses && message.responses.length > 0 && (
+                <div className="mt-2">
+                  {message.responses.map((response, index) => (
+                    <p key={index} className="text-sm">
+                      {response.userId}: {response.optionId}
+                    </p>
+                  ))}
+                </div>
+              )}
+              
               <span className="text-xs opacity-70 mt-1 block">
                 {timeAgo}
               </span>
