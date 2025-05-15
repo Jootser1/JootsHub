@@ -20,6 +20,7 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
   // Si les messages du store sont disponibles, les utiliser, sinon utiliser les props
   const displayMessages = storeMessages.length > 0 ? storeMessages : propMessages;
 
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -39,32 +40,42 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
   return (
     <div className="p-4 space-y-4">
       {displayMessages.map((message: Message, index: number) => {
+        const messageType = message.messageType;
         const isCurrentUser = message.senderId === user.id;
         const timeAgo = formatDistanceToNow(ensureDate(message.createdAt), { addSuffix: true, locale: fr });
+        let currentUserAnswer, otherUserAnswer;
+
+        if (messageType === "ANSWER") {
+          currentUserAnswer = message.userAId === user.id ? message.userAAnswer : message.userBAnswer;
+          otherUserAnswer = message.userAId === user.id ? message.userBAnswer : message.userAAnswer;
+
+        }
 
         return (
           <div
             key={`${message.id}-${index}`}
-            className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
+            className={`flex ${messageType === 'ANSWER' ? 'justify-center' : isCurrentUser ? 'justify-start' : 'justify-end'}`}
           >
             <div
               className={`max-w-[70%] rounded-lg p-3 ${
-                isCurrentUser
-                  ? 'bg-blue-500 text-white'
-                  : 'bg-gray-100 text-gray-900'
+                messageType === 'ANSWER' ? 'bg-orange-100 text-gray-900' : isCurrentUser ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <p className="text-sm">{message.content}</p>
-              {message.responses && message.responses.length > 0 && (
-                <div className="mt-2">
-                  {message.responses.map((response, index) => (
-                    <p key={index} className="text-sm">
-                      {response.userId}: {response.optionId}
-                    </p>
-                  ))}
+              <p className={`text-sm ${messageType === 'ANSWER' ? 'text-center' : ''}`}>{message.content}</p>
+              {messageType === 'ANSWER' && (
+                <div className="mt-2 space-y-2">
+                  {currentUserAnswer && (
+                    <div className="flex justify-start">
+                      <p className="text-sm">{currentUserAnswer}</p>
+                    </div>
+                  )}
+                  {otherUserAnswer && (
+                    <div className="flex justify-end">
+                      <p className="text-sm">{otherUserAnswer}</p>
+                    </div>
+                  )}
                 </div>
               )}
-              
               <span className="text-xs opacity-70 mt-1 block">
                 {timeAgo}
               </span>

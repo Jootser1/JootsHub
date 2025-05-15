@@ -135,6 +135,7 @@ export class IcebreakerService {
 
 
   private formatUserAnswersForAddIcebreakerMessage(userAnswers: any[]) {
+
     const userAnswerA = {
       userId: userAnswers[0].userId, 
       questionOption: userAnswers[0].questionOption.label
@@ -143,6 +144,7 @@ export class IcebreakerService {
       userId: userAnswers[1].userId, 
       questionOption: userAnswers[1].questionOption.label
     };
+
     const questionLabel = userAnswers[0].questionGroup.questions[0].question;
 
     return { userAnswerA, userAnswerB, questionLabel };

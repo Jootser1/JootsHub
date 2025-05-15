@@ -3,7 +3,7 @@ import { Conversation, ConversationParticipant } from '@/features/conversations/
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
-export type MessageType = 'text' | 'icebreaker';
+export type MessageType = 'TEXT' | 'ANSWER';
 
 export interface Message {
   id: string;
