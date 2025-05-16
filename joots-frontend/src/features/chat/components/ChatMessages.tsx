@@ -40,10 +40,11 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
   return (
     <div className="p-4 space-y-4">
       {displayMessages.map((message: Message, index: number) => {
-        const messageType = message.messageType;
+        const messageType = message.type;
         const isCurrentUser = message.senderId === user.id;
         const timeAgo = formatDistanceToNow(ensureDate(message.createdAt), { addSuffix: true, locale: fr });
         let currentUserAnswer, otherUserAnswer;
+        console.log('message:', message);
 
         if (messageType === "ANSWER") {
           currentUserAnswer = message.userAId === user.id ? message.userAAnswer : message.userBAnswer;

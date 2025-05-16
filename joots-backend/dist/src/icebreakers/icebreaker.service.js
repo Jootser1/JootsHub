@@ -89,18 +89,27 @@ let IcebreakerService = class IcebreakerService {
         });
     }
     async processCompletedIcebreaker(conversationId, questionGroupId) {
-        const userAnswers = await this.getUserAnswers(conversationId, questionGroupId);
+        const { userAnswers, questionGroupLocalized } = await this.getUserAnswers(conversationId, questionGroupId);
         if (userAnswers.length !== 2) {
             console.warn(`La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`);
             return;
         }
-        const { userAnswerA, userAnswerB, questionLabel } = this.formatUserAnswersForAddIcebreakerMessage(userAnswers);
+        const { userAnswerA, userAnswerB, questionLabel } = this.formatUserAnswersForAddIcebreakerMessage(conversationId, questionGroupId, userAnswers, questionGroupLocalized);
         await this.addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB);
         await this.resetIcebreakerStatus(conversationId);
         await this.emitResponsesToAllParticipants(conversationId, questionLabel, userAnswerA, userAnswerB);
     }
     async getUserAnswers(conversationId, questionGroupId) {
-        return await this.prisma.userAnswer.findMany({
+        const conversationLocale = await this.prisma.conversation.findUnique({
+            where: { id: conversationId },
+            select: { locale: true }
+        });
+        console.log('conversationLocale:', conversationLocale);
+        const questionGroupLocalized = await this.prisma.questionGroup.findUnique({
+            where: { id: questionGroupId },
+            select: { questions: { where: { locale: conversationLocale?.locale } } }
+        });
+        const userAnswers = await this.prisma.userAnswer.findMany({
             where: {
                 conversationId,
                 questionGroupId
@@ -110,22 +119,24 @@ let IcebreakerService = class IcebreakerService {
                 questionOption: {
                     select: {
                         label: true,
+                        locale: true,
                     },
                 },
                 questionGroup: {
-                    select: {
+                    include: {
                         questions: {
-                            take: 1,
-                            select: {
-                                question: true,
+                            where: {
+                                locale: conversationLocale?.locale
                             },
-                        },
-                    },
-                },
-            },
+                            take: 1,
+                        }
+                    }
+                }
+            }
         });
+        return { userAnswers, questionGroupLocalized };
     }
-    formatUserAnswersForAddIcebreakerMessage(userAnswers) {
+    formatUserAnswersForAddIcebreakerMessage(conversationId, questionGroupId, userAnswers, questionGroupLocalized) {
         const userAnswerA = {
             userId: userAnswers[0].userId,
             questionOption: userAnswers[0].questionOption.label
@@ -134,7 +145,7 @@ let IcebreakerService = class IcebreakerService {
             userId: userAnswers[1].userId,
             questionOption: userAnswers[1].questionOption.label
         };
-        const questionLabel = userAnswers[0].questionGroup.questions[0].question;
+        const questionLabel = questionGroupLocalized.questions[0].question;
         return { userAnswerA, userAnswerB, questionLabel };
     }
     async addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB) {

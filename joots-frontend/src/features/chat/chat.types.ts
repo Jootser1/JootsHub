@@ -13,11 +13,10 @@ export interface Message {
   createdAt: Date;
   status: MessageStatus;
   type: MessageType;
-  icebreakerData?: {
-    question: string;
-    senderResponse: IcebreakerResponse;
-    receiverResponse: IcebreakerResponse;
-  };
+  userAId?: string;
+  userAAnswer?: string;
+  userBId?: string;
+  userBAnswer?: string;
 }
 
 export interface ChatState {

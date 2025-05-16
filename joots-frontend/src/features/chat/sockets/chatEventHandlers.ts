@@ -1,7 +1,7 @@
 // src/sockets/chat/chatEventHandlers.ts
 
 import { useChatStore } from '@/features/chat/stores/chatStore';
-import { Message } from '@/features/chat/chat.types';
+import { Message, MessageStatus, MessageType } from '@/features/chat/chat.types';
 import { logger } from '@/utils/logger';
 
 // On utilise Zustand ou un autre store pour manipuler les messages
@@ -84,7 +84,6 @@ export function handleIcebreakerStatusUpdatedEvent(data: any) {
     
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isIcebreakerReady', isIcebreakerReady);
-      chatStore.updateParticipantField(conversationId, userId, 'icebreakerTimestamp', timestamp);
     }
     
     console.log('icebreakerStatusUpdated', conversationId, userId, isIcebreakerReady, timestamp);
@@ -111,6 +110,8 @@ export function handleIcebreakerQuestionGroupEvent(data: any) {
 
 // Handler pour 'icebreakerResponses' event
 export function handleIcebreakerResponsesEvent(data: any) {
+  console.log('handleIcebreakerResponsesEvent', data);
+  console.log('conversationId:', data?.conversationId);
   
   try {
     const message = {
@@ -118,13 +119,13 @@ export function handleIcebreakerResponsesEvent(data: any) {
       content: data?.questionLabel,
       senderId: 'JOOTS', // ou adaptez selon votre logique
       receiverId: 'JOOTS',
-      status: 'delivered',
-      type: 'ANSWER',
+      status: 'delivered' as MessageStatus,
+      type: 'ANSWER' as MessageType,
       userAAnswer: data?.response1,
       userAId: data?.user1,
       userBAnswer: data?.response2,
       userBId: data?.user2,
-      createdAt: new Date().toISOString()
+      createdAt: new Date()
     };
 
     
@@ -136,6 +137,4 @@ export function handleIcebreakerResponsesEvent(data: any) {
     logger.error('Erreur lors du traitement des réponses de l\'icebreaker:', error);
   }
 }
-
-
 
