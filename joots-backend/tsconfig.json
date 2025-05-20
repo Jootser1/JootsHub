@@ -20,5 +20,7 @@
     "paths": {
       "@prisma/client": ["./node_modules/.prisma/client"]
     }
-    }
-  }
+  },
+  "include": ["src"],                      // Inclut src et tous ses sous-dossiers
+  "exclude": ["node_modules", "dist", "prisma"] // ✅ exclut prisma/ du build
+}

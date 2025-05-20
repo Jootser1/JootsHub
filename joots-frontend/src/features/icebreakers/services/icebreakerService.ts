@@ -1,7 +1,6 @@
 import axiosInstance from "@/app/api/axiosInstance";
 import { useUserStore } from "@/features/user/stores/userStore";
 import { useChatStore } from "@/features/chat/stores/chatStore";
-import { IcebreakerResponse } from "../icebreaker.types";
 
 export class IcebreakerService {
 

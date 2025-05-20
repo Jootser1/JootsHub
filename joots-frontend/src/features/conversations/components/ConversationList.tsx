@@ -2,8 +2,7 @@ import { useEffect, useRef } from 'react'
 import ConversationItem from './ConversationItem'
 import { useConversation } from '@/features/conversations/hooks/useConversation'
 import { useSession } from 'next-auth/react'
-import { Conversation } from '@/types/chat.types'
-import { logger } from '@/utils/logger'
+import { Conversation } from '@/features/conversations/conversation.types'
 
 export const ConversationList = () => {
   const { data: session, status } = useSession()

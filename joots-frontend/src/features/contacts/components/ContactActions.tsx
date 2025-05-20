@@ -1,9 +1,9 @@
 // src/components/contacts/ContactActions.tsx
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { useChatStore } from '@/features/chat/stores/chatStore';
 import { User } from '@/features/user/user.types';
 import { UserPlus, UserMinus } from 'lucide-react';
+import { useContactStore } from '../stores/contactStore';
 
 interface ContactActionsProps {
   user: User;
@@ -11,14 +11,19 @@ interface ContactActionsProps {
 
 export function ContactActions({ user }: ContactActionsProps) {
   const [isProcessing, setIsProcessing] = useState(false);
-  const isContact = useChatStore((state) => state.isContact(user.id));
-  const syncContact = useChatStore((state) => state.syncContact);
+  const isContact = useContactStore((state) => state.isContact(user.id));
+  const addContact = useContactStore((state) => state.addContact);
+  const removeContact = useContactStore((state) => state.removeContact);
   
   const handleToggleContact = async () => {
     setIsProcessing(true);
     
     try {
-      await syncContact(user.id, !isContact);
+      if (isContact) {
+        await removeContact(user.id);
+      } else {
+        await addContact(user.id);
+      }
     } finally {
       setIsProcessing(false);
     }

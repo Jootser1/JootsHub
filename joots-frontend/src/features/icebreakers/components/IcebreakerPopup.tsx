@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import Image from 'next/image';
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -9,13 +10,26 @@ interface Option {
   label: string;
 }
 
+interface Question {
+  id: string;
+  questions: Array<{
+    question: string;
+  }>;
+  options: Option[];
+  category?: {
+    name: string;
+  };
+  categories?: {
+    logo?: string;
+  };
+}
+
 interface IcebreakerPopupProps {
-  question: any;
+  question: Question;
   isVisible: boolean;
   onAnswer: (questionId: string, optionId: string) => void;
   onClose: () => void;
 }
-
 
 export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: IcebreakerPopupProps) {
   const [isRendered, setIsRendered] = useState(false)
@@ -63,9 +77,11 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
     <div className="flex items-center gap-2">
     {question?.category && (
       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-100">
-      <img
-      src={question.categories.logo || "/placeholder.svg"}
+      <Image
+      src={question.categories?.logo || "/placeholder.svg"}
       alt={question.category.name}
+      width={20}
+      height={20}
       className="h-5 w-5"
       />
       </div>
@@ -128,8 +144,5 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
       </div>
     )
   }
-  
-  
-  
   
   export default IcebreakerPopup; 

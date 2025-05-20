@@ -1,4 +1,3 @@
-import { User } from '@/features/user/user.types';
 import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types';
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
 
@@ -28,6 +27,52 @@ export interface ChatState {
   userId?: string;
   token?: string;
   conversationsIds: string[];
+}
+
+// Types exportés pour être utilisés dans chatEventHandlers.ts
+export interface NewMessageEvent {
+  id: string;
+  content: string;
+  sender?: { id: string };
+  senderId?: string;
+  recipientId?: string;
+  type?: string;
+  createdAt?: string;
+  timestamp?: string;
+  conversationId: string;
+}
+
+export interface TypingEvent {
+  conversationId: string;
+  userId: string;
+  isTyping: boolean;
+}
+
+export interface MessageReadEvent {
+  conversationId: string;
+  messageId: string;
+}
+
+export interface IcebreakerStatusEvent {
+  conversationId: string;
+  userId: string;
+  isIcebreakerReady: boolean;
+  timestamp?: string;
+}
+
+export interface IcebreakerQuestionGroupEvent {
+  conversationId: string;
+  questionGroup: string;
+}
+
+export interface IcebreakerResponsesEvent {
+  id?: string;
+  conversationId: string;
+  questionLabel: string;
+  response1: string;
+  user1: string;
+  response2: string;
+  user2: string;
 }
 
 export type ChatActions = {

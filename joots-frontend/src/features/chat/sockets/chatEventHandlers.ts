@@ -1,14 +1,16 @@
 // src/sockets/chat/chatEventHandlers.ts
 
 import { useChatStore } from '@/features/chat/stores/chatStore';
-import { Message, MessageStatus, MessageType } from '@/features/chat/chat.types';
+import { Message, MessageType, NewMessageEvent, TypingEvent, MessageReadEvent, IcebreakerStatusEvent, IcebreakerQuestionGroupEvent, IcebreakerResponsesEvent } from '@/features/chat/chat.types';
 import { logger } from '@/utils/logger';
+
+
 
 // On utilise Zustand ou un autre store pour manipuler les messages
 const chatStore = useChatStore.getState(); // on prend l'état du store directement
 
 // Handler pour 'newMessage' event
-export function handleNewMessageEvent(message: any) {
+export function handleNewMessageEvent(message: NewMessageEvent) {
   try {
     if (!message) {
       logger.warn('Received empty message from gateway');
@@ -29,9 +31,9 @@ export function handleNewMessageEvent(message: any) {
     const newMessage: Message = {
       id: message.id,
       content: message.content,
-      senderId: message.sender?.id || message.senderId,
+      senderId: message.sender?.id || message.senderId || '',
       receiverId: message.recipientId || '',
-      type: message.type || 'text',
+      type: 'TEXT' as MessageType,
       createdAt: new Date(message.createdAt || message.timestamp || new Date()),
       status: 'delivered',
     };
@@ -39,48 +41,39 @@ export function handleNewMessageEvent(message: any) {
     // Vérifier que la date est valide avant d'ajouter le message
     
     chatStore.addMessage(conversationId, newMessage);
-    console.log('newMessage reçu et ajouté au store', newMessage);
+    //logger.debug('newMessage reçu et ajouté au store', newMessage);
   } catch (error) {
-    logger.error('Erreur lors du traitement du message:', error);
+    logger.error('Erreur lors du traitement du message:', error instanceof Error ? error : new Error(String(error)));
   }
 }
-
-// Handler pour 'userTyping' event
-export function handleTypingEvent(data: any) {
+export function handleTypingEvent(data: TypingEvent) {
   try {
-    const conversationId = data?.conversationId;
-    const userId = data?.userId;
-    const isTyping = data?.isTyping;
+    const { conversationId, userId, isTyping } = data;
     
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isTyping', isTyping);
       //logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`);
     }
   } catch (error) {
-    logger.error('Erreur lors du traitement du statut de frappe:', error);
+    logger.error('Erreur lors du traitement du statut de frappe:', error instanceof Error ? error : new Error(String(error)));
   }
 }
-
-// Handler pour 'messageRead' event
-export function handleMessageReadEvent(data: any) {
+export function handleMessageReadEvent(data: MessageReadEvent) {
   try {
     // Ex: mark a message as read in the store
-    const conversationId = data?.conversationId;
+    const conversationId = data.conversationId;
     if (conversationId) {
       console.log('Message read in conversation', conversationId, data);
     }
   } catch (error) {
-    logger.error('Erreur lors du traitement de la lecture du message:', error);
+    logger.error('Erreur lors du traitement de la lecture du message:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 // Handler pour 'icebreakerStatusUpdated' event
-export function handleIcebreakerStatusUpdatedEvent(data: any) {
+export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) {
   try {
-    const conversationId = data?.conversationId;
-    const userId = data?.userId;
-    const isIcebreakerReady = data?.isIcebreakerReady;
-    const timestamp = data?.timestamp;
+    const { conversationId, userId, isIcebreakerReady, timestamp } = data;
     
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isIcebreakerReady', isIcebreakerReady);
@@ -89,52 +82,49 @@ export function handleIcebreakerStatusUpdatedEvent(data: any) {
     console.log('icebreakerStatusUpdated', conversationId, userId, isIcebreakerReady, timestamp);
     
   } catch (error) {
-    logger.error('Erreur lors du traitement de la mise à jour du statut de l\'icebreaker:', error);
+    logger.error('Erreur lors du traitement de la mise à jour du statut de l\'icebreaker:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 // Handler pour 'icebreakerQuestionGroup' event
-export function handleIcebreakerQuestionGroupEvent(data: any) {
+export function handleIcebreakerQuestionGroupEvent(data: IcebreakerQuestionGroupEvent) {
   try {
-    const conversationId = data?.conversationId;
-    const questionGroup = data?.questionGroup;
+    const { conversationId, questionGroup } = data;
     console.log('handleIcebreakerQuestionGroupEvent', conversationId, questionGroup);
     
     chatStore.setCurrentQuestionGroup(conversationId, questionGroup);
     console.log('icebreakerQuestionGroup', conversationId, questionGroup);
     
   } catch (error) {
-    logger.error('Erreur lors du traitement de la question de l\'icebreaker:', error);
+    logger.error('Erreur lors du traitement de la question de l\'icebreaker:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 
 // Handler pour 'icebreakerResponses' event
-export function handleIcebreakerResponsesEvent(data: any) {
+export function handleIcebreakerResponsesEvent(data: IcebreakerResponsesEvent) {
   console.log('handleIcebreakerResponsesEvent', data);
-  console.log('conversationId:', data?.conversationId);
+  console.log('conversationId:', data.conversationId);
   
   try {
-    const message = {
-      id: data?.id || Date.now().toString(), // ou un autre identifiant unique
-      content: data?.questionLabel,
-      senderId: 'JOOTS', // ou adaptez selon votre logique
+    const message: Message = {
+      id: data.id || Date.now().toString(),
+      content: data.questionLabel,
+      senderId: 'JOOTS',
       receiverId: 'JOOTS',
-      status: 'delivered' as MessageStatus,
+      status: 'delivered',
       type: 'ANSWER' as MessageType,
-      userAAnswer: data?.response1,
-      userAId: data?.user1,
-      userBAnswer: data?.response2,
-      userBId: data?.user2,
+      userAAnswer: data.response1,
+      userAId: data.user1,
+      userBAnswer: data.response2,
+      userBId: data.user2,
       createdAt: new Date()
     };
 
-    
-    chatStore.addMessage(data?.conversationId, message);    
-    chatStore.resetIcebreakerStatus(data?.conversationId);
-    
+    chatStore.addMessage(data.conversationId, message);    
+    chatStore.resetIcebreakerStatus(data.conversationId);
     
   } catch (error) {
-    logger.error('Erreur lors du traitement des réponses de l\'icebreaker:', error);
+    logger.error('Erreur lors du traitement des réponses de l\'icebreaker:', error instanceof Error ? error : new Error(String(error)));
   }
 }
 

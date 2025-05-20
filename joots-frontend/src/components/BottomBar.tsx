@@ -5,10 +5,6 @@ import { useUserStore } from "@/features/user/stores/userStore"
 import Link from "next/link"
 
 
-interface BottomBarProps {
-  experience: "hub" | "icebreaker" | "socioscopy" | "revelio"
-}
-
 export const BottomBar = memo(function BottomBar() {
   const setMobileMenuOpen = useUserStore((state) => state.setMobileMenuOpen)
 

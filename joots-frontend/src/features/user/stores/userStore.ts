@@ -22,18 +22,12 @@ interface UserStore {
   syncUserData: () => Promise<void>;
 }
 
-const initialState: User = {
-  id: "",
-  username: "Invité",
-  avatar: null,
-  isOnline: false,
-  isAvailableForChat: false
-};
+
 
 export const useUserStore = create<UserStore>()(
   devtools(
     persist(
-      (set, get) => ({
+      (set) => ({
         // User state
         user: null,
         setUser: (user) => set({ user }),
@@ -50,7 +44,7 @@ export const useUserStore = create<UserStore>()(
             
             const newUser = { ...state.user, isOnline };
             logger.info(
-              `[UserStore] Statut utilisateur mis à jour (${source}): ${newUser.username} est maintenant ${isOnline ? 'en ligne' : 'hors ligne'}`
+              `[UserStore] ${newUser.username} est maintenant ${isOnline ? 'en ligne' : 'hors ligne'}`
             );
             
             return { user: newUser };
@@ -87,7 +81,7 @@ export const useUserStore = create<UserStore>()(
             set({ user: userData });
             logger.info('Données utilisateur récupérées depuis bdd et syncstore');
           } catch (error) {
-            logger.error('Erreur lors de la synchronisation des données utilisateur:', error);
+            logger.error('Erreur lors de la synchronisation des données utilisateur:', error instanceof Error ? error : new Error(String(error)));
           }
         }
       }),

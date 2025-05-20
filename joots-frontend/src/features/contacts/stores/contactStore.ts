@@ -5,6 +5,14 @@ import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
 import { ContactStore } from '@/features/contacts/contacts.types';
 
+interface ContactResponse {
+  contact: {
+    id: string;
+    username: string;
+    avatar: string | null;
+    isOnline: boolean;
+  };
+}
 
 export const useContactStore = create<ContactStore>()(
   devtools(
@@ -30,7 +38,8 @@ export const useContactStore = create<ContactStore>()(
           // Nettoyage des données associées
           const updatedOnlineContacts = new Set(state.onlineContacts);
           updatedOnlineContacts.delete(userId);
-          const { [userId]: _, ...remainingUserCache } = state.userCache;
+          const remainingUserCache = { ...state.userCache };
+          delete remainingUserCache[userId];
           
           return { 
             contactList: updatedContacts,
@@ -53,7 +62,7 @@ export const useContactStore = create<ContactStore>()(
           const response = await axiosInstance.get('/users/me/contacts');
           set((state) => {
             const newContactList = new Set(state.contactList);
-            response.data.forEach((contact: any) => {
+            response.data.forEach((contact: ContactResponse) => {
               newContactList.add(contact.contact.id);
             });
             return { 
@@ -63,7 +72,7 @@ export const useContactStore = create<ContactStore>()(
           });
           logger.info(`${response.data.length} contact(s) récupérés depuis la bdd et syncstore`);
         } catch (error) {
-          logger.error('Erreur lors du chargement des contacts vers le ContactStore', error);
+          logger.error('Erreur lors du chargement des contacts vers le ContactStore', error instanceof Error ? error : new Error(String(error)));
         }
       },
 
@@ -113,15 +122,15 @@ export const useContactStore = create<ContactStore>()(
       
       // Synchronisation avec les conversations actives
       syncWithConversations: (participantIds) => 
-        set((state) => {
+        set(() => {
           const updatedContacts = new Set(participantIds);
           return { contactList: updatedContacts };
         }),
       
       // Nettoyage du cache
       purgeCacheOlderThan: (timestamp) => 
-        set((state) => {
-          const newCache = { ...state.userCache };
+        set(() => {
+          const newCache = { ...get().userCache };
           Object.entries(newCache).forEach(([id, user]) => {
             if (user.lastSeen < timestamp) {
               delete newCache[id];

@@ -1,9 +1,11 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+type LogData = string | number | object | null | undefined;
+
 interface LogMessage {
   level: LogLevel;
   message: string;
-  data?: any;
+  data?: LogData;
   timestamp: string;
 }
 
@@ -25,7 +27,7 @@ class Logger {
     return Logger.instance;
   }
 
-  private formatData(data: any): string {
+  private formatData(data: LogData): string {
     if (!data) return '';
     try {
       // Si c'est une chaîne simple ou un nombre, on l'intègre directement
@@ -34,12 +36,12 @@ class Logger {
       }
       // Pour les objets, on les formate sur une nouvelle ligne
       return '\n' + JSON.stringify(data, null, 2);
-    } catch (e) {
+    } catch {
       return ' [Non sérialisable]';
     }
   }
 
-  private formatMessage(level: LogLevel, message: string, data?: any): LogMessage {
+  private formatMessage(level: LogLevel, message: string, data?: LogData): LogMessage {
     return {
       level,
       message,
@@ -48,7 +50,7 @@ class Logger {
     };
   }
 
-  private log(level: LogLevel, message: string, data?: any): void {
+  private log(level: LogLevel, message: string, data?: LogData): void {
     if (this.isDevelopment) {
       const logMessage = this.formatMessage(level, message, data);
       const formattedData = this.formatData(data);
@@ -73,19 +75,19 @@ class Logger {
     // ou les stocker dans une base de données
   }
 
-  public debug(message: string, data?: any): void {
+  public debug(message: string, data?: LogData): void {
     this.log('debug', message, data);
   }
 
-  public info(message: string, data?: any): void {
+  public info(message: string, data?: LogData): void {
     this.log('info', message, data);
   }
 
-  public warn(message: string, data?: any): void {
+  public warn(message: string, data?: LogData): void {
     this.log('warn', message, data);
   }
 
-  public error(message: string, data?: any): void {
+  public error(message: string, data?: LogData): void {
     this.log('error', message, data);
   }
 }

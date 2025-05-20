@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import { useUserStore } from "@/features/user/stores/userStore";
 import { useChatStore } from '@/features/chat/stores/chatStore'
-import { useCallback, useEffect } from "react";
+import { useCallback } from "react";
 import { useSocketManager } from "@/hooks/useSocketManager";
 
 type Experience = "hub" | "icebreaker" | "socioscopy" | "revelio"
@@ -18,6 +18,14 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   const { getParticipant, getOtherParticipant, activeConversationId } = useChatStore();
   const user = useUserStore((state) => state.user);
   const socketManager = useSocketManager();
+
+  const handleClick = useCallback(() => {
+    if (experience !== "icebreaker") return;
+    if (!activeConversationId) return;
+
+    console.log("conversationId", activeConversationId);    
+    socketManager.sendIcebreakerReady(activeConversationId, true);
+  }, [experience, activeConversationId, socketManager]);
 
   if (!user) return null;
   if (!activeConversationId) return null;
@@ -37,15 +45,6 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
     imageSrc = '/icebreaker_og.png';
   }
 
-  const handleClick = useCallback(() => {
-    if (experience !== "icebreaker") return;
-
-    console.log("conversationId", activeConversationId);    
-    if (activeConversationId) {
-      socketManager.sendIcebreakerReady(activeConversationId, true);
-    }
-  }, [isCurrentUserReady, isOtherParticipantReady, experience]);
-
   switch (experience) {
     case "hub":
       return (
@@ -55,8 +54,8 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
             <Image 
               src="/joots_logo.png"
               alt="Icebreaker"
-              width={45}
-              height={45}
+              width={size}
+              height={size}
             />
           </div>
         </button>
@@ -70,8 +69,8 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
             <Image 
               src={imageSrc}
               alt="Icebreaker"
-              width={45}
-              height={45}
+              width={size}
+              height={size}
             />
           </div>
         </button>

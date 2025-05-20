@@ -1,11 +1,10 @@
 "use client";
 
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BottomBar } from "./BottomBar"
 import MobileMenu from "./mobile-menu"
-import { logger } from '@/utils/logger';
 import { GlobalUserSocketProvider } from "@/features/user/sockets/GlobalUserSocketProvider";
 import { ChatSocketProvider } from "@/features/chat/sockets/ChatSocketProvider";
 

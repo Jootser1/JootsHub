@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { NextRequest } from "next/server";
 import { getServerSession } from 'next-auth';
 import axiosInstance from '@/app/api/axiosInstance';
+import { AxiosError } from 'axios';
 
 export async function GET(request: NextRequest) {
   try {
@@ -18,10 +19,10 @@ export async function GET(request: NextRequest) {
 
     const response = await axiosInstance.get(`/users/${id}`);
     return NextResponse.json(response.data);
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Erreur lors de la récupération de l\'utilisateur:', error);
     
-    if (error.response?.status === 404) {
+    if (error instanceof AxiosError && error.response?.status === 404) {
       return NextResponse.json({ error: "Utilisateur non trouvé" }, { status: 404 });
     }
     

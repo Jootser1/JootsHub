@@ -141,8 +141,8 @@ export class ConversationsService {
     
     // Créer les contacts réciproques
     await Promise.all([
-      this.userContactsService.addUserContact(userId, receiverId),
-      this.userContactsService.addUserContact(receiverId, userId)
+      this.userContactsService.addUserContactinBDD(userId, receiverId),
+      this.userContactsService.addUserContactinBDD(receiverId, userId)
     ]);
     
     return this.prisma.conversation.create({

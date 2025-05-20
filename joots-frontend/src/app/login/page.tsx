@@ -1,14 +1,12 @@
 "use client";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [error, setError] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -27,6 +25,7 @@ export default function LoginPage() {
         setError(result.error);
       }
     } catch (err) {
+      console.error(err);
       setError("Une erreur est survenue lors de la connexion.");
     } finally {
       setIsLoading(false);

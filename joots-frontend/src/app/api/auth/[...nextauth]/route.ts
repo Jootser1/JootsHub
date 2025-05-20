@@ -1,6 +1,6 @@
 import NextAuth, { Session } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import { JWT } from 'next-auth/jwt'
 import { User as NextAuthUser } from 'next-auth'
 import { logger } from '@/utils/logger';
@@ -26,7 +26,7 @@ const authOptions = {
         }
 
         try {
-          const res = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
+          const res = await axios.post(`${process.env.API_INTERNAL_URL}/auth/login`, {
             email: credentials.email,
             password: credentials.password,
           });
@@ -41,13 +41,16 @@ const authOptions = {
           }
           logger.error('Réponse invalide du serveur au login', { response: res.data });
           throw new Error('Réponse invalide du serveur');
-        } catch (error: any) {
-          logger.error('Erreur d\'authentification', {
-            message: error.message,
-            response: error.response?.data,
-            status: error.response?.status
-          });
-          throw new Error(error.response?.data?.message || 'Erreur d\'authentification');
+        } catch (error: unknown) {
+          if (error instanceof AxiosError) {
+            logger.error('Erreur d\'authentification', {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status
+            });
+            throw new Error(error.response?.data?.message || 'Erreur d\'authentification');
+          }
+          throw new Error('Erreur d\'authentification inconnue');
         }
       },
     }),

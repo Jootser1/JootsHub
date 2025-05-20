@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { QuestionGroupWithRelations } from '../../types/question';
+import { QuestionGroupWithRelations } from '../types/question';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 @Injectable()
 export class QuestionService {

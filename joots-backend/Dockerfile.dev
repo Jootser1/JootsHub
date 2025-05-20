@@ -1,0 +1,15 @@
+# Dockerfile.dev
+FROM node:20-alpine
+
+WORKDIR /joots-backend
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+# Exposer le port Nest.js
+EXPOSE 4000
+
+# Activer le watch mode (supposant que tu as nest CLI installé localement)
+CMD ["npm", "run", "start:dev"]

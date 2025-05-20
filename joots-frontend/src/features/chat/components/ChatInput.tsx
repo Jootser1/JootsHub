@@ -97,7 +97,7 @@ export const ChatInput = ({ conversationId}: ChatInputProps) => {
     <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
       {sendAttempted && !isChatConnected && (
         <div className="mb-2 p-2 bg-red-100 text-red-700 rounded text-sm">
-          Impossible d'envoyer le message : connexion au chat non établie. Veuillez réessayer dans quelques instants.
+          Impossible d&apos;envoyer le message : connexion au chat non établie. Veuillez réessayer dans quelques instants.
         </div>
       )}
       

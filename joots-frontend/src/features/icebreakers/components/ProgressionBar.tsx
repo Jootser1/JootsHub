@@ -12,7 +12,6 @@ export const LevelProgress: FC<LevelProgressProps> = ({
   level,
   current,
   max,
-  icon,
 }) => {
   const progress = Math.min(100, Math.round((current / max) * 100));
 

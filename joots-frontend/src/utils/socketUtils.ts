@@ -9,8 +9,6 @@ import { logger } from '@/utils/logger';
  */
 export const waitForConnection = async (socketService: BaseSocketService, timeoutMs: number = 5000): Promise<boolean> => {
     return new Promise<boolean>((resolve) => {
-        let timeoutId: NodeJS.Timeout;
-        
         // Vérifier immédiatement si déjà connecté
         if (socketService.isConnected()) {
             resolve(true);
@@ -26,7 +24,7 @@ export const waitForConnection = async (socketService: BaseSocketService, timeou
             }
         }, 500);
         
-        timeoutId = setTimeout(() => {
+        const timeoutId = setTimeout(() => {
             clearInterval(checkInterval);
             logger.warn('Timeout en attendant la connexion socket');
             resolve(false);

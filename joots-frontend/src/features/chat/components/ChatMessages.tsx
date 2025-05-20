@@ -4,7 +4,6 @@ import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { ensureDate } from '@/utils/dateUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
-import { useConversationMessages } from '@/features/chat/hooks/useConversationMessages';
 import { useChatStore } from '@/features/chat/stores/chatStore';
 interface ChatMessagesProps {
   messages: Message[];
@@ -44,7 +43,6 @@ export const ChatMessages = ({ messages: propMessages, conversationId }: ChatMes
         const isCurrentUser = message.senderId === user.id;
         const timeAgo = formatDistanceToNow(ensureDate(message.createdAt), { addSuffix: true, locale: fr });
         let currentUserAnswer, otherUserAnswer;
-        console.log('message:', message);
 
         if (messageType === "ANSWER") {
           currentUserAnswer = message.userAId === user.id ? message.userAAnswer : message.userBAnswer;

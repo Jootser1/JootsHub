@@ -5,7 +5,7 @@ import axiosInstance from '@/app/api/axiosInstance';
 // Route pour récupérer les messages d'une conversation
 export async function GET(
   request: Request,
-  { params }: { params: { conversationId: string } }
+  { params } : { params: Promise<{ conversationId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -14,7 +14,7 @@ export async function GET(
     }
 
     const response = await axiosInstance.get(
-      `/conversations/${params.conversationId}/messages`
+      `/conversations/${params}/messages`
     );
 
     return NextResponse.json(response.data);

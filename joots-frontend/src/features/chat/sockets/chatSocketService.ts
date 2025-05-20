@@ -1,12 +1,11 @@
 import { BaseSocketService } from '../../../lib/sockets/BaseSocketService';
 import { logger } from '@/utils/logger';
-import { useChatStore } from '@/features/chat/stores/chatStore';
 import { chatEventRegistry } from './chatEventRegistry';
-import { io } from 'socket.io-client';
+
 export class ChatSocketService extends BaseSocketService {
   private static instance: ChatSocketService | null = null;
   private activeConversations: Set<string> = new Set<string>();
-  private pingInterval: NodeJS.Timeout | null = null;
+  private _eventsRegistered = false;
 
   constructor() {
     super('chat');
@@ -25,13 +24,20 @@ export class ChatSocketService extends BaseSocketService {
   }
 
   public registerEvents() {
+    if (this._eventsRegistered) {
+      logger.debug('Événements déjà enregistrés, ignoré');
+      return;
+    }
+    
+    this._eventsRegistered = true;
     if (!this.socket) {
       logger.warn('Impossible d\'enregistrer les événements chat: socket non initialisé');
       return;
     }
+    logger.debug(`[EVENTS_REGISTER] Socket.id=${this.socket?.id}, events count`);
     
     Object.entries(chatEventRegistry).forEach(([event, handler]) => {
-      this.onEvent(event, handler);
+      this.socket?.on(event, (data) => handler(data));
     });
   }    
 
@@ -137,7 +143,7 @@ export class ChatSocketService extends BaseSocketService {
                   logger.info(`Message envoyé après reconnexion dans la conversation ${conversationId}`);
                   resolve(true);
                 } catch (e) {
-                  logger.error('Erreur lors de l\'envoi du message après reconnexion', e);
+                  logger.error('Erreur lors de l\'envoi du message après reconnexion', e as Error);
                   resolve(false);
                 }
               } else {
@@ -150,7 +156,7 @@ export class ChatSocketService extends BaseSocketService {
             setTimeout(sendAfterReconnect, 1000);
           });
         } catch (e) {
-          logger.error('Erreur lors de la tentative de reconnexion', e);
+          logger.error('Erreur lors de la tentative de reconnexion', e as Error);
           return false;
         }
       }
@@ -169,7 +175,7 @@ export class ChatSocketService extends BaseSocketService {
       logger.info(`Message envoyé dans la conversation ${conversationId}`);
       return true;
     } catch (e) {
-      logger.error('Erreur lors de l\'envoi du message', e);
+      logger.error('Erreur lors de l\'envoi du message', e as Error);
       return false;
     }
   }

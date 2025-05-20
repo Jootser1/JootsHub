@@ -8,12 +8,14 @@ import { Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { BaseGateway } from './base.gateway';
+import { UserContactsService } from '../users/contacts/contacts.service';
+import { UsersService } from '../users/users.service';
 
 @WebSocketGateway({
   cors: {
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://joots.app' 
-      : 'http://localhost:3000',
+    ? 'https://joots.app' 
+    : 'http://localhost:3000',
     credentials: true
   },
   namespace: 'user'
@@ -21,11 +23,13 @@ import { BaseGateway } from './base.gateway';
 export class UserGateway extends BaseGateway {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService
+    private readonly redis: RedisService,
+    private readonly userContactsService: UserContactsService,
+    private readonly usersService: UsersService
   ) {
     super(UserGateway.name);
   }
-
+  
   async handleConnection(client: Socket) {
     const userId = client.data.userId;
     
@@ -34,77 +38,70 @@ export class UserGateway extends BaseGateway {
       client.disconnect();
       return;
     }
-
+    
     try {
       // Mettre à jour le statut dans la BDD
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { isOnline: true }
-      });
-
+      await this.usersService.updateUserStatusinBDD(userId, true);
+      
       // Mettre à jour Redis
-      await this.redis.sadd('online_users', userId);
-      await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
-      this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur connecté`);
+      await this.usersService.addUserInRedisOnlineUsers(client, userId);
       
-      // Récupérer les contacts de l'utilisateur et rejoindre leurs rooms
-      const contacts = await this.prisma.userContact.findMany({
-        where: { userId: userId },
-        select: { contactId: true }
-      });
       
-      contacts.forEach(contact => {
-        client.join(`user-status-${contact.contactId}`);
+      // Récupérer les contacts ids de l'utilisateur
+      const contactsIds = await this.userContactsService.getContactsIds(userId);
+      
+      if (!contactsIds) {
+        return;
+      }
+
+      contactsIds.forEach(contactId => {
+        client.join(`user-status-${contactId}`);
       });
       
       // Notifier les contacts via les rooms
-      await this.notifyContactsStatusChange(userId, true);
+      await this.notifyContactsStatusChange(client, userId, true);
+
+      const onlineContactsIds = await this.userContactsService.getOnlineContactsFromRedis(userId, contactsIds);
+      
+      if (!onlineContactsIds) {
+        return;
+      }
+      
+      // Envoyer au client l'état des contacts actuellement en ligne
+      await this.sendOnlineContactsToUser(client, userId, onlineContactsIds);
       
     } catch (error) {
       this.logger.error(`[User Socket ${client.id}] Erreur lors de la connexion: ${error.message}`);
     }
   }
-
+  
   async handleDisconnect(client: Socket) {
     const userId = client.data.userId;
     if (!userId) return;
-
+    
     try {
       // Mettre à jour le statut dans la BDD
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { isOnline: false }
-      });
-
-      // Mettre à jour Redis
-      await this.redis.srem('online_users', userId);
-      await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+      await this.usersService.updateUserStatusinBDD(userId, false);
+      await this.usersService.removeUserInRedisOnlineUsers(client, userId);
 
       // Notifier les contacts via les rooms
-      await this.notifyContactsStatusChange(userId, false);
+      await this.notifyContactsStatusChange(client, userId, false);
       
       this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
     } catch (error) {
       this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de la déconnexion: ${error.message}`);
     }
   }
-
   
-  private async notifyContactsStatusChange(userId: string, isOnline: boolean) {
   
-    try {
-      // Récupérer les contacts de l'utilisateur
-      const contacts = await this.prisma.userContact.findMany({
-        where: { userId: userId },
-        select: { contactId: true }
-      });
-
+  private async notifyContactsStatusChange(client: Socket, userId: string, isOnline: boolean) {
+    try {      
       // Récupérer les informations de l'utilisateur
       const user = await this.prisma.user.findUnique({
         where: { id: userId },
         select: { username: true }
       });
-
+      
       // Notifier via les rooms
       this.server.to(`user-status-${userId}`).emit('userStatusChange', {
         userId,
@@ -112,13 +109,13 @@ export class UserGateway extends BaseGateway {
         isOnline,
         timestamp: new Date().toISOString()
       });
-
-      this.logger.debug(`[User Socket] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
+      
+      this.logger.debug(`[User Socket ${client.id}] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
     } catch (error) {
-      this.logger.error(`[User Socket] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
+      this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
     }
   }
-
+  
   @SubscribeMessage('joinContactsRooms')
   async handleJoinContactsRooms(client: Socket, payload: { contactIds: string[] }) {
     const { contactIds } = payload; 
@@ -128,7 +125,7 @@ export class UserGateway extends BaseGateway {
       client.join(`user-status-${contactId}`);
     });
   }
-
+  
   @SubscribeMessage('leaveContactsRooms')
   async handleLeaveContactsRooms(client: Socket, payload: { contactIds: string[] }) {
     const { contactIds } = payload;
@@ -138,7 +135,7 @@ export class UserGateway extends BaseGateway {
     });
     this.logger.debug(`[User Socket] ${client.data.userId} : a quitté les rooms de contacts: ${contactIds.join(', ')}`);
   }
-
+  
   @SubscribeMessage('pong')
   async handlePong(client: Socket) {
     const userId = client.data.userId;
@@ -174,11 +171,27 @@ export class UserGateway extends BaseGateway {
       this.logger.log(`[Redis] ${userId} : Statut utilisateur mis à jour : ${isOnline}`);
       
       // Notifier les contacts
-      await this.notifyContactsStatusChange(userId, isOnline);
+      await this.notifyContactsStatusChange(client, userId, isOnline);
       
       this.logger.log(`[User Socket ${client.id}] ${userId} : Statut mis à jour manuellement: ${isOnline ? 'en ligne' : 'hors ligne'}`);
     } catch (error) {
       this.logger.error(`[User Socket ${client.id}] Erreur lors de la mise à jour du statut: ${error.message}`);
+    }
+  }
+  
+  private async sendOnlineContactsToUser(client: Socket, userId: string, onlineContactsIds: string[]) {
+    try {
+      for (const contactId of onlineContactsIds) {
+        this.server.to(`user-status-${userId}`).emit('userStatusChange', {
+          userId: contactId,
+          isOnline: true,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      this.logger.debug(`[User Socket ${client.id}] ${userId} : État de ${onlineContactsIds.length} contacts en ligne envoyé`);
+    } catch (error) {
+      this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de l'envoi des contacts en ligne: ${error.message}`);
     }
   }
 } 

@@ -1,14 +1,23 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
 
+interface ContactResponse {
+  contact: {
+    id: string;
+    username: string;
+    avatar: string | null;
+    isOnline: boolean;
+  };
+}
+
 export const useContact = () => {
   const { data: session } = useSession();
   const { addContact } = useContactStore();
 
-  const loadContacts = async () => {
+  const loadContacts = useCallback(async () => {
     if (!session?.user?.id) {
       logger.warn('Impossible de charger les contacts: utilisateur non connecté');
       return;
@@ -20,20 +29,15 @@ export const useContact = () => {
       const contacts = response.data;
 
       // Ajouter chaque contact au store avec un persist pour stocker dans local storage
-      contacts.forEach((contact: any) => {
+      contacts.forEach((contact: ContactResponse) => {
         addContact(contact.contact.id);
       });
 
       logger.debug('Contacts chargés avec succès');
     } catch (error) {
-      logger.error('Erreur lors du chargement des contacts:', error);
+      logger.error('Erreur lors du chargement des contacts:', error instanceof Error ? error : new Error(String(error)));
     }
-  };
-
-  // Charger les contacts au montage
-  useEffect(() => {
-    loadContacts();
-  }, [session?.user?.id]);
+  }, [session?.user?.id, addContact]);
 
   return {
     loadContacts

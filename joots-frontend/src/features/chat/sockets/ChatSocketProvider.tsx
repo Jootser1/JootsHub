@@ -21,6 +21,7 @@ export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
             await socketMan.connectWithAllUserConversations(userId, token);
             return true;
         } catch (error) {
+            logger.error('Erreur lors de la connexion au socket chat', error as Error);
             return false;
         }
     }, [socketMan]);
@@ -34,7 +35,6 @@ export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
             }
             
             const success = await connectChat(session.user.id, session.accessToken);
-            logger.info(`(Re)Connexion socket chat ${success ? 'réussie' : 'échouée'}`);         
         };
         
         setupChatSocket();
@@ -44,7 +44,7 @@ export const ChatSocketProvider = ({ children }: ChatSocketProviderProps) => {
         session?.user?.id, 
         session?.accessToken, 
         status,
-        socketMan.isChatConnected
+        socketMan.isChatConnected,
     ]);
     
     // Rendre simplement les enfants

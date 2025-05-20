@@ -1,12 +1,11 @@
-
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest } from 'next/server';
 import axiosInstance from '@/app/api/axiosInstance';
 
-// Route pour marquer les messages comme lus  
 export async function POST(
-  request: Request,
-  { params }: { params: { conversationId: string } }
+  request: NextRequest,
+  { params } : { params: Promise<{ conversationId: string }> }
 ) {
   try {
     const session = await getServerSession();
@@ -18,7 +17,7 @@ export async function POST(
     const { messageIds } = body;
 
     const response = await axiosInstance.post(
-      `/conversations/${params.conversationId}/messages/read`,
+      `/conversations/${params}/messages/read`,
       { messageIds }
     );
 
@@ -27,4 +26,4 @@ export async function POST(
     console.error('Erreur lors du marquage des messages comme lus:', error);
     return new NextResponse('Erreur serveur', { status: 500 });
   }
-} 
+}

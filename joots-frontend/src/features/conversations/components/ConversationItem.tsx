@@ -1,5 +1,6 @@
 import { FC } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { Conversation } from '@/features/conversations/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
@@ -8,7 +9,6 @@ import { getOtherParticipantInConversation } from '@/features/conversations/util
 import { useContactStore } from '@/features/contacts/stores/contactStore'
 import { useUserStore } from '@/features/user/stores/userStore'
 import { ensureDate } from '@/utils/dateUtils'
-import { logger } from '@/utils/logger'
 
 interface ConversationItemProps {
   conversation: Conversation
@@ -39,9 +39,11 @@ const ConversationItem: FC<ConversationItemProps> = ({ conversation }) => {
           {/* Avatar */}
           <div className="w-12 h-12 rounded-lg bg-gray-200 overflow-hidden">
             {otherUser.avatar ? (
-              <img 
+              <Image 
                 src={otherUser.avatar} 
                 alt={otherUser.username}
+                width={48}
+                height={48}
                 className="w-full h-full object-cover"
               />
             ) : (

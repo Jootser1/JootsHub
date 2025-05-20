@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use, useRef } from "react"
 import axiosInstance from "@/app/api/axiosInstance"
+import { AxiosError } from "axios"
 import AppLayout from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from "sonner"
@@ -47,8 +48,12 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           useChatStore.getState().initializeConversation(conversationData);
           useChatStore.getState().setActiveConversation(conversationData.id);
         }
-      } catch (error: any) {
-        toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
+      } catch (error: unknown) {
+        if (error instanceof AxiosError) {
+          toast.error(error.response?.data?.message || "Erreur lors du chargement de la conversation")
+        } else {
+          toast.error("Erreur lors du chargement de la conversation")
+        }
       } finally {
         setIsLoading(false)
       }

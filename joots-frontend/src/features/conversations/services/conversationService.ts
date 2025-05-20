@@ -1,5 +1,6 @@
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
+import { AxiosError } from 'axios';
 
 export interface RandomChatResponse {
   conversationId: string;
@@ -31,17 +32,12 @@ export const conversationService = {
           username: randomUser.username
         }
       };
-    } catch (error: any) {
-      logger.error('[ChatService] Erreur lors de la création du chat aléatoire:', error);
-      if (error.response?.status === 404) {
+    } catch (error) {
+      logger.error('[ChatService] Erreur lors de la création du chat aléatoire:', error instanceof Error ? error : new Error(String(error)));
+      if (error instanceof AxiosError && error.response?.status === 404) {
         throw new Error('Aucun utilisateur disponible pour le moment. Revenez plus tard !');
       }
       throw new Error('Une erreur est survenue lors de la création du chat');
     }
   }
-
-  
-
-
-
 }; 

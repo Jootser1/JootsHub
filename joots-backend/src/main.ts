@@ -5,7 +5,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
     origin: process.env.NODE_ENV === 'production' 
-      ? 'https://joots.app' // URL de production
+      ? 'http://localhost:3000' // URL de production
       : 'http://localhost:3000', // URL de développement
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

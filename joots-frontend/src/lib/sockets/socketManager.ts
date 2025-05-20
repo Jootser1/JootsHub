@@ -4,7 +4,6 @@ import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
 import { waitForConnection } from '@/utils/socketUtils';
 import { useUserStore } from '@/features/user/stores/userStore';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
-import { useChatStore } from '@/features/chat/stores/chatStore';
 /**
 * Gestionnaire global de sockets pour toute l'application
 * Implémenté comme un singleton accessible partout
@@ -75,7 +74,7 @@ class SocketManager {
       // Mettre à jour le statut
       this.userSocket?.updateUserStatus(this.userId, true);
     } catch (error) {
-      logger.error("Erreur lors de la configuration des rooms:", error);
+      logger.error("Erreur lors de la configuration des rooms:", error instanceof Error ? error : new Error(String(error)));
     }
 
     logger.info('SocketManager: Socket utilisateur configuré avec succès');
@@ -92,8 +91,10 @@ class SocketManager {
       throw new Error('No credentials set for socket connection');
     }
     
-    // Si déjà connecté, retourner l'instance existante sans log redondant
+    // Si déjà connecté, ne pas créer de nouvelle instance
     if (this.chatSocket?.isConnected()) {
+      logger.debug(`Réutilisation du socket chat existant (${this.chatSocket.getSocket()?.id || 'inconnu'})`);
+      
       // Si conversationIds fournis, les joindre
       if (conversationIds && conversationIds.length > 0) {
         const existingConversations = this.chatSocket.getActiveConversations();
@@ -101,7 +102,6 @@ class SocketManager {
         
         if (newConversations.length > 0) {
           this.chatSocket.joinAllConversations(newConversations);
-          logger.info(`SocketManager: ${newConversations.length} nouvelles conversations rejointes`);
         }
       }
       
@@ -165,7 +165,7 @@ class SocketManager {
         this.userSocket.disconnect();
       }       
       catch (error) {
-        logger.error('Erreur lors de la déconnexion du socket utilisateur:', error);
+        logger.error('Erreur lors de la déconnexion du socket utilisateur:', error instanceof Error ? error : new Error(String(error)));
       }
       
       this.userSocket = null;
@@ -183,7 +183,7 @@ class SocketManager {
         
         logger.info(`Socket chat déconnecté pour l'utilisateur: ${this.userId || 'inconnu'}`);
       } catch (error) {
-        logger.error('Erreur lors de la déconnexion du socket chat:', error);
+        logger.error('Erreur lors de la déconnexion du socket chat:', error instanceof Error ? error : new Error(String(error)));
       }
       
       this.chatSocket = null;

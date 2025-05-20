@@ -3,6 +3,7 @@ import { useChatStore } from '@/features/chat/stores/chatStore';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
 import { LevelProgress } from '@/features/icebreakers/components/ProgressionBar';
 import { TargetIcon } from 'lucide-react';
+import Image from 'next/image';
 
 interface ChatHeaderProps {
   otherUser: User;
@@ -11,7 +12,7 @@ interface ChatHeaderProps {
   conversationId: string;
 }
 
-export const ChatHeader = ({ otherUser, isOnline: initialIsOnline, conversationId }: ChatHeaderProps) => {
+export const ChatHeader = ({ otherUser, conversationId }: ChatHeaderProps) => {
   // Écoute réactive du statut "isTyping" depuis le store
   const isTyping = useChatStore((state) => {
     const conversation = state.conversations[conversationId];
@@ -28,10 +29,12 @@ export const ChatHeader = ({ otherUser, isOnline: initialIsOnline, conversationI
     <div className="flex items-center space-x-3">
     <div className="relative">
     {otherUser.avatar ? (
-      <img
-      src={otherUser.avatar}
-      alt={otherUser.username}
-      className="w-10 h-10 rounded-full"
+      <Image
+        src={otherUser.avatar}
+        alt={otherUser.username}
+        width={40}
+        height={40}
+        className="rounded-full"
       />
     ) : (
       <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">

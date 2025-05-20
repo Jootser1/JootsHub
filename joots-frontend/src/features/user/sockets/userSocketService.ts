@@ -1,11 +1,10 @@
 import { BaseSocketService } from '../../../lib/sockets/BaseSocketService';
 import { logger } from '@/utils/logger';
 import { useUserStore } from '@/features/user/stores/userStore';
-import { useContactStore } from '@/features/contacts/stores/contactStore';
 import { createUserEventRegistry } from './userEventRegistry';
-import { io } from 'socket.io-client';
+import { UserStatusChangeData } from './userEventRegistry';
 
-
+type UserEventHandler = (data: UserStatusChangeData | Record<string, unknown>) => void;
 
 export class UserSocketService extends BaseSocketService {
   private static instance: UserSocketService | null = null;
@@ -32,8 +31,16 @@ export class UserSocketService extends BaseSocketService {
     
     const eventRegistry = createUserEventRegistry(this.userId);
     Object.entries(eventRegistry).forEach(([event, handler]) => {
-      this.onEvent(event, (data) => {
-        handler(data);
+      this.onEvent(event, (data: unknown) => {
+        if (event === 'userStatusChange') {
+          if (this.isUserStatusChangeData(data)) {
+            (handler as UserEventHandler)(data);
+          } else {
+            logger.warn('Données de statut utilisateur invalides reçues');
+          }
+        } else {
+          (handler as UserEventHandler)(data as Record<string, unknown>);
+        }
       });
     })
   }
@@ -58,7 +65,7 @@ export class UserSocketService extends BaseSocketService {
         logger.info(`Émission du statut utilisateur: ${isOnline ? 'en ligne' : 'hors ligne'}`);
       }
     } catch (error) {
-      logger.error('Erreur lors de la mise à jour du statut:', error);
+      logger.error('Erreur lors de la mise à jour du statut:', error instanceof Error ? error : new Error(String(error)));
     }
   }
   
@@ -71,7 +78,7 @@ export class UserSocketService extends BaseSocketService {
     try {
       this.socket.emit('joinContactsRooms', { contactIds });
     } catch (error) {
-      logger.error('Erreur lors de la jointure des rooms:', error);
+      logger.error('Erreur lors de la jointure des rooms:', error instanceof Error ? error : new Error(String(error)));
     }
   }
   
@@ -84,7 +91,18 @@ export class UserSocketService extends BaseSocketService {
     try {
       this.socket.emit('leaveContactsRooms', { contactIds });
     } catch (error) {
-      logger.error('Erreur lors de la sortie des rooms:', error);
+      logger.error('Erreur lors de la sortie des rooms:', error instanceof Error ? error : new Error(String(error)));
     }
+  }
+
+  private isUserStatusChangeData(data: unknown): data is UserStatusChangeData {
+    return (
+      typeof data === 'object' &&
+      data !== null &&
+      'userId' in data &&
+      'isOnline' in data &&
+      typeof (data as UserStatusChangeData).userId === 'string' &&
+      typeof (data as UserStatusChangeData).isOnline === 'boolean'
+    );
   }
 }

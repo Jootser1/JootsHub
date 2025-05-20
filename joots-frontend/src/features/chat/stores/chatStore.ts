@@ -38,14 +38,14 @@ export const useChatStore = create<ChatStore>()(
             const response = await axiosInstance.get('/conversations');
             set((state) => {
               const newConversations = { ...state.conversations };
-              response.data.forEach((conversation: any) => {
+              response.data.forEach((conversation: Conversation) => {
                 newConversations[conversation.id] = conversation;
               });
               return { conversations: newConversations };
             });
             logger.info(`${response.data.length} conversation(s) récupérées depuis la bdd et syncstore`);
           } catch (error) {
-            logger.error('Erreur lors du chargement des conversations vers le ChatStore', error);
+            logger.error('Erreur lors du chargement des conversations vers le ChatStore', error instanceof Error ? error : new Error(String(error)));
           }
         },
 

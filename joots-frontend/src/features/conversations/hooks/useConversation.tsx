@@ -3,7 +3,6 @@ import { useSession } from 'next-auth/react';
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
 import { Conversation } from '@/features/conversations/conversation.types';
-import { useChatStore } from '@/features/chat/stores/chatStore';
 
 export const useConversation = () => {
   const { data: session } = useSession();
@@ -12,14 +11,13 @@ export const useConversation = () => {
   const [error, setError] = useState<Error | null>(null);
   const conversationCache = useRef<Record<string, Conversation>>({});
   const pendingRequests = useRef<Record<string, Promise<Conversation>>>({});
-  const chatStore = useChatStore();
 
   const fetchConversations = async () => {
     try {
       const response = await axiosInstance.get('/conversations');
       setConversations(response.data);
     } catch (error) {
-      logger.error('Error fetching conversations:', error);
+      logger.error('Error fetching conversations:', error instanceof Error ? error : new Error(String(error)));
       setError(error instanceof Error ? error : new Error('Failed to fetch conversations'));
     }
   };
@@ -32,7 +30,7 @@ export const useConversation = () => {
       setConversations(prev => [...prev, response.data]);
       return response.data;
     } catch (error) {
-      logger.error('Error creating conversation:', error);
+      logger.error('Error creating conversation:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   };
@@ -63,14 +61,14 @@ export const useConversation = () => {
         .catch(error => {
           // Nettoyer la requête en cours en cas d'erreur
           delete pendingRequests.current[receiverId];
-          logger.error('Error finding conversation:', error);
+          logger.error('Error finding conversation:', error instanceof Error ? error : new Error(String(error)));
           throw error;
         });
 
       pendingRequests.current[receiverId] = request;
       return request;
     } catch (error) {
-      logger.error('Error finding conversation:', error);
+      logger.error('Error finding conversation:', error instanceof Error ? error : new Error(String(error)));
       throw error;
     }
   }, []);

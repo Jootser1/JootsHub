@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { logger } from '@/utils/logger';
 
-type EventCallback = (data: any) => void;
+type EventCallback = (data: unknown) => void;
 
 interface SocketEvent {
   eventName: string;
@@ -71,7 +71,7 @@ export abstract class BaseSocketService {
     if (!this.socket) return;
     
     this.socket.on('connect', () => {
-      logger.info(`Socket ${this.namespace} connecté pour userId: ${this.userId}`);
+      logger.info(`[Socket ${this.namespace}] connecté pour userId: ${this.userId}`);
     });
     
     this.socket.on('disconnect', (reason) => {
@@ -104,7 +104,7 @@ export abstract class BaseSocketService {
   }
   
   // Méthodes communes pour la gestion des événements
-  protected emit(event: string, data?: any): void {
+  protected emit(event: string, data?: unknown): void {
     if (!this.socket?.connected) {
       logger.warn(`Impossible d'émettre l'événement ${event}: non connecté`);
       return;
@@ -116,7 +116,8 @@ export abstract class BaseSocketService {
     if (!this.socket) return () => {};
     
     this.socket.on(eventName, (data) => {
-      const userInfo = data.user ? ` (${data.user.username})` : '';
+      // La variable userInfo était définie mais non utilisée
+      // const userInfo = data.user ? ` (${data.user.username})` : '';
       //logger.debug(`BaseSocketService: Événement ${eventName} reçu${userInfo}:`, data);
       callback(data);
     });

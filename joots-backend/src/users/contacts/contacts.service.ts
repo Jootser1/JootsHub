@@ -1,11 +1,16 @@
 // src/services/user-contacts.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { ConversationParticipant } from '../../../types/chat';
+import { Logger } from '@nestjs/common';
+import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class UserContactsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private logger: Logger,
+    private redis: RedisService
+  ) {}
 
   /**
    * Récupère tous les contacts d'un utilisateur
@@ -45,9 +50,29 @@ export class UserContactsService {
     }));
   }
 
-  /**
-   * Vérifie si un utilisateur est dans les contacts
-   */
+  async getContactsIds(userId: string) {
+    try {
+      
+      // Récupére la liste des contacts de l'utilisateur et la liste de ceux en ligne
+      const contacts = await this.prisma.userContact.findMany({
+        where: { userId: userId },
+        select: { 
+          contactId: true
+        }
+      });
+
+      if (contacts.length === 0) {
+        return;
+      }
+
+      const contactsIds = contacts.map(contact => contact.contactId);
+      return contactsIds;
+    } catch (error) {
+      this.logger.error(`[User Socket] ${userId} : Erreur lors de la récupération des contacts: ${error.message}`);
+      return;
+    }
+  }
+
   async isUserContact(userId: string, contactId: string): Promise<boolean> {
     const contact = await this.prisma.userContact.findUnique({
       where: {
@@ -61,10 +86,28 @@ export class UserContactsService {
     return !!contact;
   }
 
-  /**
-   * Ajoute un utilisateur aux contacts
-   */
-  async addUserContact(userId: string, contactId: string): Promise<void> {
+  async getOnlineContactsFromRedis(userId: string, contactsIds: string[]) {
+    try {
+      // Récupérer la liste des utilisateurs en ligne
+      const onlineUsersIds = await this.redis.smembers('online_users');
+      
+      // Filtrer pour obtenir les contacts en ligne
+      const onlineContactIds = contactsIds
+      .filter(contactId => onlineUsersIds.includes(contactId));
+      
+      if (onlineContactIds.length === 0) {
+        return;
+      }
+
+      return onlineContactIds;
+
+    } catch (error) {
+      this.logger.error(`[User Socket] ${userId} : Erreur lors de la récupération des contacts en ligne: ${error.message}`);
+      return;
+    }  
+  }
+
+  async addUserContactinBDD(userId: string, contactId: string): Promise<void> {
     // Vérifier que l'utilisateur à ajouter existe
     const contactUser = await this.prisma.user.findUnique({
       where: { id: contactId }

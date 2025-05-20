@@ -10,14 +10,21 @@ import { signOut } from "next-auth/react"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import axiosInstance from "@/app/api/axiosInstance"
+import { useSocketManager } from "@/hooks/useSocketManager"
 
 export default function MobileMenu() {
   const router = useRouter()
   const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useUserStore()
+  const socketManager = useSocketManager()
 
   const handleLogout = async () => {
     try {
       setMobileMenuOpen(false)
+      
+      // Déconnecter tous les sockets avant la déconnexion
+      socketManager.disconnectAll()
+      console.log("Tous les sockets ont été déconnectés")
+      
       await signOut({ redirect: false })
       logout()
       router.push("/login")
@@ -90,7 +97,7 @@ export default function MobileMenu() {
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <MessageSquare className="h-5 w-5 text-gray-500 mr-2" />
-                <span className="text-gray-700 font-medium">Accepter les invitations d'inconnus</span>
+                <span className="text-gray-700 font-medium">Accepter les invitations d&apos;inconnus</span>
               </div>
               <Switch
                 checked={user?.isAvailableForChat ?? true}

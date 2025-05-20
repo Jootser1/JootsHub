@@ -65,6 +65,6 @@ export class UsersController {
     @Param('id') id: string,
     @Body('isOnline') isOnline: boolean,
   ) {
-    return this.usersService.updateUserStatus(id, isOnline);
+    return this.usersService.updateUserStatusinBDD(id, isOnline);
   }
 }

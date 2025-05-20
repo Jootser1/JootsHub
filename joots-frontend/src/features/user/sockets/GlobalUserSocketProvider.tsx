@@ -28,27 +28,51 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
   const { user, syncUserData } = useUserStore();
   const socketManager = useSocketManager();
   const setupDoneRef = useRef(false);
+  const isAuthenticatedRef = useRef(false);
+  const connectionAttemptedRef = useRef(false);
 
   const connectUserSocket = useCallback(async (userId: string, token: string): Promise<boolean> => {
+    if (connectionAttemptedRef.current && setupDoneRef.current) {
+      return socketManager.isUserConnected;
+    }
+    
+    connectionAttemptedRef.current = true;
+    
     try {
+      if (socketManager.isUserConnected) {
+        return true;
+      }
+      
       await socketManager.connectUserSocket(userId, token);
       return true;
     } catch (error) {
+      logger.error('Erreur lors de la connexion du socket utilisateur:', error instanceof Error ? error : new Error(String(error)));
       return false;
     }
   }, [socketManager]);
 
-
   useEffect(() => {
+    // Reset connection attempt flag if userId or authentication state changes
+    if (session?.user?.id !== undefined) {
+      connectionAttemptedRef.current = false;
+    }
+
+    // Ne rien faire si l'utilisateur n'est pas authentifié
+    if (status !== 'authenticated') {
+      logger.debug('GlobalUserSocketProvider: Non authentifié, pas de connexion socket');
+      isAuthenticatedRef.current = false;
+      return;
+    }
+    
+    // Marquer comme authentifié
+    isAuthenticatedRef.current = true;
+    
     const setupSocket = async () => {
-      // Éviter les configurations multiples
-      if (setupDoneRef.current) return;
-      
-      if (status !== 'authenticated'|| !session?.user?.id || !session?.accessToken) {
-        logger.debug('GlobalUserSocketProvider: Conditions non remplies pour la connexion', { status, userId: session?.user?.id });
+      // Éviter les configurations multiples et vérifier l'authentification
+      if (setupDoneRef.current || !session?.user?.id || !session?.accessToken) {
         return;
       }
-                  
+      
       try {
         // Récupération des données utilisateur depuis bdd et sync userStore
         if (!user) {
@@ -70,7 +94,7 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         
         setupDoneRef.current = true;
       } catch (error) {
-        logger.error("Erreur lors de la configuration du socket:", error);
+        logger.error("Erreur lors de la configuration du socket:", error instanceof Error ? error : new Error(String(error)));
       } finally {
         setIsLoading(false);
       }
@@ -85,8 +109,16 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
     
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'hidden') {
-        logger.info('GlobalUserSocketProvider: Page cachée, nettoyage des sockets');
-        socketManager.disconnectAll();
+        logger.info('GlobalUserSocketProvider: Page cachée');
+        // Ne pas déconnecter immédiatement pour éviter les reconnexions inutiles
+        // lors de changements d'onglets rapides
+      } else if (document.visibilityState === 'visible') {
+        logger.info('GlobalUserSocketProvider: Page de nouveau visible, vérification des sockets');
+        // Vérifier si les sockets sont toujours connectés
+        if (!socketManager.isUserConnected && session?.user?.id && session?.accessToken) {
+          logger.info('GlobalUserSocketProvider: Reconnexion du socket utilisateur');
+          connectUserSocket(session.user.id, session.accessToken);
+        }
       }
     };
     
@@ -102,19 +134,25 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         isChatConnected: socketManager.isChatConnected
       }
     };
-    logger.debug('Dependance', socketInfo);
+
     
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
       window.removeEventListener('visibilitychange', handleVisibilityChange);
       
       // Garder aussi la condition existante
-      if (status === "unauthenticated") {
+      if (!isAuthenticatedRef.current) {
         logger.info('GlobalUserSocketProvider: Nettoyage du socket (session terminée)');
         socketManager.disconnectAll();
       }
     };
-  }, [session?.user?.id, status]);
+  }, [
+    session?.user?.id, 
+    status,
+    socketManager,
+    connectUserSocket,
+    syncUserData
+  ]);
   
   const contextValue = {
     isLoading,

@@ -12,7 +12,6 @@ export function handleUserStatusChange(data: UserStatusChange, currentUserId?: s
   // Si c'est l'utilisateur actuel, mettre à jour son statut
   if (data.userId === currentUserId) {
     userStore.setUserStatus(data.isOnline);
-    logger.debug('L\'utilisateur actif se met à jour dans le user store', { data });
   }
   
   // S'assurer que l'utilisateur est dans la liste des contacts

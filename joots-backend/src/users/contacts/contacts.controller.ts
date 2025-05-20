@@ -40,7 +40,7 @@ import {
           throw new BadRequestException('contactId est requis');
         }
         
-        await this.userContactsService.addUserContact(userId, contactId);
+        await this.userContactsService.addUserContactinBDD(userId, contactId);
         return { success: true };
       } catch (error) {
         throw new BadRequestException(error.message);

@@ -1,0 +1,61 @@
+services:
+  frontend:
+    build:
+      context: ./joots-frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - ./joots-frontend/.env
+    depends_on:
+      - backend
+    networks:
+      - joots-network
+
+  backend:
+    build:
+      context: ./joots-backend
+      dockerfile: Dockerfile
+    ports:
+      - "4000:4000"
+    environment:
+      - NODE_ENV=production
+      - SEED_DB=false  # ou false
+    env_file:
+      - ./joots-backend/.env
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - joots-network
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - joots-network
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+    networks:
+      - joots-network
+
+networks:
+  joots-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

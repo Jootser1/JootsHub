@@ -1,4 +1,4 @@
-import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types';
+import { Conversation } from '@/features/conversations/conversation.types';
 import { User } from '@/features/user/user.types';
 import { useContactStore } from '@/features/contacts/stores/contactStore';
 

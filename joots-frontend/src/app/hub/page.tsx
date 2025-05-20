@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, TouchEvent } from "react";
-import { useSession } from "next-auth/react";
+import { useState, TouchEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import AppLayout from "@/components/AppLayout";
 import { Button } from "@/components/ui/button"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { useUserStore } from "@/features/user/stores/userStore"
+
 
 const apps = [
   {
@@ -39,13 +39,10 @@ const apps = [
 ]
 
 export default function HubPage() {
-  const { data: session, status } = useSession();
-  const user = session?.user;
   const [currentApp, setCurrentApp] = useState(0);
   const [touchStart, setTouchStart] = useState(0);
   const [touchEnd, setTouchEnd] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [direction, setDirection] = useState(0);
   const [offset, setOffset] = useState(apps.length); // Offset pour centrer sur le groupe du milieu
   const router = useRouter();
 
@@ -67,7 +64,6 @@ export default function HubPage() {
           carousel.style.transition = 'transform 500ms ease-in-out';
         }
         setIsTransitioning(false);
-        setDirection(0);
       }, 50);
     }, 500);
   };
@@ -75,7 +71,6 @@ export default function HubPage() {
   const handlePrevious = () => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    setDirection(-1);
     
     if (currentApp <= 0) {
       setCurrentApp(apps.length - 1);
@@ -86,7 +81,6 @@ export default function HubPage() {
       setOffset(offset - 1);
       setTimeout(() => {
         setIsTransitioning(false);
-        setDirection(0);
       }, 500);
     }
   }
@@ -94,7 +88,6 @@ export default function HubPage() {
   const handleNext = () => {
     if (isTransitioning) return;
     setIsTransitioning(true);
-    setDirection(1);
     
     if (currentApp >= apps.length - 1) {
       setCurrentApp(0);
@@ -105,7 +98,6 @@ export default function HubPage() {
       setOffset(offset + 1);
       setTimeout(() => {
         setIsTransitioning(false);
-        setDirection(0);
       }, 500);
     }
   }
@@ -154,9 +146,7 @@ export default function HubPage() {
     return `calc(${baseTranslation}% - ${touchOffset}px)`;
   }
 
-  if (status === "loading") {
-    return <p>Chargement...</p>;
-  }
+
 
   return (
     <AppLayout>
@@ -198,7 +188,13 @@ export default function HubPage() {
                       className="text-4xl md:text-5xl font-bold transform transition-all duration-300 hover:scale-110"
                       style={{ color: app.color }}
                     >
-                      <img src={app.logo} alt={app.title} className="w-16" />
+                      <Image 
+                        src={app.logo} 
+                        alt={app.title} 
+                        width={64} 
+                        height={64} 
+                        className="w-16"
+                      />
                     </div>
                   </div>
 

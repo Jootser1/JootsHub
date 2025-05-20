@@ -1,11 +1,9 @@
 import { JootsLogo } from "./joots-logo"
 import Link from "next/link"
-import Image from "next/image"
 import { useUserStore } from "@/features/user/stores/userStore"
-import { signOut } from "next-auth/react"
 
 export function Header() {
-  const {user, logout} = useUserStore()
+  const {user} = useUserStore()
 
   return (
     <header className="p-4 flex items-center justify-between border-b">

@@ -13,6 +13,28 @@ export function useSocketManager() {
   const [isUserConnected, setIsUserConnected] = useState(socketManager.isUserSocketConnected());
   const [isChatConnected, setIsChatConnected] = useState(socketManager.isChatSocketConnected());
   
+  // Fonction pour vérifier si une conversation est active
+  const isConversationActive = useCallback((conversationId: string) => {
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
+    return chatSocket ? chatSocket.isInConversation(conversationId) : false;
+  }, []);
+  
+  // Fonction pour rejoindre une conversation
+  const joinConversation = useCallback((conversationId: string) => {
+    const chatSocket = socketManager.getChatSocket();
+    if (chatSocket?.isConnected()) {
+      // Vérifier si déjà dans la conversation avant de rejoindre
+      if (!isConversationActive(conversationId)) {
+        chatSocket.joinConversation(conversationId);
+        logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+      } else {
+        logger.info(`useSocketManager: Déjà dans la conversation: ${conversationId}`);
+      }
+    } else {
+      logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
+    }
+  }, [isConversationActive]);
+  
   // Synchronisation de l'état avec l'état réel des sockets
   useEffect(() => {
     // Vérifier l'état actuel
@@ -31,11 +53,6 @@ export function useSocketManager() {
 
     // Vérifier immédiatement
     updateConnectionState();
-
-    // Vérifier périodiquement
-    const intervalId = setInterval(updateConnectionState, 2000);
-    
-    return () => clearInterval(intervalId);
   }, []);
   
   // Connexion du socket utilisateur
@@ -46,7 +63,7 @@ export function useSocketManager() {
       setIsUserConnected(userSocket.isConnected());
       return userSocket;
     } catch (error) {
-      logger.error('useSocketManager: Erreur lors de la connexion du socket utilisateur', error);
+      logger.error('useSocketManager: Erreur lors de la connexion du socket utilisateur', error as Error);
       throw error;
     }
   }, []);
@@ -59,7 +76,7 @@ export function useSocketManager() {
 
       return chatSocket;
     } catch (error) {
-      logger.error('useSocketManager: Erreur lors de la connexion du socket chat', error);
+      logger.error('useSocketManager: Erreur lors de la connexion du socket chat', error as Error);
       throw error;
     }
   }, []);
@@ -72,13 +89,13 @@ export function useSocketManager() {
         return conversationIds;
       }
       const response = await axiosInstance.get('/conversations');
-      conversationIds = response.data.map((conv: any) => conv.id);
+      conversationIds = response.data.map((conv: { id: string }) => conv.id);
       const chatStore = useChatStore.getState();
       chatStore.setConversationsIds(conversationIds);
       logger.info(`${conversationIds.length} conversation(s) récupérées depuis la bdd`);
       return conversationIds;
     } catch (error) {
-      logger.error("useSocketManager: Erreur lors du chargement des conversations:", error);
+      logger.error("useSocketManager: Erreur lors du chargement des conversations:", error as Error);
       return [];
     }
   }, []);
@@ -115,7 +132,7 @@ export function useSocketManager() {
         return true;
       }
     } catch (error) {
-      logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error);
+      logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error as Error);
       return false;
     }
   }, [fetchUserConversations]);
@@ -138,21 +155,6 @@ export function useSocketManager() {
   }, []);
   
   // Fonctions pour les conversations
-  const joinConversation = useCallback((conversationId: string) => {
-    const chatSocket = socketManager.getChatSocket();
-    if (chatSocket?.isConnected()) {
-      // Vérifier si déjà dans la conversation avant de rejoindre
-      if (!isConversationActive(conversationId)) {
-        chatSocket.joinConversation(conversationId);
-        logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
-      } else {
-        logger.info(`useSocketManager: Déjà dans la conversation: ${conversationId}`);
-      }
-    } else {
-      logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
-    }
-  }, []);
-  
   const leaveConversation = useCallback((conversationId: string) => {
     const chatSocket = socketManager.getChatSocket();
     if (chatSocket?.isConnected()) {
@@ -167,11 +169,6 @@ export function useSocketManager() {
       chatSocket.joinAllConversations(conversationIds);
       logger.info(`useSocketManager: ${conversationIds.length} conversations rejointes`);
     }
-  }, []);
-  
-  const isConversationActive = useCallback((conversationId: string) => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
-    return chatSocket ? chatSocket.isInConversation(conversationId) : false;
   }, []);
   
   const getActiveConversations = useCallback(() => {

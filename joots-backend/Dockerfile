@@ -1,36 +1,36 @@
-# 1️⃣ Utiliser une image légère et récente de Node.js
+# 🛠️ Étape 1 : Build
 FROM node:20-alpine AS builder
 
-# 2️⃣ Définir le dossier de travail dans le conteneur
-WORKDIR /app
+WORKDIR /joots-backend
 
-# 3️⃣ Copier les fichiers nécessaires pour l’installation
-COPY package.json package-lock.json ./
+# Installer les dépendances
+COPY package*.json ./
+RUN npm ci
 
-# 4️⃣ Installer les dépendances en mode production
-RUN npm ci --only=production
+# Copier uniquement les dossiers utiles
+COPY tsconfig*.json ./
+COPY src ./src
+COPY prisma ./prisma
 
-# 5️⃣ Copier tout le code source du projet
-COPY . .
+# Générer Prisma Client
+RUN npx prisma generate
 
-# 6️⃣ Construire le projet TypeScript en JavaScript
+# Compiler le projet
 RUN npm run build
 
-# 7️⃣ Étape finale : Créer une image légère pour l'exécution
+# 🔧 Étape 2 : Création de l'image de prod minimale
 FROM node:20-alpine AS runner
-WORKDIR /app
 
-# 8️⃣ Copier uniquement les fichiers nécessaires depuis l’étape précédente
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/dist ./dist
-COPY package.json ./
+WORKDIR /joots-backend
 
-# 9️⃣ Définir l'environnement en production
+# Copier le build, les dépendances et le fichier package.json
+COPY --from=builder /joots-backend/dist ./dist
+COPY --from=builder /joots-backend/node_modules ./node_modules
+COPY --from=builder /joots-backend/package.json ./package.json
+COPY --from=builder /joots-backend/prisma ./prisma
+
 ENV NODE_ENV=production
+EXPOSE 4000
 
-# 🔟 Exposer le port d'écoute de l'API
-EXPOSE 3000
-
-# 1️⃣1️⃣ Lancer le backend avec Node.js
-CMD ["node", "dist/main.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && [ \"$SEED_DB\" = \"true\" ] && npx prisma db seed; node dist/src/main.js"]
 

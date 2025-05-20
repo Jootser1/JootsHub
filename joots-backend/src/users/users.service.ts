@@ -1,13 +1,43 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
+import { RedisService } from '../redis/redis.service';
+import { Logger } from '@nestjs/common';
+import { Socket } from 'socket.io';
 
-
-type UserWithAuth = Prisma.UserGetPayload<{ include: { auth: true } }>
+// Définir notre propre type User avec Auth sans dépendre des types Prisma
+type UserWithAuth = {
+  id: string;
+  avatar: string | null;
+  bio: string | null;
+  languages: string[];
+  createdAt: Date;
+  updatedAt: Date;
+  userNumber: number;
+  username: string;
+  role: string;
+  isOnline: boolean;
+  isAvailableForChat: boolean;
+  // Auth relation
+  auth: {
+    id: string;
+    email: string;
+    password: string;
+    accessToken: string | null;
+    refreshToken: string | null;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: string;
+  } | null;
+};
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly redis: RedisService,
+    private readonly logger: Logger
+  ) {}
 
   async getAllUsers() {
     return this.prisma.user.findMany();
@@ -27,6 +57,19 @@ export class UsersService {
 
   async getUsersCount() {
     return this.prisma.user.count();
+  }
+
+  async addUserInRedisOnlineUsers(client: Socket, userId: string) {
+    await this.redis.sadd('online_users', userId);
+    await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+      this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur connecté`);
+
+  }
+
+  async removeUserInRedisOnlineUsers(client: Socket, userId: string) {
+    await this.redis.srem('online_users', userId);
+    await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
+    this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
   }
 
   async getOnlineUsers() {
@@ -100,7 +143,7 @@ export class UsersService {
     return availableUsers[randomIndex];
   }
 
-  async updateUserStatus(userId: string, isOnline: boolean) {
+  async updateUserStatusinBDD(userId: string, isOnline: boolean) {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { isOnline },
