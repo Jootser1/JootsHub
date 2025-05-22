@@ -84,13 +84,16 @@ export const GlobalUserSocketProvider = ({ children }: { children: ReactNode }) 
         const lastSyncTime = contactStore.lastSyncTime || 0;
         const shouldRefresh = Date.now() - lastSyncTime > CONTACT_REFRESH_INTERVAL;
         
+        // Ne charger les contacts que si nécessaire
         if (contactStore.contactList.size === 0 || shouldRefresh) {
           await contactStore.loadContacts();
         }
         
-        // Connexion du socket utilisateur
-        const success = await connectUserSocket(session.user.id, session.accessToken);
-        logger.info(`(Re)Connexion socket utilisateur ${success ? 'réussie' : 'échouée'}`);
+        // Connexion du socket utilisateur seulement si pas déjà connecté
+        if (!socketManager.isUserConnected) {
+          const success = await connectUserSocket(session.user.id, session.accessToken);
+          logger.info(`(Re)Connexion socket utilisateur ${success ? 'réussie' : 'échouée'}`);
+        }
         
         setupDoneRef.current = true;
       } catch (error) {

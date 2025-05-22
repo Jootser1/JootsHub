@@ -46,6 +46,7 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
     logger.error('Erreur lors du traitement du message:', error instanceof Error ? error : new Error(String(error)));
   }
 }
+
 export function handleTypingEvent(data: TypingEvent) {
   try {
     const { conversationId, userId, isTyping } = data;
@@ -58,6 +59,7 @@ export function handleTypingEvent(data: TypingEvent) {
     logger.error('Erreur lors du traitement du statut de frappe:', error instanceof Error ? error : new Error(String(error)));
   }
 }
+
 export function handleMessageReadEvent(data: MessageReadEvent) {
   try {
     // Ex: mark a message as read in the store
@@ -90,10 +92,7 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
 export function handleIcebreakerQuestionGroupEvent(data: IcebreakerQuestionGroupEvent) {
   try {
     const { conversationId, questionGroup } = data;
-    console.log('handleIcebreakerQuestionGroupEvent', conversationId, questionGroup);
-    
-    chatStore.setCurrentQuestionGroup(conversationId, questionGroup);
-    console.log('icebreakerQuestionGroup', conversationId, questionGroup);
+    chatStore.setCurrentQuestionGroup(conversationId, JSON.stringify(questionGroup));
     
   } catch (error) {
     logger.error('Erreur lors du traitement de la question de l\'icebreaker:', error instanceof Error ? error : new Error(String(error)));

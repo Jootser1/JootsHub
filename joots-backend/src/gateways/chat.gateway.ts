@@ -10,6 +10,7 @@ import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
+import { ProgressionResult } from 'src/types/chat';
 
 interface ParticipantIceStatus {
   userId: string;
@@ -244,7 +245,7 @@ export class ChatGateway extends BaseGateway {
   }
   
   // Émettre la réponse de chaque utilisateur à la question par socket.io
-  public async emitIcebreakerResponsesToAllParticipants(conversationId: string, questionLabel: string, user1: string, response1: string, user2: string, response2: string) {
+  public async emitIcebreakerResponsesToAllParticipants(conversationId: string, questionLabel: string, user1: string, response1: string, user2: string, response2: string, xpAndLevel: ProgressionResult) {
     console.log('emitIcebreakerResponsesToAllParticipants', conversationId, questionLabel, user1, response1, user2, response2);
     const socketData = {
     conversationId,
@@ -253,6 +254,7 @@ export class ChatGateway extends BaseGateway {
       response1,
       user2,
       response2,
+      xpAndLevel,
       answeredAt: new Date().toISOString()
     };
       

@@ -4,7 +4,8 @@ import { RedisService } from '../redis/redis.service';
 import { QuestionGroupWithRelations } from '../types/question';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
-
+import { ConversationsService } from '../conversations/conversations.service';
+import { ProgressionResult } from '../types/chat';
 @Injectable()
 export class IcebreakerService {
   constructor(
@@ -12,6 +13,7 @@ export class IcebreakerService {
     private readonly redis: RedisService,
     @Inject(forwardRef(() => ChatGateway)) private readonly chatGateway: ChatGateway,
     private readonly messagesService: MessagesService,
+    private readonly conversationsService: ConversationsService
   ) {}
   
   async setParticipantIcebreakerReady(conversationId: string, userId: string, isIcebreakerReady: boolean) {
@@ -103,7 +105,8 @@ export class IcebreakerService {
     
     await this.addIcebreakerMessage(conversationId, questionLabel, userAnswerA, userAnswerB);
     await this.resetIcebreakerStatus(conversationId);
-    await this.emitResponsesToAllParticipants(conversationId, questionLabel, userAnswerA, userAnswerB);
+    const xpAndLevel = await this.conversationsService.addXpAndComputeLevel(conversationId);
+    await this.emitResponsesToAllParticipants(conversationId, questionLabel, userAnswerA, userAnswerB, xpAndLevel);
   }
 
   private async getUserAnswers(conversationId: string, questionGroupId: string) {
@@ -196,7 +199,12 @@ export class IcebreakerService {
     }), 86400); // Expire après 24 heures
   }
   
-  async emitResponsesToAllParticipants(conversationId: string, questionLabel: string, userAnswerA: { userId: string, questionOption: string }, userAnswerB: { userId: string, questionOption: string }) {
+  async emitResponsesToAllParticipants(conversationId: string,
+     questionLabel: string, 
+     userAnswerA: { userId: string, questionOption: string }, 
+     userAnswerB: { userId: string, questionOption: string },
+     xpAndLevel: ProgressionResult
+  ) {
  
     
     // Récupérer les réponses des deux participants depuis Redis
@@ -213,7 +221,8 @@ export class IcebreakerService {
       user1,
       response1,
       user2,
-      response2
+      response2,
+      xpAndLevel
     );
   }
 }

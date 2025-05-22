@@ -27,7 +27,7 @@ export default function AppLayout({
   return (
     <GlobalUserSocketProvider>
       <ChatSocketProvider>
-        <div className="h-screen flex flex-col">
+        <div className="h-screen w-screen flex flex-col">
           <main className="flex-1 flex flex-col overflow-hidden">
             {children}
           </main>

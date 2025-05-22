@@ -33,7 +33,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center h-screen w-screen bg-gray-100">
       <div className="bg-white p-6 rounded-2xl shadow-lg w-80">
         <h1 className="text-2xl font-bold text-center mb-4">JOOTS</h1>
         <form onSubmit={handleSubmit}>

@@ -35,6 +35,14 @@ export interface Conversation {
   };
 }
 
+export type ProgressionResult = {
+  newXp: number;
+  level: number;
+  remainingXp: number;
+  reward?: string;
+  photoRevealPercent?: number;
+};
+
 export interface ChatState {
   messages: Record<string, Message[]>;
   conversations: Record<string, Conversation>;

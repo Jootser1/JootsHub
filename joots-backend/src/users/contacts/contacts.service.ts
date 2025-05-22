@@ -137,9 +137,6 @@ export class UserContactsService {
     });
   }
 
-  /**
-   * Supprime un utilisateur des contacts
-   */
   async removeUserContact(userId: string, contactId: string): Promise<void> {
     await this.prisma.userContact.delete({
       where: {
@@ -149,5 +146,9 @@ export class UserContactsService {
         }
       }
     });
+  }
+
+  async addUserToAContactRoom(userId: string, contactId: string): Promise<void> {
+    
   }
 }

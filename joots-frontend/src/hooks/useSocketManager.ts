@@ -92,7 +92,6 @@ export function useSocketManager() {
       conversationIds = response.data.map((conv: { id: string }) => conv.id);
       const chatStore = useChatStore.getState();
       chatStore.setConversationsIds(conversationIds);
-      logger.info(`${conversationIds.length} conversation(s) récupérées depuis la bdd`);
       return conversationIds;
     } catch (error) {
       logger.error("useSocketManager: Erreur lors du chargement des conversations:", error as Error);

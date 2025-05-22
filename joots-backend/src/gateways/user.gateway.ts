@@ -3,8 +3,11 @@ import {
   SubscribeMessage,
   ConnectedSocket,
   MessageBody,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  WebSocketServer
 } from '@nestjs/websockets';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { BaseGateway } from './base.gateway';
@@ -29,6 +32,12 @@ export class UserGateway extends BaseGateway {
   ) {
     super(UserGateway.name);
   }
+
+  // Map userId → socketId
+  private userSockets = new Map<string, string>();
+
+  // Map socketId → userId (pour cleanup)
+  private socketUsers = new Map<string, string>();
   
   async handleConnection(client: Socket) {
     const userId = client.data.userId;
@@ -39,6 +48,10 @@ export class UserGateway extends BaseGateway {
       return;
     }
     
+    // Enregistrement des maps
+    this.userSockets.set(userId, client.id);
+    this.socketUsers.set(client.id, userId);
+
     try {
       // Mettre à jour le statut dans la BDD
       await this.usersService.updateUserStatusinBDD(userId, true);
@@ -78,6 +91,9 @@ export class UserGateway extends BaseGateway {
   async handleDisconnect(client: Socket) {
     const userId = client.data.userId;
     if (!userId) return;
+
+    this.userSockets.delete(userId);
+    this.socketUsers.delete(client.id);
     
     try {
       // Mettre à jour le statut dans la BDD
@@ -193,5 +209,10 @@ export class UserGateway extends BaseGateway {
     } catch (error) {
       this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de l'envoi des contacts en ligne: ${error.message}`);
     }
+  }
+
+  findSocketIdByUserId(userId: string): string | null {
+    const socketId = this.userSockets.get(userId);
+    return socketId ?? null;
   }
 } 

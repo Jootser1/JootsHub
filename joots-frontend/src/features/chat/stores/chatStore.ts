@@ -6,6 +6,26 @@ import { getUnreadCount } from '../../conversations/utils/conversationUtils';
 import axiosInstance from '@/app/api/axiosInstance';
 import { logger } from '@/utils/logger';
 
+interface Option {
+  id: string;
+  label: string;
+}
+
+interface Question {
+  id: string;
+  questions: Array<{
+    question: string;
+  }>;
+  options: Option[];
+  category?: {
+    name: string;
+  };
+  categories?: {
+    logo?: string;
+  };
+}
+
+
 const initialState: ChatState = {
   messages: {},
   conversations: {},
@@ -13,6 +33,7 @@ const initialState: ChatState = {
   error: null,
   currentQuestionGroup: null,
   conversationsIds: [],
+  icebreakerQuestions: {},
 };
 
 export const useChatStore = create<ChatStore>()(
@@ -171,6 +192,7 @@ export const useChatStore = create<ChatStore>()(
             };
           }),
 
+
         // Participants
         updateParticipantField: (
           conversationId: string,
@@ -277,6 +299,22 @@ export const useChatStore = create<ChatStore>()(
           const participant = conversation?.participants.find(p => p.userId === participantId);
           return participant?.response || null;
         },
+
+        updateConversationXP: (conversationId: string, xp: number) => {
+          set((state) => {
+            const conv = state.conversations[conversationId];
+            if (!conv) return state;
+            return {
+              conversations: {
+                ...state.conversations,
+                [conversationId]: {
+                  ...conv,
+                  xpPoint: (conv.xpPoint ?? 0) + xp,
+                },
+              },
+            };
+          });
+        }
       }),
       { name: 'chat-store' }
     )

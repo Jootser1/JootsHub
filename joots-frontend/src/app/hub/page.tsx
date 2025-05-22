@@ -150,68 +150,46 @@ export default function HubPage() {
 
   return (
     <AppLayout>
-      <div className="flex-1 flex flex-col items-center justify-center p-4 relative overflow-hidden touch-pan-y">
-        <div 
-          className="carousel-container max-w-4xl w-full transition-transform duration-500 ease-in-out transform"
-          style={{ 
-            transform: `translateX(${getTranslateX()})`,
-            transition: touchEnd ? 'none' : 'transform 500ms ease-in-out'
-          }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-        >
-          <div className="flex">
-            {[...apps, ...apps, ...apps].map((app, index) => (
+      <div className="flex-1 flex flex-col p-4 relative">
+        {/* Version mobile : affichage en colonne */}
+        <div className="md:hidden h-full overflow-y-auto">
+          <div className="h-full flex flex-col justify-between py-8">
+            {apps.map((app, index) => (
               <div
-                key={`${app.id}-${index}`}
-                className={`w-full flex-shrink-0 px-4 md:px-8 transform transition-all duration-500 ${
-                  index % apps.length === currentApp
-                    ? 'scale-100 opacity-100' 
-                    : 'scale-95 opacity-50'
-                }`}
+                key={app.id}
+                className={`w-[85%] transform ${index % 2 === 0 ? '-rotate-3' : 'rotate-3'} hover:rotate-0 transition-all duration-300 flex-1 flex items-center justify-center`}
               >
-                {/* Début de la carte d'application avec ombre et espacement adaptatif */}
-                <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 space-y-4 md:space-y-6">
-                  <h2 
-                    className="text-3xl md:text-4xl font-bold text-center"
-                    style={{ color: app.color }}
-                  >
-                    {app.title}
-                  </h2>
-                  <p className="text-lg md:text-xl text-gray-600 text-center">
-                    {app.description}
-                  </p>
-
-                  <div className="aspect-video bg-white rounded-xl flex items-center justify-center overflow-hidden">
+                <div 
+                  className="bg-white rounded-3xl shadow-2xl p-6 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 relative w-full"
+                  onClick={() => app.enabled && router.push(app.path)}
+                  style={{
+                    background: `linear-gradient(135deg, ${app.color}15 0%, white 100%)`,
+                    border: `2px solid ${app.color}30`
+                  }}
+                >
+                  <div className="flex flex-col items-center">
                     <div 
-                      className="text-4xl md:text-5xl font-bold transform transition-all duration-300 hover:scale-110"
-                      style={{ color: app.color }}
+                      className="w-20 h-20 rounded-2xl mb-4 flex items-center justify-center shadow-lg"
+                      style={{ backgroundColor: `${app.color}20` }}
                     >
                       <Image 
                         src={app.logo} 
                         alt={app.title} 
-                        width={64} 
-                        height={64} 
-                        className="w-16"
+                        width={48} 
+                        height={48} 
+                        className="w-12"
                       />
                     </div>
-                  </div>
 
-                  
-
-                  <div className="flex justify-center">
-                    <Button
-                      onClick={handleStart}
-                      disabled={!app.enabled}
-                      className="w-full md:w-auto px-6 md:px-8 py-3 text-lg font-semibold rounded-xl transform transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
-                      style={{
-                        backgroundColor: app.enabled ? app.color : '#999999',
-                        color: 'white',
-                      }}
+                    <h2 
+                      className="text-2xl font-bold text-center mb-3"
+                      style={{ color: app.color }}
                     >
-                      {app.enabled ? "Commencer" : "Bientôt disponible"}
-                    </Button>
+                      {app.title}
+                    </h2>
+                    <p className="text-base text-gray-600 text-center">
+                      {app.description}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -219,41 +197,109 @@ export default function HubPage() {
           </div>
         </div>
 
-        {/* Indicateurs de navigation uniquement visibles sur desktop */}
-        <div className="hidden md:flex absolute top-1/2 left-4 z-10">
-          <button
-            onClick={handlePrevious}
-            className="transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
-            aria-label="Application précédente"
+        {/* Version desktop : carrousel */}
+        <div className="hidden md:block w-full">
+          <div 
+            className="carousel-container max-w-4xl w-full transition-transform duration-500 ease-in-out transform"
+            style={{ 
+              transform: `translateX(${getTranslateX()})`,
+              transition: touchEnd ? 'none' : 'transform 500ms ease-in-out'
+            }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           >
-            <ChevronLeft className="h-6 w-6" />
-          </button>
-        </div>
+            <div className="flex">
+              {[...apps, ...apps, ...apps].map((app, index) => (
+                <div
+                  key={`${app.id}-${index}`}
+                  className={`w-full flex-shrink-0 px-4 md:px-8 transform transition-all duration-500 ${
+                    index % apps.length === currentApp
+                      ? 'scale-100 opacity-100' 
+                      : 'scale-95 opacity-50'
+                  }`}
+                >
+                  <div className="bg-white rounded-2xl shadow-xl p-4 md:p-8 space-y-4 md:space-y-6">
+                    <h2 
+                      className="text-3xl md:text-4xl font-bold text-center"
+                      style={{ color: app.color }}
+                    >
+                      {app.title}
+                    </h2>
+                    <p className="text-lg md:text-xl text-gray-600 text-center">
+                      {app.description}
+                    </p>
 
-        <div className="hidden md:flex absolute top-1/2 right-4 z-10">
-          <button
-            onClick={handleNext}
-            className="transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
-            aria-label="Application suivante"
-          >
-            <ChevronRight className="h-6 w-6" />
-          </button>
-        </div>
+                    <div className="aspect-video bg-white rounded-xl flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="text-4xl md:text-5xl font-bold transform transition-all duration-300 hover:scale-110"
+                        style={{ color: app.color }}
+                      >
+                        <Image 
+                          src={app.logo} 
+                          alt={app.title} 
+                          width={64} 
+                          height={64} 
+                          className="w-16"
+                        />
+                      </div>
+                    </div>
 
-        {/* Indicateurs de pagination */}
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center space-x-2">
-          {apps.map((_, index) => (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleStart}
+                        disabled={!app.enabled}
+                        className="w-full md:w-auto px-6 md:px-8 py-3 text-lg font-semibold rounded-xl transform transition-all duration-200 hover:scale-105 disabled:hover:scale-100"
+                        style={{
+                          backgroundColor: app.enabled ? app.color : '#999999',
+                          color: 'white',
+                        }}
+                      >
+                        {app.enabled ? "Commencer" : "Bientôt disponible"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Indicateurs de navigation desktop */}
+          <div className="hidden md:flex absolute top-1/2 left-4 z-10">
             <button
-              key={index}
-              onClick={() => setCurrentApp(index)}
-              className={`w-2.5 h-2.5 md:w-3 md:h-3 rounded-full transition-all duration-300 ${
-                index === currentApp 
-                  ? 'bg-gray-800 scale-125' 
-                  : 'bg-gray-300 hover:bg-gray-400'
-              }`}
-              aria-label={`Aller à l'application ${index + 1}`}
-            />
-          ))}
+              onClick={handlePrevious}
+              className="transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+              aria-label="Application précédente"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          </div>
+
+          <div className="hidden md:flex absolute top-1/2 right-4 z-10">
+            <button
+              onClick={handleNext}
+              className="transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+              aria-label="Application suivante"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Indicateurs de pagination desktop */}
+          <div className="hidden md:flex absolute bottom-4 left-0 right-0 justify-center space-x-2">
+            {apps.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentApp(index)}
+                className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                  index === currentApp 
+                    ? 'bg-gray-800 scale-125' 
+                    : 'bg-gray-300 hover:bg-gray-400'
+                }`}
+                aria-label={`Aller à l'application ${index + 1}`}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </AppLayout>

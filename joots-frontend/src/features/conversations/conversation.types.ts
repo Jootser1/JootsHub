@@ -26,4 +26,7 @@ export interface Conversation {
     lastMessage?: Message;
     unreadCount: number;
     currentQuestionGroup?: string;
-    };
+    xpPoint?: number;
+}
+
+

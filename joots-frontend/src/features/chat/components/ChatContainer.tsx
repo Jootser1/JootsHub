@@ -35,44 +35,14 @@ interface ChatContainerProps {
 }
 
 export const ChatContainer = ({ conversation }: ChatContainerProps) => {
-  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } = useChatStore();
+  const { activeConversationId, getParticipant, getOtherParticipant, currentQuestionGroup} = useChatStore();
+  console.log('currentQuestionGroup', currentQuestionGroup);
   const user = useUserStore((state) => state.user);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuestion, setShowQuestion] = useState(false);
-  const [questionData, setQuestionData] = useState<Question | null>(null);
-  
-  const currentQuestionGroup = activeConversationId ? getCurrentQuestionGroup(activeConversationId) : null;
   const isCurrentUserReady = activeConversationId && user?.id ? getParticipant(activeConversationId, user.id)?.isIcebreakerReady : false;
   const isOtherParticipantReady = activeConversationId && user?.id ? getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady : false;
-
-  // Récupérer les données complètes de la question si nécessaire
-  useEffect(() => {
-    const fetchQuestionData = async () => {
-      if (currentQuestionGroup && typeof currentQuestionGroup === 'string') {
-        try {
-          // Tentative de parsing si c'est un JSON stringifié
-          try {
-            const parsed = JSON.parse(currentQuestionGroup);
-            if (parsed.id) {
-              // Charger les données complètes de la question
-              const response = await axios.get(`/api/questions/by-id/${parsed.id}`);
-              setQuestionData(response.data);
-            }
-          } catch (error) {
-            // Si ce n'est pas un JSON valide, essayer de charger directement par ID
-            console.error('Erreur lors du chargement des données de la question:', error);
-            const response = await axios.get(`/api/questions/by-id/${currentQuestionGroup}`);
-            setQuestionData(response.data);
-          }
-        } catch (error) {
-          console.error('Erreur lors du chargement des données de la question:', error);
-          setQuestionData(null);
-        }
-      }
-    };
-
-    fetchQuestionData();
-  }, [currentQuestionGroup]);
+  
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -89,25 +59,29 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
     setShowQuestion(false);
   };
   
+  // Scroll to bottom of the chat
   useEffect(() => {
     scrollToBottom();
-
     const input = document.getElementById("chat-input");
     input?.addEventListener("focus", scrollToBottom);
-
     return () => {
       input?.removeEventListener("focus", scrollToBottom);
     };
   }, [conversation?.messages.length]);
 
+  // Show the question if the current user and the other participant are ready
   useEffect(() => {
+    console.log('currentQuestionGroup', currentQuestionGroup);
+    console.log('showQuestion', showQuestion);
+    console.log('isCurrentUserReady', isCurrentUserReady);
+    console.log('isOtherParticipantReady', isOtherParticipantReady);
     if (currentQuestionGroup && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true);
     }
   }, [isCurrentUserReady, isOtherParticipantReady, currentQuestionGroup]);
 
-  if (!activeConversationId || !user?.id) return null;
 
+  if (!activeConversationId || !user?.id) return null;
   const otherUser = getOtherParticipantInConversation(conversation, user.id);
 
   if (!otherUser) {
@@ -116,9 +90,9 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
   
   return (
     <>
-      {questionData && (
+      {currentQuestionGroup && (
         <IcebreakerPopup
-          question={questionData}
+          question={JSON.parse(currentQuestionGroup)}
           isVisible={showQuestion}
           onAnswer={handleAnswerQuestion}
           onClose={handleCloseQuestion}

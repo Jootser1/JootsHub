@@ -1,5 +1,6 @@
 import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types';
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types';
+import { Question } from '@/features/questions/question.types';
 
 export type MessageStatus = 'sent' | 'delivered' | 'read';
 export type MessageType = 'TEXT' | 'ANSWER';
@@ -27,6 +28,7 @@ export interface ChatState {
   userId?: string;
   token?: string;
   conversationsIds: string[];
+  icebreakerQuestions: Record<string, Question>;
 }
 
 // Types exportés pour être utilisés dans chatEventHandlers.ts

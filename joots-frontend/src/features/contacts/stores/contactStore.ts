@@ -103,9 +103,7 @@ export const useContactStore = create<ContactStore>()(
       // Fonctions de cache - uniquement pour les contacts
       cacheUser: (user) => {
         const isContact = get().isContact(user.id);
-        if (!isContact) {
-          get().addContact(user.id); // Ajouter automatiquement aux contacts
-        }
+        if (!isContact) return; // Ne pas ajouter automatiquement aux contacts
         
         set((state) => ({
           userCache: {

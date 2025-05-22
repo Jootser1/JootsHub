@@ -52,7 +52,7 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
         <button className="w-18 h-18 rounded-full bg-white shadow-lg flex items-center justify-center border border-gray-300 hover:shadow-xl transition duration-300">
           <div className="absolute bottom-3">
             <Image 
-              src="/joots_logo.png"
+              src={imageSrc}
               alt="Icebreaker"
               width={size}
               height={size}
