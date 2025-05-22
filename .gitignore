@@ -9,6 +9,9 @@
 /joots-backend/node_modules
 /joots-backend/logs
 /joots-backend/.dockerignore
+/joots-backend/prisma/*.js
+/joots-backend/prisma/*.js.map
+/joots-backend/prisma/*.d.ts
 
 #frontend NextJS
 /joots-frontend/dist

@@ -88,6 +88,7 @@ model Conversation {
   updatedAt    DateTime                  @updatedAt
   locale       LocaleCode                @default(fr_FR)
   xpPoint      Int                       @default(0)
+  difficulty   Difficulty                @default(INTERMEDIATE)
   participants ConversationParticipant[]
   messages     Message[]
   UserAnswer   UserAnswer[]
