@@ -42,6 +42,9 @@ docker-compose.override.yml
 .env.development.local
 .env.production
 questions_structured_iso.json
+.env.docker.dev
+.env.docker.dev
+.env.*
 
 #archives
 *.zip

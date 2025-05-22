@@ -25,9 +25,9 @@ services:
       - "4000:4000"
     environment:
       - NODE_ENV=development
-      - SEED_DB=false
+      - SEED_DB=true
     env_file:
-      - ./joots-backend/.env
+      - ./joots-backend/.env.docker.dev
     volumes:
       - ./joots-backend:/joots-backend
       - /joots-backend/node_modules

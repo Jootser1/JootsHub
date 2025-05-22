@@ -25,6 +25,24 @@ const CATEGORY_TRANSLATIONS = [
 ];
 
 async function main() {
+  console.log('Cleaning existing data...');
+  // Supprimer d'abord les enregistrements dépendants
+  await prisma.auth.deleteMany();
+  await prisma.userAnswer.deleteMany();
+  await prisma.userQuestionPreference.deleteMany();
+  await prisma.userContact.deleteMany();
+  await prisma.message.deleteMany();
+  await prisma.conversationParticipant.deleteMany();
+  await prisma.questionOption.deleteMany();
+  await prisma.question.deleteMany();
+  await prisma.questionGroupCategory.deleteMany();
+  await prisma.questionGroup.deleteMany();
+  await prisma.categoryTranslation.deleteMany();
+  await prisma.category.deleteMany();
+  await prisma.levelingConfig.deleteMany();
+  // Supprimer ensuite les utilisateurs
+  await prisma.user.deleteMany();
+
   console.log('Création de Jootser 1...');
   const hashedPassword = await argon2.hash('bobby1');
   const jootser1 = await prisma.user.create({
