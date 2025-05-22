@@ -1,10 +1,11 @@
 // prisma/seed.ts
-import { PrismaClient} from '@prisma/client';
+import { PrismaClient, Difficulty } from '@prisma/client';
 import * as fs from 'fs';
 import { authorize } from 'passport';
 import path from 'path';
 import * as argon2 from 'argon2';
 
+import data from './leveling_config_seed.json';
 const prisma = new PrismaClient();
 
 
@@ -139,6 +140,19 @@ async function main() {
               )
             }
           : undefined
+      }
+    });
+  }
+
+  console.log('Seeding leveling config...');
+  for (const entry of data) {
+    await prisma.levelingConfig.create({
+      data: {
+        level: entry.level,
+        difficulty: entry.difficulty as Difficulty,
+        xpRequired: entry.xpRequired,
+        reward: entry.reward,
+        photoRevealPercent: entry.photoRevealPercent ?? undefined,
       }
     });
   }

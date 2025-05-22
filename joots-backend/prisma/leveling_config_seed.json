@@ -1,0 +1,290 @@
+[
+  {
+    "level": 2,
+    "difficulty": "EASY",
+    "xpRequired": 20,
+    "questionCount": 1,
+    "reward": "one_more_conv",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 3,
+    "difficulty": "EASY",
+    "xpRequired": 60,
+    "questionCount": 2,
+    "reward": "living_city",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 4,
+    "difficulty": "EASY",
+    "xpRequired": 100,
+    "questionCount": 2,
+    "reward": "gender",
+    "photoRevealPercent": 10
+  },
+  {
+    "level": 5,
+    "difficulty": "EASY",
+    "xpRequired": 160,
+    "questionCount": 3,
+    "reward": "Passions",
+    "photoRevealPercent": 20
+  },
+  {
+    "level": 6,
+    "difficulty": "EASY",
+    "xpRequired": 220,
+    "questionCount": 3,
+    "reward": "greatest_quality",
+    "photoRevealPercent": 30
+  },
+  {
+    "level": 7,
+    "difficulty": "EASY",
+    "xpRequired": 300,
+    "questionCount": 4,
+    "reward": "origin",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 8,
+    "difficulty": "EASY",
+    "xpRequired": 380,
+    "questionCount": 4,
+    "reward": "Voice",
+    "photoRevealPercent": 50
+  },
+  {
+    "level": 9,
+    "difficulty": "EASY",
+    "xpRequired": 480,
+    "questionCount": 5,
+    "reward": "age",
+    "photoRevealPercent": 60
+  },
+  {
+    "level": 10,
+    "difficulty": "EASY",
+    "xpRequired": 580,
+    "questionCount": 5,
+    "reward": "pro_activity",
+    "photoRevealPercent": 70
+  },
+  {
+    "level": 11,
+    "difficulty": "EASY",
+    "xpRequired": 700,
+    "questionCount": 6,
+    "reward": "biggest_flaw",
+    "photoRevealPercent": 80
+  },
+  {
+    "level": 12,
+    "difficulty": "EASY",
+    "xpRequired": 840,
+    "questionCount": 7,
+    "reward": "sexual_orientation",
+    "photoRevealPercent": 90
+  },
+  {
+    "level": 13,
+    "difficulty": "EASY",
+    "xpRequired": 1000,
+    "questionCount": 8,
+    "reward": "celebration",
+    "photoRevealPercent": 100
+  },
+  {
+    "level": 2,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 20,
+    "questionCount": 2,
+    "reward": "one_more_conv",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 3,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 50,
+    "questionCount": 3,
+    "reward": "living_city",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 4,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 90,
+    "questionCount": 4,
+    "reward": "gender",
+    "photoRevealPercent": 10
+  },
+  {
+    "level": 5,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 140,
+    "questionCount": 5,
+    "reward": "Passions",
+    "photoRevealPercent": 20
+  },
+  {
+    "level": 6,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 200,
+    "questionCount": 6,
+    "reward": "greatest_quality",
+    "photoRevealPercent": 30
+  },
+  {
+    "level": 7,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 280,
+    "questionCount": 8,
+    "reward": "origin",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 8,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 370,
+    "questionCount": 9,
+    "reward": "Voice",
+    "photoRevealPercent": 50
+  },
+  {
+    "level": 9,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 470,
+    "questionCount": 10,
+    "reward": "age",
+    "photoRevealPercent": 60
+  },
+  {
+    "level": 10,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 580,
+    "questionCount": 11,
+    "reward": "pro_activity",
+    "photoRevealPercent": 70
+  },
+  {
+    "level": 11,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 700,
+    "questionCount": 12,
+    "reward": "biggest_flaw",
+    "photoRevealPercent": 80
+  },
+  {
+    "level": 12,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 840,
+    "questionCount": 14,
+    "reward": "sexual_orientation",
+    "photoRevealPercent": 90
+  },
+  {
+    "level": 13,
+    "difficulty": "INTERMEDIATE",
+    "xpRequired": 1000,
+    "questionCount": 16,
+    "reward": "celebration",
+    "photoRevealPercent": 100
+  },
+  {
+    "level": 2,
+    "difficulty": "HARDCORE",
+    "xpRequired": 20,
+    "questionCount": 8,
+    "reward": "one_more_conv",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 3,
+    "difficulty": "HARDCORE",
+    "xpRequired": 50,
+    "questionCount": 12,
+    "reward": "living_city",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 4,
+    "difficulty": "HARDCORE",
+    "xpRequired": 90,
+    "questionCount": 16,
+    "reward": "gender",
+    "photoRevealPercent": 10
+  },
+  {
+    "level": 5,
+    "difficulty": "HARDCORE",
+    "xpRequired": 140,
+    "questionCount": 20,
+    "reward": "Passions",
+    "photoRevealPercent": 20
+  },
+  {
+    "level": 6,
+    "difficulty": "HARDCORE",
+    "xpRequired": 200,
+    "questionCount": 24,
+    "reward": "greatest_quality",
+    "photoRevealPercent": 30
+  },
+  {
+    "level": 7,
+    "difficulty": "HARDCORE",
+    "xpRequired": 280,
+    "questionCount": 32,
+    "reward": "origin",
+    "photoRevealPercent": null
+  },
+  {
+    "level": 8,
+    "difficulty": "HARDCORE",
+    "xpRequired": 370,
+    "questionCount": 36,
+    "reward": "Voice",
+    "photoRevealPercent": 50
+  },
+  {
+    "level": 9,
+    "difficulty": "HARDCORE",
+    "xpRequired": 470,
+    "questionCount": 40,
+    "reward": "age",
+    "photoRevealPercent": 60
+  },
+  {
+    "level": 10,
+    "difficulty": "HARDCORE",
+    "xpRequired": 580,
+    "questionCount": 44,
+    "reward": "pro_activity",
+    "photoRevealPercent": 70
+  },
+  {
+    "level": 11,
+    "difficulty": "HARDCORE",
+    "xpRequired": 700,
+    "questionCount": 48,
+    "reward": "biggest_flaw",
+    "photoRevealPercent": 80
+  },
+  {
+    "level": 12,
+    "difficulty": "HARDCORE",
+    "xpRequired": 840,
+    "questionCount": 56,
+    "reward": "sexual_orientation",
+    "photoRevealPercent": 90
+  },
+  {
+    "level": 13,
+    "difficulty": "HARDCORE",
+    "xpRequired": 1000,
+    "questionCount": 64,
+    "reward": "celebration",
+    "photoRevealPercent": 100
+  }
+]
