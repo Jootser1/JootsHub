@@ -33,7 +33,7 @@ export function useSocketManager() {
     } else {
       logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
     }
-  }, [isConversationActive]);
+  }, []);
   
   // Synchronisation de l'état avec l'état réel des sockets
   useEffect(() => {
@@ -185,7 +185,13 @@ export function useSocketManager() {
     
     // S'assurer que la conversation est rejointe avant d'envoyer
     if (!chatSocket.isInConversation(conversationId)) {
-      joinConversation(conversationId);
+      if (chatSocket.isConnected()) {
+        chatSocket.joinConversation(conversationId);
+        logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+      } else {
+        logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
+        return false;
+      }
     }
     
     const result = chatSocket.sendMessage(conversationId, content, userId);
@@ -196,19 +202,25 @@ export function useSocketManager() {
     }
     
     return result;
-  }, [joinConversation]);
+  }, []);
   
   const sendTypingStatus = useCallback((conversationId: string, isTyping: boolean) => {
     const chatSocket = socketManager.getChatSocket() as ChatSocketService;
     if (chatSocket?.isConnected()) {
       // S'assurer que la conversation est rejointe avant d'envoyer
       if (!chatSocket.isInConversation(conversationId)) {
-        joinConversation(conversationId);
+        if (chatSocket.isConnected()) {
+          chatSocket.joinConversation(conversationId);
+          logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+        } else {
+          logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
+          return;
+        }
       }
       
       chatSocket.sendTypingStatus(conversationId, isTyping);
     }
-  }, [joinConversation]);
+  }, []);
   
   const sendIcebreakerReady = useCallback((conversationId: string, isIcebreakerReady: boolean) => {
     const chatSocket = socketManager.getChatSocket() as ChatSocketService;
@@ -225,11 +237,17 @@ export function useSocketManager() {
     
     // S'assurer que la conversation est rejointe avant d'envoyer
     if (!chatSocket.isInConversation(conversationId)) {
-      joinConversation(conversationId);
+      if (chatSocket.isConnected()) {
+        chatSocket.joinConversation(conversationId);
+        logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
+      } else {
+        logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
+        return;
+      }
     }
     
     chatSocket.sendIcebreakerReady(conversationId, userId, isIcebreakerReady);
-  }, [joinConversation]);
+  }, []);
   
   // Retourne toutes les fonctionnalités
   return {

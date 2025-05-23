@@ -49,7 +49,6 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
   }, [isVisible])
   
   const handleOptionClick = (optionId: string) => {
-    console.log('optionId', optionId)
     setSelectedOptionId(optionId)
   }
   

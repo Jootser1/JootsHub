@@ -53,14 +53,8 @@ export class UserGateway extends BaseGateway {
     this.socketUsers.set(client.id, userId);
 
     try {
-      // Mettre à jour le statut dans la BDD
       await this.usersService.updateUserStatusinBDD(userId, true);
-      
-      // Mettre à jour Redis
       await this.usersService.addUserInRedisOnlineUsers(client, userId);
-      
-      
-      // Récupérer les contacts ids de l'utilisateur
       const contactsIds = await this.userContactsService.getContactsIds(userId);
       
       if (!contactsIds) {
@@ -72,10 +66,8 @@ export class UserGateway extends BaseGateway {
       });
       
       // Notifier les contacts via les rooms
-      await this.notifyContactsStatusChange(client, userId, true);
-
+      await this.notifyContactsStatusChange(userId, true);
       const onlineContactsIds = await this.userContactsService.getOnlineContactsFromRedis(userId, contactsIds);
-      
       if (!onlineContactsIds) {
         return;
       }
@@ -101,7 +93,7 @@ export class UserGateway extends BaseGateway {
       await this.usersService.removeUserInRedisOnlineUsers(client, userId);
 
       // Notifier les contacts via les rooms
-      await this.notifyContactsStatusChange(client, userId, false);
+      await this.notifyContactsStatusChange(userId, false);
       
       this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
     } catch (error) {
@@ -110,7 +102,7 @@ export class UserGateway extends BaseGateway {
   }
   
   
-  private async notifyContactsStatusChange(client: Socket, userId: string, isOnline: boolean) {
+  private async notifyContactsStatusChange(userId: string, isOnline: boolean) {
     try {      
       // Récupérer les informations de l'utilisateur
       const user = await this.prisma.user.findUnique({
@@ -126,9 +118,9 @@ export class UserGateway extends BaseGateway {
         timestamp: new Date().toISOString()
       });
       
-      this.logger.debug(`[User Socket ${client.id}] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
+      this.logger.debug(`[User Socket] ${userId} : Statut ${isOnline ? 'en ligne' : 'hors ligne'} notifié à ses contacts`);
     } catch (error) {
-      this.logger.error(`[User Socket ${client.id}] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
+      this.logger.error(`[User Socket] ${userId} : Erreur lors de la notification de son statut à ses contacts: ${error.message}`);
     }
   }
   
@@ -172,22 +164,18 @@ export class UserGateway extends BaseGateway {
     
     try {
       // Mettre à jour le statut dans la BDD
-      await this.prisma.user.update({
-        where: { id: userId },
-        data: { isOnline }
-      });
+      await this.usersService.updateUserStatusinBDD(userId, isOnline);
       
       // Mettre à jour Redis
       if (isOnline) {
-        await this.redis.sadd('online_users', userId);
+        await this.usersService.addUserInRedisOnlineUsers(client, userId);
       } else {
-        await this.redis.srem('online_users', userId);
+        await this.usersService.removeUserInRedisOnlineUsers(client, userId);
       }
-      await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
       this.logger.log(`[Redis] ${userId} : Statut utilisateur mis à jour : ${isOnline}`);
       
       // Notifier les contacts
-      await this.notifyContactsStatusChange(client, userId, isOnline);
+      await this.notifyContactsStatusChange(userId, isOnline);
       
       this.logger.log(`[User Socket ${client.id}] ${userId} : Statut mis à jour manuellement: ${isOnline ? 'en ligne' : 'hors ligne'}`);
     } catch (error) {
@@ -197,13 +185,14 @@ export class UserGateway extends BaseGateway {
   
   private async sendOnlineContactsToUser(client: Socket, userId: string, onlineContactsIds: string[]) {
     try {
-      for (const contactId of onlineContactsIds) {
-        this.server.to(`user-status-${userId}`).emit('userStatusChange', {
+      // Envoyer tous les statuts en une seule fois
+      this.server.to(`user-status-${userId}`).emit('userStatusChange', {
+        contacts: onlineContactsIds.map(contactId => ({
           userId: contactId,
           isOnline: true,
           timestamp: new Date().toISOString()
-        });
-      }
+        }))
+      });
       
       this.logger.debug(`[User Socket ${client.id}] ${userId} : État de ${onlineContactsIds.length} contacts en ligne envoyé`);
     } catch (error) {

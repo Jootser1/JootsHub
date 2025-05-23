@@ -35,8 +35,8 @@ interface ChatContainerProps {
 }
 
 export const ChatContainer = ({ conversation }: ChatContainerProps) => {
-  const { activeConversationId, getParticipant, getOtherParticipant, currentQuestionGroup} = useChatStore();
-  console.log('currentQuestionGroup', currentQuestionGroup);
+  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } = useChatStore();
+  const currentQuestionGroup = activeConversationId ? getCurrentQuestionGroup(activeConversationId) : null;
   const user = useUserStore((state) => state.user);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [showQuestion, setShowQuestion] = useState(false);
@@ -71,10 +71,6 @@ export const ChatContainer = ({ conversation }: ChatContainerProps) => {
 
   // Show the question if the current user and the other participant are ready
   useEffect(() => {
-    console.log('currentQuestionGroup', currentQuestionGroup);
-    console.log('showQuestion', showQuestion);
-    console.log('isCurrentUserReady', isCurrentUserReady);
-    console.log('isOtherParticipantReady', isOtherParticipantReady);
     if (currentQuestionGroup && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true);
     }

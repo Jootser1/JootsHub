@@ -148,7 +148,4 @@ export class UserContactsService {
     });
   }
 
-  async addUserToAContactRoom(userId: string, contactId: string): Promise<void> {
-    
-  }
 }

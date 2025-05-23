@@ -315,7 +315,7 @@ export class ChatGateway extends BaseGateway {
     const questionGroup = await this.redis.get(questionGroupKey);
     
     if (questionGroup) {
-      client.emit('icebreakerQuestionGroup', {
+      this.server.to(conversationId).emit('icebreakerQuestionGroup', {
         questionGroup: JSON.parse(questionGroup),
         conversationId,
         timestamp: new Date().toISOString()
@@ -329,12 +329,7 @@ export class ChatGateway extends BaseGateway {
     participants: ParticipantIceStatus[]
   ) {
     for (const participant of participants) {
-      client.emit('icebreakerStatusUpdated', {
-        userId: participant.userId,
-        conversationId,
-        isIcebreakerReady: participant.isIcebreakerReady,
-        timestamp: new Date().toISOString()
-      });
+      this.emitIcebreakerStatusUpdate(conversationId, participant.userId, participant.isIcebreakerReady);
     }
   }
 
@@ -358,7 +353,7 @@ export class ChatGateway extends BaseGateway {
       const parsedResponse1 = JSON.parse(response1);
       const parsedResponse2 = JSON.parse(response2);
       
-      client.emit('icebreakerResponses', {
+      this.server.to(conversationId).emit('icebreakerResponses', {
         conversationId,
         questionGroupId: parsedResponse1.questionGroupId,
         userId1: user1,

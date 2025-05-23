@@ -22,8 +22,6 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   const handleClick = useCallback(() => {
     if (experience !== "icebreaker") return;
     if (!activeConversationId) return;
-
-    console.log("conversationId", activeConversationId);    
     socketManager.sendIcebreakerReady(activeConversationId, true);
   }, [experience, activeConversationId, socketManager]);
 
