@@ -14,18 +14,18 @@ import { ConversationsService } from '../conversations/conversations.service';
 @Module({
   imports: [RedisModule],
   providers: [
-    UserGateway, 
-    ChatGateway,  
-    Logger, 
-    PrismaService, 
+    UserGateway,
+    ChatGateway,
+    Logger,
+    PrismaService,
     RedisService,
-    HeartbeatService, 
+    HeartbeatService,
     UserContactsService,
     UsersService,
     QuestionService,
     IcebreakerService,
     MessagesService,
-    ConversationsService
+    ConversationsService,
   ],
   exports: [UserGateway, ChatGateway],
 })

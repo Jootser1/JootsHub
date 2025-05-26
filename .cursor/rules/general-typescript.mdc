@@ -1,3 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # Règles Générales TypeScript/JavaScript
 
 ## Style de Code
@@ -15,7 +20,7 @@
 ### Conventions de Nommage
 - **PascalCase** : Classes, composants, types, interfaces
 - **camelCase** : Variables, fonctions, méthodes, hooks, propriétés
-- **kebab-case** : Noms de fichiers et dossiers
+- **kebab-case** : Noms de fichiers et dossiers (sauf conventions métier NestJS)
 - **UPPERCASE** : Variables d'environnement, constantes globales
 
 ### Suffixes d'Interfaces Standardisés

@@ -14,7 +14,15 @@ import { Logger } from '@nestjs/common';
 @Module({
   imports: [PrismaModule, RedisModule, forwardRef(() => GatewaysModule)],
   controllers: [QuestionController],
-  providers: [QuestionService, RedisService, IcebreakerService, MessagesService, ConversationsService, UserContactsService, Logger],
-  exports: [QuestionService]
+  providers: [
+    QuestionService,
+    RedisService,
+    IcebreakerService,
+    MessagesService,
+    ConversationsService,
+    UserContactsService,
+    Logger,
+  ],
+  exports: [QuestionService],
 })
-export class QuestionModule {} 
+export class QuestionModule {}

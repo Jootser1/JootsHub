@@ -8,8 +8,8 @@ export class LoggingMiddleware implements NestMiddleware {
       method: req.method,
       url: req.url,
       headers: req.headers,
-      body: req.body
+      body: req.body,
     });
     next();
   }
-} 
+}

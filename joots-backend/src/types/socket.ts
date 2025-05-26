@@ -13,16 +13,13 @@ export interface ClientToServerEvents {
     messageId: string;
     conversationId: string;
   }) => void;
-  messageRead: (data: {
-    messageId: string;
-    conversationId: string;
-  }) => void;
+  messageRead: (data: { messageId: string; conversationId: string }) => void;
   typing: (data: {
     conversationId: string;
     userId: string;
     isTyping: boolean;
   }) => void;
-  icebreakerReady: (conversationId: string) => void
+  icebreakerReady: (conversationId: string) => void;
 }
 
 // Events reçus du serveur
@@ -94,4 +91,4 @@ export interface TypingStatus {
   conversationId: string;
   userId: string;
   isTyping: boolean;
-} 
+}

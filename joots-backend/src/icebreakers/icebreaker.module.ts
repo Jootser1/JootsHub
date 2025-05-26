@@ -2,7 +2,7 @@ import { Module, forwardRef } from '@nestjs/common';
 import { IcebreakerService } from './icebreaker.service';
 import { IcebreakerController } from './icebreaker.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
-import { RedisModule } from '../redis/redis.module';  
+import { RedisModule } from '../redis/redis.module';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { GatewaysModule } from '../gateways/gateways.module';
@@ -12,13 +12,19 @@ import { ContactsModule } from '../users/contacts/contacts.module';
 
 @Module({
   imports: [
-    PrismaModule, 
+    PrismaModule,
     RedisModule,
     forwardRef(() => GatewaysModule),
-    ContactsModule
+    ContactsModule,
   ],
   controllers: [IcebreakerController],
-  providers: [IcebreakerService, RedisService, QuestionService, MessagesService, ConversationsService],
+  providers: [
+    IcebreakerService,
+    RedisService,
+    QuestionService,
+    MessagesService,
+    ConversationsService,
+  ],
   exports: [IcebreakerService],
 })
-export class IcebreakerModule {} 
+export class IcebreakerModule {}

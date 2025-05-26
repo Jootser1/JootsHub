@@ -12,7 +12,7 @@ export class JwtAuthGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
     const authHeader = request.headers['authorization'] as string | undefined;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return false;
     }
@@ -20,10 +20,12 @@ export class JwtAuthGuard implements CanActivate {
     try {
       const token = authHeader.split(' ')[1];
       // Le token est déjà vérifié par Next-Auth, on peut le décoder directement
-      const decoded = JSON.parse(Buffer.from(token.split('.')[1], 'base64').toString());
+      const decoded = JSON.parse(
+        Buffer.from(token.split('.')[1], 'base64').toString()
+      );
       request.user = {
         sub: decoded.sub,
-        id: decoded.sub // Next-Auth utilise 'sub' comme ID d'utilisateur
+        id: decoded.sub, // Next-Auth utilise 'sub' comme ID d'utilisateur
       };
       return true;
     } catch {

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // Définir l'interface UserAnswer à l'extérieur de la classe
@@ -10,7 +14,7 @@ interface IcebreakerUserAnswer {
 @Injectable()
 export class MessagesService {
   constructor(private readonly prisma: PrismaService) {}
-  
+
   async markAsRead(conversationId: string, userId: string) {
     // Vérifier que l'utilisateur a accès à la conversation
     const conversation = await this.prisma.conversation.findFirst({
@@ -21,11 +25,13 @@ export class MessagesService {
         },
       },
     });
-    
+
     if (!conversation) {
-      throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
+      throw new NotFoundException(
+        'Conversation non trouvée ou accès non autorisé'
+      );
     }
-    
+
     // Marquer tous les messages reçus comme lus
     await this.prisma.message.updateMany({
       where: {
@@ -37,16 +43,20 @@ export class MessagesService {
         isRead: true,
       },
     });
-    
+
     return { success: true };
   }
-  
-  async addIcebreakerMessage(conversationId: string, questionLabel: string, userAnswerA: IcebreakerUserAnswer, userAnswerB: IcebreakerUserAnswer) {
-    // Récupérer les UserAnswer avec leurs relations
-    console.log("userAnswerA", userAnswerA);
-    console.log("userAnswerB", userAnswerB);
 
-    
+  async addIcebreakerMessage(
+    conversationId: string,
+    questionLabel: string,
+    userAnswerA: IcebreakerUserAnswer,
+    userAnswerB: IcebreakerUserAnswer
+  ) {
+    // Récupérer les UserAnswer avec leurs relations
+    console.log('userAnswerA', userAnswerA);
+    console.log('userAnswerB', userAnswerB);
+
     await this.prisma.message.create({
       data: {
         conversationId,
@@ -56,8 +66,7 @@ export class MessagesService {
         userAAnswer: userAnswerA.questionOption,
         userBId: userAnswerB.userId,
         userBAnswer: userAnswerB.questionOption,
-      }
+      },
     });
-    
   }
 }

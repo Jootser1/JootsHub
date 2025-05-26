@@ -2,7 +2,6 @@ import { Injectable, LoggerService } from '@nestjs/common';
 import * as winston from 'winston';
 import 'winston-daily-rotate-file';
 
-
 @Injectable()
 export class AppLogger implements LoggerService {
   private logger: winston.Logger;
@@ -23,8 +22,8 @@ export class AppLogger implements LoggerService {
             timestamp: string;
           }) => {
             return `${timestamp} [${level.toUpperCase()}] ${message}`;
-          },
-        ),
+          }
+        )
       ),
       transports: [
         new winston.transports.Console(), // Logs dans la console

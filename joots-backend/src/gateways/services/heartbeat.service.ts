@@ -20,10 +20,13 @@ export class HeartbeatService {
     return `[User: ${username} (${userId})]`;
   }
 
-  startHeartbeat(client: Socket, options: {
-    interval?: number;
-    timeout?: number;
-  } = {}) {
+  startHeartbeat(
+    client: Socket,
+    options: {
+      interval?: number;
+      timeout?: number;
+    } = {}
+  ) {
     const interval = options.interval || 25000;
     const timeout = options.timeout || 60000;
     const userInfo = this.getUserInfo(client);
@@ -39,14 +42,16 @@ export class HeartbeatService {
     // Gère le timeout
     const timeoutId = setTimeout(() => {
       if (client.connected) {
-        this.logger.warn(`Client ${client.id} ${userInfo} timeout, disconnecting...`);
+        this.logger.warn(
+          `Client ${client.id} ${userInfo} timeout, disconnecting...`
+        );
         client.disconnect();
       }
     }, timeout);
 
     this.heartbeatIntervals.set(client.id, {
       pingInterval,
-      timeoutId
+      timeoutId,
     });
 
     this.logger.log(`Heartbeat started for client ${client.id} ${userInfo}`);
@@ -70,11 +75,15 @@ export class HeartbeatService {
       clearTimeout(intervals.timeoutId);
       intervals.timeoutId = setTimeout(() => {
         if (client.connected) {
-          this.logger.warn(`Client ${client.id} ${userInfo} timeout, disconnecting...`);
+          this.logger.warn(
+            `Client ${client.id} ${userInfo} timeout, disconnecting...`
+          );
           client.disconnect();
         }
       }, 60000);
-      this.logger.debug(`Heartbeat timeout reset for client ${client.id} ${userInfo}`);
+      this.logger.debug(
+        `Heartbeat timeout reset for client ${client.id} ${userInfo}`
+      );
     }
   }
 
@@ -82,7 +91,7 @@ export class HeartbeatService {
     this.resetHeartbeatTimeout(client);
     const userInfo = this.getUserInfo(client);
     this.logger.debug(`Pong received from client ${client.id} ${userInfo}`);
-    
+
     // À chaque pong, rafraîchir le TTL du statut utilisateur dans Redis
     const userId = client.data?.userId;
     if (userId) {
@@ -105,4 +114,4 @@ export class HeartbeatService {
       this.logger.log(`Cleaned up heartbeat for client ${clientId}`);
     }
   }
-} 
+}

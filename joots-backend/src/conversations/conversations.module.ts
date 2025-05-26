@@ -8,11 +8,7 @@ import { Logger } from '@nestjs/common';
 import { RedisModule } from '../redis/redis.module';
 
 @Module({
-  imports: [
-    PrismaModule,
-    GatewaysModule,
-    RedisModule
-  ],
+  imports: [PrismaModule, GatewaysModule, RedisModule],
   controllers: [ConversationsController],
   providers: [ConversationsService, UserContactsService, Logger],
   exports: [ConversationsService],

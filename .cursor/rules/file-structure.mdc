@@ -3,6 +3,11 @@
 ## 🗂️ Philosophie d'Organisation
 
 ### Principes Fondamentaux
+# Règles Arborescence & Organisation des Fichiers - JootsHub
+
+## 🗂️ Philosophie d'Organisation
+
+### Principes Fondamentaux
 - **Domain-Driven Design** : Organisation par domaine métier
 - **Colocation** : Fichiers liés regroupés ensemble
 - **Séparation des responsabilités** : Frontend/Backend/Shared clairement séparés
@@ -509,3 +514,71 @@ import type { ChatMessage } from '../types/chat'
 - [ ] Optimiser les imports
 
 Cette organisation garantit une codebase maintenable et scalable pour JootsHub ! 🗂️✨ 
+
+## 📁 Conventions de Nommage des Fichiers
+
+### **Règle Générale : kebab-case**
+```
+user-profile.tsx
+chat-container.tsx
+socket-utils.ts
+date-utils.ts
+```
+
+### **Exceptions Métier Autorisées**
+
+#### **NestJS Backend (Conventions Officielles)**
+```
+✅ user.controller.ts
+✅ user.service.ts
+✅ user.module.ts
+✅ auth.guard.ts
+✅ logging.middleware.ts
+✅ create-user.dto.ts
+✅ user.entity.ts
+```
+
+#### **Configuration et Types**
+```
+✅ next.config.ts
+✅ tailwind.config.ts
+✅ next-auth.d.ts
+✅ socket.d.ts
+```
+
+#### **Tests**
+```
+✅ user.service.spec.ts
+✅ app.e2e-spec.ts
+```
+
+### **Frontend React/Next.js**
+```
+✅ user-profile.tsx
+✅ chat-container.tsx
+✅ socket-manager.ts
+✅ conversation-utils.ts
+```
+
+## 🎯 Justification des Exceptions
+
+### **NestJS : Respect de l'Écosystème**
+- **CLI NestJS** génère automatiquement avec ces conventions
+- **Documentation officielle** utilise ces patterns
+- **Outils de développement** reconnaissent ces suffixes
+- **Communauté** adopte massivement ces conventions
+
+### **Configuration : Standards Établis**
+- **Next.js** : `next.config.ts`
+- **Tailwind** : `tailwind.config.ts`
+- **TypeScript** : `*.d.ts`
+
+## ✅ **Règle Finale Pragmatique**
+
+**"Utiliser kebab-case sauf quand les conventions métier établies dictent autrement"**
+
+Cette approche respecte :
+1. **Cohérence générale** (kebab-case)
+2. **Conventions d'écosystème** (NestJS, Next.js)
+3. **Productivité développeur** (outils reconnaissent les patterns)
+4. **Standards communautaires** (bonnes pratiques établies) 

@@ -1,18 +1,18 @@
 export interface Option {
-  id: string;
-  label: string;
+  id: string
+  label: string
 }
 
 export interface Question {
-  id: string;
+  id: string
   questions: Array<{
-    question: string;
-  }>;
-  options: Option[];
+    question: string
+  }>
+  options: Option[]
   category?: {
-    name: string;
-  };
+    name: string
+  }
   categories?: {
-    logo?: string;
-  };
-} 
+    logo?: string
+  }
+}

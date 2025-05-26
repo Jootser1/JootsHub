@@ -9,7 +9,7 @@ export class AuthController {
   @Post('register')
   async register(
     @Body('email') email: string,
-    @Body('password') password: string,
+    @Body('password') password: string
   ) {
     return this.authService.register(email, password);
   }
@@ -26,7 +26,7 @@ export class AuthController {
       return {
         success: true,
         user: result.user,
-        access_token: result.access_token
+        access_token: result.access_token,
       };
     } catch (error) {
       console.error('Erreur de connexion:', error);

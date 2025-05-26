@@ -50,44 +50,44 @@ export class RedisService {
   // Nouvelles méthodes pour la gestion du statut utilisateur
   async setUserOnline(userId: string, ttl: number = 300) {
     const batch = this.redis.multi();
-    
+
     // 1. Mise à jour du statut en ligne
     const userStatusKey = `user:status:${userId}`;
     batch.set(userStatusKey, 'online', 'EX', ttl);
-    
+
     // 2. Mise à jour de la dernière activité
     const lastActivityKey = `user:${userId}:last_activity`;
     batch.set(lastActivityKey, Date.now().toString());
-    
+
     // 3. Ajout à l'ensemble des utilisateurs en ligne
     batch.sadd('online_users', userId);
-    
+
     // Exécution atomique
     await batch.exec();
-    
+
     return true;
   }
-  
+
   async setUserOffline(userId: string) {
     const batch = this.redis.multi();
-    
+
     // 1. Suppression du statut
     const userStatusKey = `user:status:${userId}`;
     batch.del(userStatusKey);
-    
+
     // 2. Mise à jour de la dernière activité
     const lastActivityKey = `user:${userId}:last_activity`;
     batch.set(lastActivityKey, Date.now().toString());
-    
+
     // 3. Retrait de l'ensemble des utilisateurs en ligne
     batch.srem('online_users', userId);
-    
+
     // Exécution atomique
     await batch.exec();
-    
+
     return true;
   }
-  
+
   async getUserStatus(userId: string): Promise<'online' | 'offline'> {
     const userStatusKey = `user:status:${userId}`;
     const status = await this.get(userStatusKey);
@@ -98,11 +98,11 @@ export class RedisService {
     // Rafraîchir le TTL de la clé de statut
     const userStatusKey = `user:status:${userId}`;
     await this.set(userStatusKey, 'online', ttl);
-    
+
     // Mettre à jour le timestamp de dernière activité
     const lastActivityKey = `user:${userId}:last_activity`;
     await this.set(lastActivityKey, Date.now().toString());
-    
+
     return true;
   }
 }

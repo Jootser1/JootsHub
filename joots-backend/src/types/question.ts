@@ -1,35 +1,35 @@
 import { Prisma } from '@prisma/client';
 
 export type Question = {
-    id: string;
-    groupId: string;
-    locale: string;
-    question: string;
-}
+  id: string;
+  groupId: string;
+  locale: string;
+  question: string;
+};
 
 export type QuestionOption = {
-    id: string;
-    text: string;
-    questionId: string;
-}
+  id: string;
+  text: string;
+  questionId: string;
+};
 
 export type QuestionGroup = {
-    id: string;
-    type: number;
-    isModerated: boolean;
-    moderatedAt: Date | null;
-    pinned: boolean;
-    enabled: boolean;
-    questions: Question[];
-    options: QuestionOption[];
-    categories: Category[];
-}
+  id: string;
+  type: number;
+  isModerated: boolean;
+  moderatedAt: Date | null;
+  pinned: boolean;
+  enabled: boolean;
+  questions: Question[];
+  options: QuestionOption[];
+  categories: Category[];
+};
 
 export type Category = {
-    id: string;
-    label: string;
-    description: string;
-}
+  id: string;
+  label: string;
+  description: string;
+};
 
 // Définir nos propres types pour les relations sans dépendre des types Prisma directement
 export type QuestionGroupWithRelations = {
