@@ -8,27 +8,9 @@ import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '../stores/chat-store'
 import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
-import axios from 'axios'
+import { logger } from '@/utils/logger'
 
-// Définition du type Question pour éviter l'erreur de type
-interface Option {
-  id: string
-  label: string
-}
 
-interface Question {
-  id: string
-  questions: Array<{
-    question: string
-  }>
-  options: Option[]
-  category?: {
-    name: string
-  }
-  categories?: {
-    logo?: string
-  }
-}
 
 interface ChatContainerProps {
   conversation: Conversation
@@ -64,7 +46,7 @@ export function ChatContainer({ conversation }: ChatContainerProps) {
       optionId,
       activeConversationId
     )
-    console.log(`Réponse validée: Question ${questionGroupId}, Option ${optionId}`)
+    logger.debug(`Réponse validée: Question ${questionGroupId}, Option ${optionId}`)
     setShowQuestion(false)
   }
 

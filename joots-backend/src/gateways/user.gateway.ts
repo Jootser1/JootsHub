@@ -89,7 +89,6 @@ export class UserGateway extends BaseGateway {
       await this.usersService.removeUserInRedisOnlineUsers(client, userId);
 
       // Notifier les contacts via les rooms
-      console.log('coucou1');
       await this.notifyContactsStatusChange(userId, false);
 
       this.logger.log(
@@ -111,7 +110,6 @@ export class UserGateway extends BaseGateway {
       });
 
       // Notifier via les rooms
-      console.log('coucou2');
       this.server.to(`user-status-${userId}`).emit('userStatusChange', {
         userId,
         username: user?.username,
@@ -135,7 +133,6 @@ export class UserGateway extends BaseGateway {
     payload: { contactIds: string[] }
   ) {
     const { contactIds } = payload;
-    console.log('handleJoinContactsRooms', contactIds);
 
     contactIds.forEach((contactId) => {
       client.join(`user-status-${contactId}`);

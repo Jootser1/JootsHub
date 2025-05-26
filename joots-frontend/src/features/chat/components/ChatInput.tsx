@@ -23,7 +23,6 @@ export function ChatInput({ conversationId }: ChatInputProps) {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newMessage = e.target.value
-    console.log(`📝 [CHAT_INPUT_CHANGE] Message changé: "${newMessage}"`)
     setMessage(newMessage)
 
     // Gérer le statut de frappe
@@ -46,9 +45,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    console.log(`🎯 [CHAT_INPUT_SUBMIT] handleSubmit appelé avec message: "${message}", trim: "${message.trim()}"`)
     if (!message.trim()) {
-      console.log(`🚫 [CHAT_INPUT_SUBMIT] Message vide, abandon`)
       return
     }
 
@@ -67,7 +64,6 @@ export function ChatInput({ conversationId }: ChatInputProps) {
           sendResult
             .then(success => {
               if (success) {
-                console.log(`✅ [CHAT_INPUT_RESET] Message envoyé avec succès, reset du champ`)
                 setMessage('')
                 setSendAttempted(false)
               } else {

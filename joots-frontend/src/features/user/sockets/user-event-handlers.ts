@@ -16,7 +16,6 @@ export function handleUserStatusChange(data: UserStatusChange, currentUserId?: s
 
   // Mise à jour du statut dans le store des contacts uniquement si c'est un contact
   if (contactStore.isContact(data.userId)) {
-    console.log('handleUserStatusChange', data)
     contactStore.setUserOnlineStatus(data.userId, data.isOnline)
     const onlineContacts = [...contactStore.contactList].filter(contactId =>
       contactStore.isUserOnline(contactId)

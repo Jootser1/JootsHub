@@ -1,4 +1,4 @@
-import { Injectable, forwardRef, Inject } from '@nestjs/common';
+import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { QuestionGroupWithRelations } from '../types/question';
@@ -6,6 +6,7 @@ import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { ProgressionResult } from '../types/chat';
+
 @Injectable()
 export class IcebreakerService {
   constructor(
@@ -14,7 +15,8 @@ export class IcebreakerService {
     @Inject(forwardRef(() => ChatGateway))
     private readonly chatGateway: ChatGateway,
     private readonly messagesService: MessagesService,
-    private readonly conversationsService: ConversationsService
+    private readonly conversationsService: ConversationsService,
+    private readonly logger: Logger
   ) {}
 
   async setParticipantIcebreakerReady(
@@ -75,9 +77,9 @@ export class IcebreakerService {
           timestamp: new Date().toISOString(),
         })
       );
-      console.log('Question group stored in Redis:', questionGroup.id);
+
     } catch (error) {
-      console.error('Error storing random question:', error);
+      this.logger.error('Error storing random question:', error);
       throw error;
     }
   }
@@ -151,7 +153,7 @@ export class IcebreakerService {
     );
 
     if (userAnswers.length !== 2) {
-      console.warn(
+      this.logger.warn(
         `La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`
       );
       return;
@@ -191,7 +193,7 @@ export class IcebreakerService {
       where: { id: conversationId },
       select: { locale: true },
     });
-    console.log('conversationLocale:', conversationLocale);
+
 
     const questionGroupLocalized = await this.prisma.questionGroup.findUnique({
       where: { id: questionGroupId },

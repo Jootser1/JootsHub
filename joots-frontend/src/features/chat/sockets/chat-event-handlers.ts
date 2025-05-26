@@ -40,7 +40,7 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
       content: message.content,
       senderId: message.sender?.id || message.senderId || '',
       receiverId: message.recipientId || '',
-      type: 'TEXT' as MessageType,
+      messageType: 'TEXT' as MessageType,
       createdAt: new Date(message.createdAt || message.timestamp || new Date()),
       status: 'delivered',
     }
@@ -102,7 +102,6 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
       )
     }
 
-    console.log('icebreakerStatusUpdated', conversationId, userId, isIcebreakerReady, timestamp)
   } catch (error) {
     logger.error(
       "Erreur lors du traitement de la mise à jour du statut de l'icebreaker:",
@@ -147,7 +146,7 @@ export function handleIcebreakerResponsesEvent(data: any) {
       senderId: 'JOOTS',
       receiverId: 'JOOTS',
       status: 'delivered',
-      type: 'ANSWER' as MessageType,
+      messageType: 'ANSWER' as MessageType,
       userAAnswer: data.response1,
       userAId: data.user1,
       userBAnswer: data.response2,

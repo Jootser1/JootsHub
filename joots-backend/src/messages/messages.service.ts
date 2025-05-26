@@ -1,9 +1,11 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+
+
 
 // Définir l'interface UserAnswer à l'extérieur de la classe
 interface IcebreakerUserAnswer {
@@ -53,9 +55,7 @@ export class MessagesService {
     userAnswerA: IcebreakerUserAnswer,
     userAnswerB: IcebreakerUserAnswer
   ) {
-    // Récupérer les UserAnswer avec leurs relations
-    console.log('userAnswerA', userAnswerA);
-    console.log('userAnswerB', userAnswerB);
+
 
     await this.prisma.message.create({
       data: {

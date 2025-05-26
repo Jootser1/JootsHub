@@ -12,7 +12,7 @@ export interface Message {
   receiverId: string
   createdAt: Date
   status: MessageStatus
-  type: MessageType
+  messageType: MessageType
   userAId?: string
   userAAnswer?: string
   userBId?: string

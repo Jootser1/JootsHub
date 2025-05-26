@@ -39,17 +39,9 @@ export class UserContactsService {
       },
     });
 
-    console.log(
+    this.logger.log(
       `[Contacts Service] ${userId} : ${contacts.length} contacts trouvés`
     );
-
-    // Si contacts est vide, tentons de vérifier si l'utilisateur existe au moins
-    if (contacts.length === 0) {
-      const user = await this.prisma.user.findUnique({
-        where: { id: userId },
-      });
-      console.log(`L'utilisateur ${userId} existe-t-il?`, !!user);
-    }
 
     return contacts.map((contact) => ({
       contact: {

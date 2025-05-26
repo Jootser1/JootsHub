@@ -63,7 +63,6 @@ export class UsersController {
   @Get('random/available')
   @UseGuards(JwtAuthGuard)
   async getRandomAvailableUser(@CurrentUser() user: any) {
-    console.log('user dans getRandomAvailableUser');
     return this.usersService.getRandomAvailableUser(user.id);
   }
 

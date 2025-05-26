@@ -138,8 +138,6 @@ export class ChatSocketService extends BaseSocketService {
                   if (!this.activeConversations.has(conversationId)) {
                     this.joinConversation(conversationId)
                   }
-                  logger.info(`[SEND_MESSAGE_RECONNECT] Envoi: conversationId=${conversationId}, content="${content}", userId=${userId}`)
-                  console.log(`🔄 [SEND_MESSAGE_RECONNECT] DIRECT CONSOLE: conversationId=${conversationId}, content="${content}", userId=${userId}`)
                   this.socket.emit('sendMessage', { conversationId, content, userId })
                   logger.info(
                     `Message envoyé après reconnexion dans la conversation ${conversationId}`
@@ -173,11 +171,7 @@ export class ChatSocketService extends BaseSocketService {
       if (!this.activeConversations.has(conversationId)) {
         this.joinConversation(conversationId)
       }
-
-      logger.info(`[SEND_MESSAGE] Envoi: conversationId=${conversationId}, content="${content}", userId=${userId}`)
-      console.log(`🚀 [SEND_MESSAGE] DIRECT CONSOLE: conversationId=${conversationId}, content="${content}", userId=${userId}`)
       this.socket.emit('sendMessage', { conversationId, content, userId })
-      logger.info(`Message envoyé dans la conversation ${conversationId}`)
       return true
     } catch (e) {
       logger.error("Erreur lors de l'envoi du message", e as Error)

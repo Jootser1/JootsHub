@@ -1,4 +1,4 @@
-import { Logger, Module } from '@nestjs/common';
+import { Logger, Module, forwardRef } from '@nestjs/common';
 import { UserGateway } from './user.gateway';
 import { ChatGateway } from './chat.gateway';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -7,10 +7,10 @@ import { RedisService } from '../redis/redis.service';
 import { HeartbeatService } from './services/heartbeat.service';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { QuestionService } from '../questions/question.service';
-import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { MessagesService } from '../messages/messages.service';
 import { UsersService } from '../users/users.service';
 import { ConversationsService } from '../conversations/conversations.service';
+import { IcebreakerService } from 'src/icebreakers/icebreaker.service';
 @Module({
   imports: [RedisModule],
   providers: [
@@ -23,9 +23,9 @@ import { ConversationsService } from '../conversations/conversations.service';
     UserContactsService,
     UsersService,
     QuestionService,
-    IcebreakerService,
     MessagesService,
     ConversationsService,
+    IcebreakerService
   ],
   exports: [UserGateway, ChatGateway],
 })

@@ -21,6 +21,7 @@ import { Switch } from '@/components/ui/Switch'
 import { Label } from '@/components/ui/Label'
 import axiosInstance from '@/app/api/axios-instance'
 import { useSocketManager } from '@/hooks/useSocketManager'
+import { logger } from '@/utils/logger'
 
 export function MobileMenu() {
   const router = useRouter()
@@ -33,7 +34,7 @@ export function MobileMenu() {
 
       // Déconnecter tous les sockets avant la déconnexion
       socketManager.disconnectAll()
-      console.log('Tous les sockets ont été déconnectés')
+      logger.info('Tous les sockets ont été déconnectés')
 
       await signOut({ redirect: false })
       logout()

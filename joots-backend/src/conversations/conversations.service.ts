@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { ProgressionResult } from '../types/chat';
 import { XP_CONFIG } from 'src/config/leveling';
+
 @Injectable()
 export class ConversationsService {
   constructor(
@@ -18,6 +19,8 @@ export class ConversationsService {
     avatar: true,
     isOnline: true,
   };
+
+
 
   async findAllConversationsForAUserId(userId: string) {
     try {

@@ -243,7 +243,6 @@ export class ChatGateway extends BaseGateway {
     data: { conversationId: string; userId: string; isIcebreakerReady: boolean }
   ) {
     const { conversationId, userId, isIcebreakerReady } = data;
-    console.log('icebreakerReady', userId, conversationId, isIcebreakerReady);
 
     // Vérifier que l'utilisateur est bien celui authentifié
     if (userId !== client.data.userId) {
@@ -351,15 +350,6 @@ export class ChatGateway extends BaseGateway {
     response2: string,
     xpAndLevel: ProgressionResult
   ) {
-    console.log(
-      'emitIcebreakerResponsesToAllParticipants',
-      conversationId,
-      questionLabel,
-      user1,
-      response1,
-      user2,
-      response2
-    );
     const socketData = {
       conversationId,
       questionLabel,

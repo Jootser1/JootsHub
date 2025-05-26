@@ -14,7 +14,6 @@ export class QuestionService {
     currentUserId: string,
     questionGroupId: string
   ) {
-    console.log(Object.keys(this.prisma));
     return this.prisma.userAnswer.findFirst({
       where: {
         userId: currentUserId,
@@ -111,7 +110,6 @@ export class QuestionService {
       Math.random() * unansweredQuestionGroups.length
     );
     const randomUnansweredQuestionGroup = unansweredQuestionGroups[randomIndex];
-    console.log('randomUnansweredQuestionGroup', randomUnansweredQuestionGroup);
     return randomUnansweredQuestionGroup;
   }
 
@@ -121,13 +119,6 @@ export class QuestionService {
     optionId: string,
     conversationId: string
   ) {
-    console.log(
-      'savedResponse',
-      userId,
-      questionGroupId,
-      optionId,
-      conversationId
-    );
 
     // Vérification des paramètres requis
     if (!userId || !questionGroupId || !optionId) {

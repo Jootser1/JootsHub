@@ -34,7 +34,7 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
   return (
     <div className='p-4 space-y-4'>
       {displayMessages.map((message: Message, index: number) => {
-        const messageType = message.type
+        const messageType = message.messageType
         const isCurrentUser = message.senderId === user.id
         const timeAgo = formatDistanceToNow(ensureDate(message.createdAt), {
           addSuffix: true,

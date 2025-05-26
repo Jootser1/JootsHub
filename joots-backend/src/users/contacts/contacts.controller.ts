@@ -26,7 +26,6 @@ export class UserContactsController {
       const contacts = await this.userContactsService.getUserContacts(userId);
       return contacts;
     } catch (error) {
-      console.log('req', req);
       throw new BadRequestException(error.message);
     }
   }

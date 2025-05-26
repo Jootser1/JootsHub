@@ -1,4 +1,4 @@
-import { Module, forwardRef } from '@nestjs/common';
+import { Logger, Module, forwardRef } from '@nestjs/common';
 import { IcebreakerService } from './icebreaker.service';
 import { IcebreakerController } from './icebreaker.controller';
 import { PrismaModule } from '../../prisma/prisma.module';
@@ -23,7 +23,8 @@ import { ContactsModule } from '../users/contacts/contacts.module';
     RedisService,
     QuestionService,
     MessagesService,
-    ConversationsService,
+    ConversationsService, 
+    Logger,
   ],
   exports: [IcebreakerService],
 })
