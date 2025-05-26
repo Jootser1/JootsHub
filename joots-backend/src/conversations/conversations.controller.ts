@@ -19,7 +19,7 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.findAll(req.user.sub);
+    return this.conversationsService.findAllConversationsForAUserId(req.user.sub);
   }
 
   

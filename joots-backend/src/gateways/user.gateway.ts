@@ -64,16 +64,9 @@ export class UserGateway extends BaseGateway {
       contactsIds.forEach(contactId => {
         client.join(`user-status-${contactId}`);
       });
-      
       // Notifier les contacts via les rooms
-      await this.notifyContactsStatusChange(userId, true);
-      const onlineContactsIds = await this.userContactsService.getOnlineContactsFromRedis(userId, contactsIds);
-      if (!onlineContactsIds) {
-        return;
-      }
+      //await this.notifyContactsStatusChange(userId, true);
       
-      // Envoyer au client l'état des contacts actuellement en ligne
-      await this.sendOnlineContactsToUser(client, userId, onlineContactsIds);
       
     } catch (error) {
       this.logger.error(`[User Socket ${client.id}] Erreur lors de la connexion: ${error.message}`);
@@ -93,6 +86,7 @@ export class UserGateway extends BaseGateway {
       await this.usersService.removeUserInRedisOnlineUsers(client, userId);
 
       // Notifier les contacts via les rooms
+      console.log('coucou1');
       await this.notifyContactsStatusChange(userId, false);
       
       this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
@@ -111,6 +105,7 @@ export class UserGateway extends BaseGateway {
       });
       
       // Notifier via les rooms
+      console.log('coucou2');
       this.server.to(`user-status-${userId}`).emit('userStatusChange', {
         userId,
         username: user?.username,
@@ -185,14 +180,14 @@ export class UserGateway extends BaseGateway {
   
   private async sendOnlineContactsToUser(client: Socket, userId: string, onlineContactsIds: string[]) {
     try {
-      // Envoyer tous les statuts en une seule fois
-      this.server.to(`user-status-${userId}`).emit('userStatusChange', {
-        contacts: onlineContactsIds.map(contactId => ({
+      for (const contactId of onlineContactsIds) {
+        this.server.to(`user-status-${contactId}`).emit('userStatusChange', {
           userId: contactId,
           isOnline: true,
           timestamp: new Date().toISOString()
-        }))
-      });
+        });
+      }
+      
       
       this.logger.debug(`[User Socket ${client.id}] ${userId} : État de ${onlineContactsIds.length} contacts en ligne envoyé`);
     } catch (error) {

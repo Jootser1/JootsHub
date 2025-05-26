@@ -12,6 +12,7 @@ const chatStore = useChatStore.getState(); // on prend l'état du store directem
 // Handler pour 'newMessage' event
 export function handleNewMessageEvent(message: NewMessageEvent) {
   try {
+    console.log('Message brut reçu du gateway:', message);
     if (!message) {
       logger.warn('Received empty message from gateway');
       return;

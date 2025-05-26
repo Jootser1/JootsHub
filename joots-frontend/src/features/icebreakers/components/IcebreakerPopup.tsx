@@ -103,7 +103,12 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
     </div>
     
     <div className="max-h-[60vh] overflow-y-auto">
-    <div className={cn("grid gap-2", question && question.options.length > 4 ? "grid-cols-2" : "grid-cols-1")}>
+    <div className={cn(
+      "grid gap-2",
+      Array.isArray(question?.options) && question.options.length > 4
+        ? "grid-cols-2"
+        : "grid-cols-1"
+    )}>
     
     
        {question?.options && question.options.length > 0 && question?.options.map((option: Option, index: number) => (

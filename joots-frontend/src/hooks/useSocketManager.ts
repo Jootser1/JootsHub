@@ -158,7 +158,6 @@ export function useSocketManager() {
     const chatSocket = socketManager.getChatSocket();
     if (chatSocket?.isConnected()) {
       chatSocket.leaveConversation(conversationId);
-      logger.info(`useSocketManager: Conversation quittée: ${conversationId}`);
     }
   }, []);
   

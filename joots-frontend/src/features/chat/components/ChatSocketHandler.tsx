@@ -51,7 +51,6 @@ export const ChatSocketHandler = ({ children, conversationId }: ChatSocketHandle
     // Nettoyage lors du démontage du composant
     return () => {
       if (hasJoinedRef.current) {
-        logger.info(`ChatSocketHandler: Quitter la conversation ${conversationIdRef.current}`);
         leaveConversation(conversationIdRef.current);
         hasJoinedRef.current = false;
         connectedConversations.delete(conversationIdRef.current);

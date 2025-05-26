@@ -56,13 +56,29 @@ export const useChatStore = create<ChatStore>()(
         // Conversations
         loadAllConversations: async () => {
           try {
+            logger.info('Début du chargement des conversations');
             const response = await axiosInstance.get('/conversations');
             set((state) => {
               const newConversations = { ...state.conversations };
+              const newMessages = { ...state.messages };
+              
               response.data.forEach((conversation: Conversation) => {
+                if (conversation.messages) {
+                  conversation.messages.forEach((msg, idx) => {
+                  });
+                }
                 newConversations[conversation.id] = conversation;
+                // S'assurer que les messages sont également chargés
+                if (conversation.messages) {
+                  logger.info(`Chargement de ${conversation.messages.length} messages pour la conversation ${conversation.id}`);
+                  newMessages[conversation.id] = conversation.messages;
+                }
               });
-              return { conversations: newConversations };
+              
+              return { 
+                conversations: newConversations,
+                messages: newMessages
+              };
             });
             logger.info(`${response.data.length} conversation(s) récupérées depuis la bdd et syncstore`);
           } catch (error) {
@@ -100,9 +116,11 @@ export const useChatStore = create<ChatStore>()(
         // Messages
         addMessage: (conversationId: string, message: Message) =>
           set((state) => {
+            logger.info(`Ajout d'un nouveau message dans la conversation ${conversationId}`);
             const conversationMessages = state.messages[conversationId] || [];
             const conversation = state.conversations[conversationId];
             if (!conversation) {
+              logger.warn(`Tentative d'ajout de message dans une conversation inexistante: ${conversationId}`);
               return {
                 ...state,
                 messages: {
@@ -316,7 +334,23 @@ export const useChatStore = create<ChatStore>()(
           });
         }
       }),
-      { name: 'chat-store' }
+      {
+        name: 'chat-storage',
+        partialize: (state) => {
+          return {
+            messages: state.messages,
+            conversations: state.conversations,
+            activeConversationId: state.activeConversationId,
+            conversationsIds: state.conversationsIds,
+          };
+        },
+        onRehydrateStorage: () => (state) => {
+          if (state) {
+            logger.info('Réhydratation du store - Début du rechargement des conversations');
+            state.loadAllConversations();
+          }
+        },
+      }
     )
   )
 );

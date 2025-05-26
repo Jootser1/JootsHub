@@ -1,0 +1,465 @@
+# Règles WebSocket & Socket.IO - JootsHub
+
+## 🏗️ Architecture Socket.IO
+
+### Namespaces Standardisés
+- **`/user`** : Gestion des statuts utilisateur, contacts, notifications
+- **`/chat`** : Messages, conversations, icebreakers, typing
+- **Pas de namespace par défaut** : Toujours utiliser des namespaces explicites
+
+### Structure des Fichiers
+```typescript
+// Backend
+src/gateways/
+  base.gateway.ts           // Authentification commune
+  user.gateway.ts           // Namespace /user
+  chat.gateway.ts           // Namespace /chat
+
+// Frontend  
+src/features/[domain]/sockets/
+  [domain]SocketService.ts  // Service de connexion
+  [domain]EventHandlers.ts  // Handlers d'événements
+  [domain]EventRegistry.ts  // Registry des événements
+```
+
+## 🔐 Authentification WebSocket
+
+### Règles d'Authentification
+```typescript
+// ✅ BON - BaseGateway avec middleware commun
+export abstract class BaseGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  afterInit(server: Server) {
+    server.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token
+        const userId = socket.handshake.auth.userId
+        
+        if (!token || !userId) {
+          return next(new Error('Authentification requise'))
+        }
+        
+        const validUserId = this.extractUserIdFromToken(token)
+        if (!validUserId || validUserId !== userId) {
+          return next(new Error('Token invalide'))
+        }
+        
+        socket.data.userId = userId
+        next()
+      } catch (error) {
+        next(new Error('Erreur d\'authentification'))
+      }
+    })
+  }
+}
+
+// ❌ MAUVAIS - Authentification dans chaque gateway
+@SubscribeMessage('someEvent')
+async handleEvent(@ConnectedSocket() client: Socket) {
+  const token = client.handshake.auth.token // Répétition
+  // Validation répétée...
+}
+```
+
+### Côté Frontend - Authentification
+```typescript
+// ✅ BON - Credentials centralisés
+class SocketManager {
+  private credentials: { userId: string; token: string } | null = null
+  
+  setCredentials(userId: string, token: string) {
+    this.credentials = { userId, token }
+  }
+  
+  private getAuthConfig() {
+    if (!this.credentials) throw new Error('Credentials manquants')
+    
+    return {
+      auth: {
+        token: this.credentials.token,
+        userId: this.credentials.userId
+      }
+    }
+  }
+}
+```
+
+## 📡 Nommage des Événements
+
+### Convention de Nommage
+- **camelCase** pour tous les événements
+- **Verbes d'action** : `sendMessage`, `joinConversation`, `updateStatus`
+- **Événements de réponse** : suffixe avec le statut (`messageReceived`, `statusUpdated`)
+
+### Événements Standardisés
+
+#### Namespace `/chat`
+```typescript
+// ✅ Événements entrants (client → serveur)
+interface ChatIncomingEvents {
+  sendMessage: (data: SendMessageData) => void
+  joinConversation: (data: JoinConversationData) => void
+  leaveConversation: (data: LeaveConversationData) => void
+  typing: (data: TypingData) => void
+  icebreakerReady: (data: IcebreakerReadyData) => void
+}
+
+// ✅ Événements sortants (serveur → client)
+interface ChatOutgoingEvents {
+  newMessage: (data: NewMessageEvent) => void
+  typing: (data: TypingEvent) => void
+  icebreakerStatusUpdated: (data: IcebreakerStatusEvent) => void
+  icebreakerQuestionGroup: (data: IcebreakerQuestionGroupEvent) => void
+  icebreakerResponses: (data: IcebreakerResponsesEvent) => void
+}
+```
+
+#### Namespace `/user`
+```typescript
+// ✅ Événements entrants
+interface UserIncomingEvents {
+  updateUserStatus: (data: UpdateUserStatusData) => void
+  joinContactsRooms: (data: JoinContactsRoomsData) => void
+  leaveContactsRooms: (data: LeaveContactsRoomsData) => void
+  pong: () => void
+}
+
+// ✅ Événements sortants  
+interface UserOutgoingEvents {
+  userStatusChange: (data: UserStatusChangeEvent) => void
+  ping: () => void
+}
+```
+
+## 🎯 Validation des Payloads
+
+### Validation Côté Backend
+```typescript
+// ✅ BON - DTOs avec class-validator
+export class SendMessageDto {
+  @IsString()
+  @IsNotEmpty()
+  conversationId: string
+
+  @IsString()
+  @IsNotEmpty()
+  @MaxLength(1000)
+  content: string
+
+  @IsString()
+  @IsNotEmpty()
+  userId: string
+}
+
+@SubscribeMessage('sendMessage')
+async handleSendMessage(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: SendMessageDto // Validation automatique
+) {
+  // Vérification d'autorisation
+  if (data.userId !== client.data.userId) {
+    throw new WsException('Non autorisé')
+  }
+  
+  // Logique métier...
+}
+```
+
+### Validation Côté Frontend
+```typescript
+// ✅ BON - Schemas Zod pour validation
+import { z } from 'zod'
+
+const sendMessageSchema = z.object({
+  conversationId: z.string().uuid(),
+  content: z.string().min(1).max(1000),
+  userId: z.string().uuid()
+})
+
+export class ChatSocketService {
+  sendMessage(conversationId: string, content: string, userId: string) {
+    // Validation avant envoi
+    const data = sendMessageSchema.parse({
+      conversationId,
+      content, 
+      userId
+    })
+    
+    this.socket.emit('sendMessage', data)
+  }
+}
+```
+
+## 🔄 Gestion des Connexions
+
+### Pattern de Connexion/Déconnexion
+```typescript
+// ✅ BON - Tracking des connexions
+export class ChatGateway extends BaseGateway {
+  // Maps pour tracking
+  private userChatSockets = new Map<string, string>() // userId → socketId
+  private chatSocketUsers = new Map<string, string>() // socketId → userId
+  
+  async handleConnection(client: Socket) {
+    const userId = client.data.userId
+    
+    if (!userId) {
+      this.logger.warn(`Connexion rejetée sans ID utilisateur`)
+      client.disconnect()
+      return
+    }
+    
+    // Enregistrement
+    this.userChatSockets.set(userId, client.id)
+    this.chatSocketUsers.set(client.id, userId)
+    
+    // Logique métier (rejoindre conversations, etc.)
+    await this.joinUserConversations(client, userId)
+  }
+  
+  async handleDisconnect(client: Socket) {
+    const userId = client.data.userId
+    if (!userId) return
+    
+    try {
+      // Nettoyage des maps
+      this.userChatSockets.delete(userId)
+      this.chatSocketUsers.delete(client.id)
+      
+      // Nettoyage métier (quitter rooms, reset statuts)
+      await this.cleanupUserSessions(client, userId)
+      
+    } catch (error) {
+      this.logger.error(`Erreur déconnexion: ${error.message}`)
+    }
+  }
+}
+```
+
+### Gestion des Rooms
+```typescript
+// ✅ BON - Rooms par conversation
+@SubscribeMessage('joinConversation')
+handleJoinConversation(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: { conversationId: string }
+) {
+  // Vérification d'autorisation
+  if (!this.canUserAccessConversation(client.data.userId, data.conversationId)) {
+    throw new WsException('Accès non autorisé à cette conversation')
+  }
+  
+  client.join(data.conversationId)
+  this.logger.debug(`${client.data.userId} a rejoint ${data.conversationId}`)
+  
+  return { success: true }
+}
+
+// ✅ BON - Rooms pour statuts utilisateur
+private async joinContactStatusRooms(client: Socket, userId: string) {
+  const contactIds = await this.getContactIds(userId)
+  
+  contactIds.forEach(contactId => {
+    client.join(`user-status-${contactId}`)
+  })
+}
+```
+
+## 🚨 Gestion d'Erreurs
+
+### Exceptions WebSocket
+```typescript
+// ✅ BON - Toujours utiliser WsException
+import { WsException } from '@nestjs/websockets'
+
+@SubscribeMessage('someEvent')
+async handleEvent(@MessageBody() data: any) {
+  try {
+    // Logique métier
+  } catch (error) {
+    // ✅ BON - Exception WebSocket typée
+    if (error instanceof ValidationError) {
+      throw new WsException('Données invalides')
+    }
+    
+    if (error instanceof UnauthorizedException) {
+      throw new WsException('Non autorisé')
+    }
+    
+    // ✅ BON - Log + exception générique
+    this.logger.error(`Erreur: ${error.message}`)
+    throw new WsException('Erreur interne')
+  }
+}
+
+// ❌ MAUVAIS - throw Error classique
+throw new Error('Quelque chose a échoué') // Ne sera pas bien géré côté client
+```
+
+### Côté Frontend - Gestion d'Erreurs
+```typescript
+// ✅ BON - Handlers d'erreur centralisés
+export class ChatSocketService {
+  private setupErrorHandlers() {
+    this.socket.on('connect_error', (error) => {
+      logger.error('Erreur de connexion chat:', error)
+      this.handleConnectionError(error)
+    })
+    
+    this.socket.on('error', (error) => {
+      logger.error('Erreur socket chat:', error)
+      this.handleSocketError(error)
+    })
+  }
+  
+  private handleConnectionError(error: Error) {
+    // Logique de reconnexion ou notification utilisateur
+    if (error.message.includes('Authentification')) {
+      // Rediriger vers login
+      this.authService.logout()
+    }
+  }
+}
+```
+
+## 🔄 Reconnexion Automatique
+
+### Configuration de Reconnexion
+```typescript
+// ✅ BON - Configuration robuste
+const socketConfig = {
+  autoConnect: false,
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  timeout: 20000,
+  forceNew: true
+}
+
+export class SocketService {
+  private reconnectAttempts = 0
+  private maxReconnectAttempts = 5
+  
+  private setupReconnectionHandlers() {
+    this.socket.on('disconnect', (reason) => {
+      logger.warn(`Socket déconnecté: ${reason}`)
+      
+      if (reason === 'io server disconnect') {
+        // Reconnexion manuelle nécessaire
+        this.scheduleReconnection()
+      }
+    })
+    
+    this.socket.on('reconnect', (attemptNumber) => {
+      logger.info(`Socket reconnecté après ${attemptNumber} tentatives`)
+      this.reconnectAttempts = 0
+      this.onReconnected()
+    })
+  }
+  
+  private async onReconnected() {
+    // Resynchroniser l'état
+    await this.rejoinAllRooms()
+    await this.syncUserState()
+  }
+}
+```
+
+## 📊 Rate Limiting
+
+### Limitation des Événements
+```typescript
+// ✅ BON - Rate limiting par utilisateur
+import { ThrottlerGuard } from '@nestjs/throttler'
+
+@UseGuards(ThrottlerGuard)
+@SubscribeMessage('sendMessage')
+async handleSendMessage(/* ... */) {
+  // Limité automatiquement par ThrottlerGuard
+}
+
+// ✅ BON - Rate limiting personnalisé
+private messageRateLimiter = new Map<string, number[]>()
+
+@SubscribeMessage('sendMessage')
+async handleSendMessage(@ConnectedSocket() client: Socket, @MessageBody() data: any) {
+  const userId = client.data.userId
+  const now = Date.now()
+  const userMessages = this.messageRateLimiter.get(userId) || []
+  
+  // Nettoyer les anciens messages (> 1 minute)
+  const recentMessages = userMessages.filter(time => now - time < 60000)
+  
+  if (recentMessages.length >= 30) { // Max 30 messages/minute
+    throw new WsException('Trop de messages envoyés')
+  }
+  
+  recentMessages.push(now)
+  this.messageRateLimiter.set(userId, recentMessages)
+  
+  // Traiter le message...
+}
+```
+
+## 🧪 Tests WebSocket
+
+### Tests d'Intégration
+```typescript
+// ✅ BON - Tests avec client Socket.IO
+describe('ChatGateway', () => {
+  let gateway: ChatGateway
+  let client: Socket
+  
+  beforeEach(async () => {
+    const module = await Test.createTestingModule({
+      providers: [ChatGateway, /* ... */]
+    }).compile()
+    
+    gateway = module.get<ChatGateway>(ChatGateway)
+    
+    // Client de test
+    client = io('http://localhost:3001/chat', {
+      auth: { token: 'valid-token', userId: 'user-123' }
+    })
+    
+    await new Promise(resolve => client.on('connect', resolve))
+  })
+  
+  it('should handle sendMessage event', (done) => {
+    client.emit('sendMessage', {
+      conversationId: 'conv-123',
+      content: 'Hello',
+      userId: 'user-123'
+    })
+    
+    client.on('newMessage', (message) => {
+      expect(message.content).toBe('Hello')
+      done()
+    })
+  })
+})
+```
+
+## 📋 Checklist WebSocket
+
+### ✅ **Avant chaque événement :**
+- [ ] Validation du payload avec DTO/Zod
+- [ ] Vérification d'autorisation (`userId === client.data.userId`)
+- [ ] Vérification d'accès aux ressources (conversation, contact)
+- [ ] Gestion d'erreurs avec `WsException`
+- [ ] Logging approprié
+
+### ✅ **Architecture :**
+- [ ] Namespaces séparés par domaine
+- [ ] BaseGateway pour authentification commune
+- [ ] Event handlers séparés des gateways
+- [ ] Maps de tracking des connexions
+- [ ] Nettoyage approprié à la déconnexion
+
+### ✅ **Performance :**
+- [ ] Rate limiting sur événements critiques
+- [ ] Rooms optimisées (pas de broadcast global)
+- [ ] Nettoyage des données temporaires
+- [ ] Reconnexion automatique côté client
+
+Cette structure garantit une architecture WebSocket robuste et maintenable pour JootsHub ! 🚀 

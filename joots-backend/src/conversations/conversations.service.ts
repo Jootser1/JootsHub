@@ -19,7 +19,7 @@ export class ConversationsService {
     isOnline: true,
   };
   
-  async findAll(userId: string) {
+  async findAllConversationsForAUserId(userId: string) {
     try {
       return await this.prisma.conversation.findMany({
         where: {
@@ -27,23 +27,45 @@ export class ConversationsService {
             some: { userId },
           },
         },
-        include: {
+        select: {
+          id: true,
+          updatedAt: true,
           participants: {
-            include: {
-              user: { select: this.userSelect },
+            select: {
+              user: {
+                select: this.userSelect,
+              },
+              isIcebreakerReady: true
             },
           },
           messages: {
             orderBy: { createdAt: 'desc' },
             take: 1,
+            select: {
+              id: true,
+              content: true,
+              createdAt: true,
+              senderId: true,
+            },
           },
         },
         orderBy: { updatedAt: 'desc' },
       });
     } catch (error) {
-      console.error('Erreur dans findAll:', error);
+      console.error('Erreur lors de la récupération des conversations pour l\'utilisateur:', error);
       throw error;
     }
+  }
+  
+
+  async findAllConversationsIdsForAUserId(userId: string): Promise<string[]> {
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
+        participants: { some: { userId } },
+      },
+      select: { id: true },
+    });
+    return conversations.map(conversation => conversation.id);
   }
   
   async findOne(id: string, userId: string) {
@@ -174,7 +196,6 @@ export class ConversationsService {
           isOnline: user2.isOnline,
           timestamp: new Date().toISOString()
         };
-
         // Émettre avec un timeout pour éviter les problèmes de connexion
         setTimeout(() => {
           this.userGateway.server.to(room1).emit('userStatusChange', statusData1);

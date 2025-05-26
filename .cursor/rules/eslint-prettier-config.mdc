@@ -1,0 +1,343 @@
+# Configuration ESLint & Prettier - JootsHub
+
+## 📁 Fichiers de Configuration Requis
+
+### 1. `.eslintrc.js` (Frontend - joots-frontend/)
+```javascript
+module.exports = {
+  root: true,
+  env: {
+    browser: true,
+    es2022: true,
+    node: true
+  },
+  extends: [
+    'eslint:recommended',
+    '@typescript-eslint/recommended',
+    'next/core-web-vitals',
+    'prettier' // TOUJOURS en dernier pour désactiver les règles conflictuelles
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true
+    }
+  },
+  plugins: [
+    '@typescript-eslint',
+    'react',
+    'react-hooks'
+  ],
+  rules: {
+    // ✅ Règles JootsHub spécifiques
+    'semi': ['error', 'never'], // Pas de semicolons
+    'quotes': ['error', 'single'], // Guillemets simples
+    'max-len': ['error', { 
+      code: 100,
+      ignoreUrls: true,
+      ignoreStrings: true,
+      ignoreTemplateLiterals: true,
+      ignoreComments: true
+    }],
+    
+    // ✅ TypeScript
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/explicit-function-return-type': 'off',
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/prefer-interface': 'off', // Désactivé car on préfère interface
+    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    
+    // ✅ React spécifique
+    'react/prop-types': 'off', // TypeScript gère les types
+    'react/react-in-jsx-scope': 'off', // Next.js auto-import
+    'react-hooks/rules-of-hooks': 'error',
+    'react-hooks/exhaustive-deps': 'warn',
+    
+    // ✅ Nommage
+    'camelcase': ['error', { 
+      properties: 'never',
+      ignoreDestructuring: true,
+      allow: ['^UNSAFE_'] 
+    }],
+    
+    // ✅ Imports
+    'import/order': ['error', {
+      groups: [
+        'builtin',
+        'external', 
+        'internal',
+        'parent',
+        'sibling',
+        'index'
+      ],
+      'newlines-between': 'always',
+      alphabetize: { order: 'asc' }
+    }],
+    
+    // ✅ Préférences JootsHub
+    'prefer-const': 'error',
+    'no-var': 'error',
+    'object-shorthand': 'error',
+    'prefer-template': 'error'
+  },
+  overrides: [
+    {
+      files: ['**/*.test.{ts,tsx}', '**/*.spec.{ts,tsx}'],
+      env: {
+        jest: true
+      },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off' // Tests peuvent utiliser any
+      }
+    }
+  ]
+}
+```
+
+### 2. `.eslintrc.js` (Backend - joots-backend/)
+```javascript
+module.exports = {
+  root: true,
+  env: {
+    node: true,
+    es2022: true
+  },
+  extends: [
+    'eslint:recommended',
+    '@typescript-eslint/recommended',
+    'prettier'
+  ],
+  parser: '@typescript-eslint/parser',
+  parserOptions: {
+    ecmaVersion: 'latest',
+    sourceType: 'module'
+  },
+  plugins: ['@typescript-eslint'],
+  rules: {
+    // ✅ Règles JootsHub spécifiques
+    'semi': ['error', 'never'],
+    'quotes': ['error', 'single'],
+    'max-len': ['error', { 
+      code: 100,
+      ignoreUrls: true,
+      ignoreStrings: true,
+      ignoreTemplateLiterals: true 
+    }],
+    
+    // ✅ TypeScript
+    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/explicit-function-return-type': 'error', // Backend plus strict
+    '@typescript-eslint/no-explicit-any': 'error',
+    '@typescript-eslint/consistent-type-definitions': ['error', 'interface'],
+    
+    // ✅ NestJS spécifique
+    '@typescript-eslint/explicit-member-accessibility': ['error', {
+      accessibility: 'explicit',
+      overrides: {
+        constructors: 'no-public'
+      }
+    }],
+    
+    // ✅ Gestion d'erreurs
+    'prefer-promise-reject-errors': 'error',
+    'no-throw-literal': 'error'
+  },
+  overrides: [
+    {
+      files: ['**/*.spec.ts', '**/*.test.ts'],
+      env: {
+        jest: true
+      },
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off'
+      }
+    }
+  ]
+}
+```
+
+### 3. `.prettierrc.json` (Racine du projet)
+```json
+{
+  "semi": false,
+  "singleQuote": true,
+  "tabWidth": 2,
+  "useTabs": false,
+  "printWidth": 100,
+  "trailingComma": "es5",
+  "bracketSpacing": true,
+  "bracketSameLine": false,
+  "arrowParens": "avoid",
+  "endOfLine": "lf",
+  "quoteProps": "as-needed",
+  "jsxSingleQuote": true,
+  "overrides": [
+    {
+      "files": "*.md",
+      "options": {
+        "printWidth": 80,
+        "proseWrap": "always"
+      }
+    }
+  ]
+}
+```
+
+### 4. `.prettierignore`
+```
+# Build outputs
+dist/
+build/
+.next/
+node_modules/
+
+# Generated files
+*.generated.ts
+*.d.ts
+
+# Logs
+*.log
+
+# Cache
+.cache/
+.eslintcache
+
+# Environment
+.env*
+
+# Database
+prisma/migrations/
+```
+
+### 5. `package.json` - Scripts requis
+
+#### Frontend (joots-frontend/package.json)
+```json
+{
+  "scripts": {
+    "lint": "next lint",
+    "lint:fix": "next lint --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "type-check": "tsc --noEmit",
+    "quality": "npm run type-check && npm run lint && npm run format:check"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-next": "^14.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "eslint-plugin-react": "^7.33.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.0.0"
+  }
+}
+```
+
+#### Backend (joots-backend/package.json)
+```json
+{
+  "scripts": {
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"test/**/*.ts\"",
+    "type-check": "tsc --noEmit",
+    "quality": "npm run type-check && npm run lint && npm run format:check"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "eslint-config-prettier": "^9.0.0",
+    "prettier": "^3.0.0"
+  }
+}
+```
+
+## 🔧 Configuration VSCode
+
+### `.vscode/settings.json` (Racine du projet)
+```json
+{
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.organizeImports": true
+  },
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.rulers": [100],
+  "files.eol": "\n",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "eslint.workingDirectories": [
+    "joots-frontend",
+    "joots-backend"
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ]
+}
+```
+
+### `.vscode/extensions.json`
+```json
+{
+  "recommendations": [
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-typescript-next"
+  ]
+}
+```
+
+## 🚀 Scripts de Qualité Globaux
+
+### `package.json` (Racine)
+```json
+{
+  "scripts": {
+    "lint": "npm run lint --workspace=joots-frontend && npm run lint --workspace=joots-backend",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "quality:frontend": "npm run quality --workspace=joots-frontend",
+    "quality:backend": "npm run quality --workspace=joots-backend",
+    "quality": "npm run quality:frontend && npm run quality:backend",
+    "pre-commit": "npm run quality"
+  }
+}
+```
+
+## 🎯 Avantages de cette Configuration
+
+### ✅ **Automatisation complète**
+- Formatage automatique à la sauvegarde
+- Correction ESLint automatique
+- Validation TypeScript intégrée
+
+### ✅ **Cohérence enforced**
+- 100 caractères max (avec exceptions)
+- 2 espaces d'indentation
+- Pas de semicolons
+- Guillemets simples
+
+### ✅ **Workflow optimisé**
+- Scripts `npm run quality` pour validation complète
+- Configuration VSCode prête à l'emploi
+- Support monorepo (frontend + backend)
+
+### ✅ **Règles spécifiques JootsHub**
+- Interfaces préférées aux types
+- Nommage standardisé
+- Gestion d'erreurs NestJS enforced
+- Imports organisés automatiquement
+
+Cette configuration garantit que **tous les développeurs** suivent exactement les mêmes règles, automatiquement ! 🎯 

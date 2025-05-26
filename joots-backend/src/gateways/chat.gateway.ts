@@ -11,6 +11,7 @@ import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { ProgressionResult } from 'src/types/chat';
+import { ConversationsService } from 'src/conversations/conversations.service';
 
 interface ParticipantIceStatus {
   userId: string;
@@ -32,21 +33,29 @@ export class ChatGateway extends BaseGateway {
     private readonly prisma: PrismaService,
     private readonly redis: RedisService,
     private readonly questionService: QuestionService,
-    private readonly icebreakerService: IcebreakerService
+    private readonly icebreakerService: IcebreakerService,
+    private readonly conversationsService: ConversationsService
   ) {
     super(ChatGateway.name);
   }
+
+  // Map userId → socketId
+  private userChatSockets = new Map<string, string>();
+  // Map socketId → userId (pour cleanup)
+  private chatSocketUsers = new Map<string, string>();
   
   handleConnection(client: Socket) {
     const userId = client.data.userId;
     
     if (!userId) {
-      this.logger.warn(`[Chat Socket ${client.id}] Connexion chat rejetée sans ID utilisateur`);
+      this.logger.warn(`[Chat Socket ${client.id}] Connexion rejetée sans ID utilisateur`);
       client.disconnect();
       return;
     }
     
-    this.logger.log(`[Chat Socket ${client.id}] ${userId} : Connexion chat réussie`);
+     // Enregistrement des maps
+     this.userChatSockets.set(userId, client.id);
+     this.chatSocketUsers.set(client.id, userId);
 
     // Rejoindre automatiquement toutes les conversations de l'utilisateur
     this.joinUserConversations(client, userId).catch(error => {
@@ -54,8 +63,38 @@ export class ChatGateway extends BaseGateway {
     });
   }
   
-  handleDisconnect(client: Socket) {
-    this.logger.log(`[Chat Socket ${client.id}] ${client.data.userId} : Déconnexion chat réussie`);
+  async handleDisconnect(client: Socket) {
+    const userId = client.data.userId;
+    if (!userId) return;
+
+    try {
+      // Nettoyage des maps
+      this.userChatSockets.delete(userId);
+      this.chatSocketUsers.delete(client.id);
+
+      // Récupérer toutes les conversations de l'utilisateur
+      const conversationsIds = await this.conversationsService.findAllConversationsIdsForAUserId(userId);
+      
+      for (const conversationId of conversationsIds) {
+        // Quitter la room
+        client.leave(conversationId);
+        
+        // Notifier les autres participants que l'utilisateur n'est plus en train de taper
+        this.server.to(conversationId).emit('typing', {
+          conversationId: conversationId,
+          userId,
+          isTyping: false,
+          timestamp: new Date().toISOString()
+        });
+
+        // Réinitialiser le statut icebreaker
+        await this.icebreakerService.setParticipantIcebreakerReady(conversationId, userId, false);
+      }
+
+      this.logger.log(`[Chat Socket ${client.id}] ${userId} : Déconnexion chat réussie`);
+    } catch (error) {
+      this.logger.error(`[Chat Socket ${client.id}] ${userId} : Erreur lors de la déconnexion: ${error.message}`);
+    }
   }
   
   @SubscribeMessage('joinConversation')
@@ -265,27 +304,19 @@ export class ChatGateway extends BaseGateway {
   private async joinUserConversations(client: Socket, userId: string) {
     try {
       // Trouver toutes les conversations auxquelles l'utilisateur participe
-      const conversations = await this.prisma.conversationParticipant.findMany({
-        where: { userId },
-        select: { 
-          conversationId: true,
-          conversation: {
-            include: {
-              participants: true
-            }
-          }
-        }
-      });
-
+      const conversations = await this.conversationsService.findAllConversationsForAUserId(userId);
       this.logger.log(`[Chat Socket ${client.id}] ${userId} devrait rejoindre ${conversations.length} conversations`);
       
-      // Rejoindre chaque conversation
-      for (const convo of conversations) {
-        const conversationId = convo.conversationId;
+      for (const conversation of conversations) {
+        const conversationId = conversation.id;
         client.join(conversationId);
         
         // Synchroniser l'état de la conversation
-        await this.synchronizeConversationState(client, conversationId, userId, convo.conversation.participants);
+        const participants = conversation.participants.map(p => ({
+          userId: p.user.id,
+          isIcebreakerReady: p.isIcebreakerReady
+        }));
+        await this.synchronizeConversationState(client, conversationId, userId, participants);
       }
     } catch (error) {
       this.logger.error(`Erreur lors de la récupération des conversations: ${error.message}`);

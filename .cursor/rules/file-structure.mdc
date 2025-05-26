@@ -1,0 +1,511 @@
+# Règles Arborescence & Organisation des Fichiers - JootsHub
+
+## 🗂️ Philosophie d'Organisation
+
+### Principes Fondamentaux
+- **Domain-Driven Design** : Organisation par domaine métier
+- **Colocation** : Fichiers liés regroupés ensemble
+- **Séparation des responsabilités** : Frontend/Backend/Shared clairement séparés
+- **Scalabilité** : Structure qui grandit avec le projet
+- **Découvrabilité** : Nommage intuitif et hiérarchie logique
+
+## 📁 Structure Globale du Projet
+
+```
+JootsHub/
+├── 📁 joots-frontend/          # Application Next.js
+├── 📁 joots-backend/           # API NestJS
+├── 📁 shared/                  # Types et utilitaires partagés
+├── 📁 docs/                    # Documentation
+├── 📁 scripts/                 # Scripts de développement
+├── 📁 .cursor/                 # Configuration Cursor AI
+├── 📁 logs/                    # Logs de développement
+├── 🐳 docker-compose.yml       # Configuration Docker
+├── 📋 README.md               # Documentation principale
+└── 🔧 package.json            # Dépendances workspace
+```
+
+## 🎨 Frontend (joots-frontend/)
+
+### Structure Recommandée
+```
+joots-frontend/
+├── 📁 public/                  # Assets statiques
+│   ├── 🖼️ images/
+│   ├── 🎵 sounds/
+│   └── 📄 favicon.ico
+├── 📁 src/
+│   ├── 📁 app/                 # Next.js App Router
+│   │   ├── 📁 (auth)/         # Route groups
+│   │   │   ├── 📁 login/
+│   │   │   └── 📁 register/
+│   │   ├── 📁 api/            # API Routes
+│   │   │   ├── 📁 auth/
+│   │   │   ├── 📁 conversations/
+│   │   │   └── 📁 users/
+│   │   ├── 📁 conversations/   # Pages conversations
+│   │   │   └── 📁 [id]/
+│   │   ├── 📁 hub/            # Page hub principal
+│   │   ├── 📁 icebreaker/     # Pages icebreaker
+│   │   ├── 🎨 globals.css     # Styles globaux
+│   │   ├── 📄 layout.tsx      # Layout racine
+│   │   ├── 📄 page.tsx        # Page d'accueil
+│   │   ├── 📄 loading.tsx     # Loading UI
+│   │   ├── 📄 error.tsx       # Error Boundary
+│   │   └── 📄 not-found.tsx   # Page 404
+│   ├── 📁 components/         # Composants réutilisables
+│   │   ├── 📁 ui/             # Composants UI de base
+│   │   │   ├── 📄 button.tsx
+│   │   │   ├── 📄 input.tsx
+│   │   │   ├── 📄 modal.tsx
+│   │   │   └── 📄 index.ts    # Barrel export
+│   │   ├── 📁 layout/         # Composants de layout
+│   │   │   ├── 📄 header.tsx
+│   │   │   ├── 📄 sidebar.tsx
+│   │   │   └── 📄 footer.tsx
+│   │   └── 📁 common/         # Composants communs
+│   │       ├── 📄 loading-spinner.tsx
+│   │       ├── 📄 error-message.tsx
+│   │       └── 📄 avatar.tsx
+│   ├── 📁 features/           # Fonctionnalités par domaine
+│   │   ├── 📁 auth/
+│   │   │   ├── 📁 components/
+│   │   │   │   ├── 📄 login-form.tsx
+│   │   │   │   └── 📄 register-form.tsx
+│   │   │   ├── 📁 hooks/
+│   │   │   │   └── 📄 use-auth.ts
+│   │   │   ├── 📁 services/
+│   │   │   │   └── 📄 auth-service.ts
+│   │   │   └── 📁 types/
+│   │   │       └── 📄 auth.types.ts
+│   │   ├── 📁 chat/
+│   │   │   ├── 📁 components/
+│   │   │   │   ├── 📄 chat-window.tsx
+│   │   │   │   ├── 📄 message-list.tsx
+│   │   │   │   ├── 📄 message-input.tsx
+│   │   │   │   └── 📄 typing-indicator.tsx
+│   │   │   ├── 📁 hooks/
+│   │   │   │   ├── 📄 use-chat.ts
+│   │   │   │   └── 📄 use-messages.ts
+│   │   │   ├── 📁 stores/
+│   │   │   │   ├── 📄 chat-store.ts
+│   │   │   │   └── 📄 chat-volatile-store.ts
+│   │   │   ├── 📁 sockets/
+│   │   │   │   └── 📄 chat-socket.ts
+│   │   │   └── 📁 types/
+│   │   │       └── 📄 chat.types.ts
+│   │   ├── 📁 conversations/
+│   │   │   ├── 📁 components/
+│   │   │   │   ├── 📄 conversation-list.tsx
+│   │   │   │   ├── 📄 conversation-item.tsx
+│   │   │   │   └── 📄 conversation-header.tsx
+│   │   │   ├── 📁 hooks/
+│   │   │   │   └── 📄 use-conversations.ts
+│   │   │   ├── 📁 services/
+│   │   │   │   └── 📄 conversation-service.ts
+│   │   │   └── 📁 utils/
+│   │   │       └── 📄 conversation-utils.ts
+│   │   ├── 📁 contacts/
+│   │   │   ├── 📁 components/
+│   │   │   ├── 📁 hooks/
+│   │   │   ├── 📁 stores/
+│   │   │   ├── 📁 sockets/
+│   │   │   └── 📁 types/
+│   │   ├── 📁 icebreakers/
+│   │   │   ├── 📁 components/
+│   │   │   ├── 📁 hooks/
+│   │   │   ├── 📁 services/
+│   │   │   └── 📁 types/
+│   │   ├── 📁 questions/
+│   │   │   └── 📁 components/
+│   │   └── 📁 user/
+│   │       ├── 📁 components/
+│   │       ├── 📁 hooks/
+│   │       ├── 📁 stores/
+│   │       └── 📁 sockets/
+│   ├── 📁 hooks/              # Hooks globaux
+│   │   ├── 📄 use-local-storage.ts
+│   │   ├── 📄 use-debounce.ts
+│   │   └── 📄 use-media-query.ts
+│   ├── 📁 lib/                # Utilitaires et configuration
+│   │   ├── 📁 sockets/
+│   │   │   └── 📄 socket-client.ts
+│   │   ├── 📄 utils.ts        # Utilitaires généraux
+│   │   ├── 📄 constants.ts    # Constantes
+│   │   ├── 📄 env.ts          # Variables d'environnement
+│   │   └── 📄 auth.ts         # Configuration NextAuth
+│   ├── 📁 styles/             # Styles CSS
+│   │   ├── 📄 globals.css
+│   │   └── 📄 components.css
+│   ├── 📁 types/              # Types TypeScript globaux
+│   │   ├── 📄 global.d.ts
+│   │   ├── 📄 api.types.ts
+│   │   └── 📄 next-auth.d.ts
+│   ├── 📁 utils/              # Fonctions utilitaires
+│   │   ├── 📄 format.ts
+│   │   ├── 📄 validation.ts
+│   │   └── 📄 api.ts
+│   └── 📁 test/               # Configuration tests
+│       ├── 📄 setup.ts
+│       └── 📄 mocks.ts
+├── 📁 .next/                  # Build Next.js (généré)
+├── 📄 next.config.js          # Configuration Next.js
+├── 📄 tailwind.config.js      # Configuration Tailwind
+├── 📄 tsconfig.json           # Configuration TypeScript
+├── 📄 package.json            # Dépendances
+└── 📄 README.md               # Documentation frontend
+```
+
+## ⚙️ Backend (joots-backend/)
+
+### Structure Recommandée
+```
+joots-backend/
+├── 📁 prisma/                 # Configuration Prisma
+│   ├── 📁 migrations/         # Migrations base de données
+│   └── 📄 schema.prisma       # Schéma de base de données
+├── 📁 src/
+│   ├── 📁 auth/               # Module authentification
+│   │   ├── 📁 dto/
+│   │   │   ├── 📄 login.dto.ts
+│   │   │   └── 📄 register.dto.ts
+│   │   ├── 📁 guards/
+│   │   │   ├── 📄 jwt-auth.guard.ts
+│   │   │   └── 📄 roles.guard.ts
+│   │   ├── 📁 strategies/
+│   │   │   └── 📄 jwt.strategy.ts
+│   │   ├── 📄 auth.controller.ts
+│   │   ├── 📄 auth.service.ts
+│   │   └── 📄 auth.module.ts
+│   ├── 📁 conversations/      # Module conversations
+│   │   ├── 📁 dto/
+│   │   │   ├── 📄 create-conversation.dto.ts
+│   │   │   └── 📄 update-conversation.dto.ts
+│   │   ├── 📁 entities/
+│   │   │   └── 📄 conversation.entity.ts
+│   │   ├── 📄 conversations.controller.ts
+│   │   ├── 📄 conversations.service.ts
+│   │   └── 📄 conversations.module.ts
+│   ├── 📁 messages/           # Module messages
+│   │   ├── 📁 dto/
+│   │   ├── 📁 entities/
+│   │   ├── 📄 messages.controller.ts
+│   │   ├── 📄 messages.service.ts
+│   │   └── 📄 messages.module.ts
+│   ├── 📁 users/              # Module utilisateurs
+│   │   ├── 📁 contacts/       # Sous-module contacts
+│   │   │   ├── 📄 contacts.controller.ts
+│   │   │   ├── 📄 contacts.service.ts
+│   │   │   └── 📄 contacts.module.ts
+│   │   ├── 📁 dto/
+│   │   │   ├── 📄 create-user.dto.ts
+│   │   │   └── 📄 update-user.dto.ts
+│   │   ├── 📁 entities/
+│   │   │   └── 📄 user.entity.ts
+│   │   ├── 📄 users.controller.ts
+│   │   ├── 📄 users.service.ts
+│   │   └── 📄 users.module.ts
+│   ├── 📁 icebreakers/        # Module icebreakers
+│   │   ├── 📁 dto/
+│   │   ├── 📁 entities/
+│   │   ├── 📄 icebreakers.controller.ts
+│   │   ├── 📄 icebreakers.service.ts
+│   │   └── 📄 icebreakers.module.ts
+│   ├── 📁 questions/          # Module questions
+│   │   ├── 📁 dto/
+│   │   ├── 📁 entities/
+│   │   ├── 📄 questions.controller.ts
+│   │   ├── 📄 questions.service.ts
+│   │   └── 📄 questions.module.ts
+│   ├── 📁 gateways/           # WebSocket Gateways
+│   │   ├── 📁 services/
+│   │   │   └── 📄 socket-auth.service.ts
+│   │   ├── 📄 base.gateway.ts
+│   │   ├── 📄 chat.gateway.ts
+│   │   └── 📄 user.gateway.ts
+│   ├── 📁 common/             # Modules communs
+│   │   ├── 📁 decorators/
+│   │   │   ├── 📄 roles.decorator.ts
+│   │   │   └── 📄 user.decorator.ts
+│   │   ├── 📁 filters/
+│   │   │   └── 📄 http-exception.filter.ts
+│   │   ├── 📁 guards/
+│   │   │   └── 📄 throttler.guard.ts
+│   │   ├── 📁 interceptors/
+│   │   │   ├── 📄 logging.interceptor.ts
+│   │   │   └── 📄 transform.interceptor.ts
+│   │   ├── 📁 pipes/
+│   │   │   └── 📄 validation.pipe.ts
+│   │   └── 📁 middleware/
+│   │       ├── 📄 cors.middleware.ts
+│   │       └── 📄 logger.middleware.ts
+│   ├── 📁 config/             # Configuration
+│   │   ├── 📄 database.config.ts
+│   │   ├── 📄 jwt.config.ts
+│   │   ├── 📄 redis.config.ts
+│   │   └── 📄 app.config.ts
+│   ├── 📁 logger/             # Service de logging
+│   │   ├── 📄 logger.service.ts
+│   │   └── 📄 logger.module.ts
+│   ├── 📁 redis/              # Service Redis
+│   │   ├── 📄 redis.service.ts
+│   │   └── 📄 redis.module.ts
+│   ├── 📁 types/              # Types TypeScript
+│   │   ├── 📄 auth.types.ts
+│   │   ├── 📄 socket.types.ts
+│   │   └── 📄 global.types.ts
+│   ├── 📄 app.controller.ts   # Contrôleur principal
+│   ├── 📄 app.service.ts      # Service principal
+│   ├── 📄 app.module.ts       # Module principal
+│   └── 📄 main.ts             # Point d'entrée
+├── 📁 test/                   # Tests
+│   ├── 📁 e2e/               # Tests end-to-end
+│   ├── 📁 unit/              # Tests unitaires
+│   └── 📄 jest-e2e.json      # Configuration Jest E2E
+├── 📁 logs/                   # Logs (généré)
+├── 📄 nest-cli.json           # Configuration Nest CLI
+├── 📄 tsconfig.json           # Configuration TypeScript
+├── 📄 package.json            # Dépendances
+└── 📄 README.md               # Documentation backend
+```
+
+## 🔗 Dossier Shared (shared/)
+
+### Structure pour Types Partagés
+```
+shared/
+├── 📁 types/                  # Types partagés
+│   ├── 📄 user.types.ts
+│   ├── 📄 conversation.types.ts
+│   ├── 📄 message.types.ts
+│   ├── 📄 icebreaker.types.ts
+│   └── 📄 api.types.ts
+├── 📁 constants/              # Constantes partagées
+│   ├── 📄 roles.constants.ts
+│   ├── 📄 status.constants.ts
+│   └── 📄 events.constants.ts
+├── 📁 utils/                  # Utilitaires partagés
+│   ├── 📄 validation.utils.ts
+│   ├── 📄 format.utils.ts
+│   └── 📄 date.utils.ts
+├── 📁 schemas/                # Schémas de validation
+│   ├── 📄 user.schema.ts
+│   ├── 📄 message.schema.ts
+│   └── 📄 conversation.schema.ts
+└── 📄 package.json            # Configuration package
+```
+
+## 📋 Conventions de Nommage
+
+### 📁 **Dossiers**
+```bash
+# ✅ Bon - kebab-case
+user-profile/
+chat-window/
+error-handling/
+
+# ❌ Mauvais
+UserProfile/
+chatWindow/
+error_handling/
+```
+
+### 📄 **Fichiers**
+```bash
+# ✅ Composants React - PascalCase
+UserCard.tsx
+ChatWindow.tsx
+MessageList.tsx
+
+# ✅ Hooks - camelCase avec préfixe use
+useAuth.ts
+useChat.ts
+useLocalStorage.ts
+
+# ✅ Services - kebab-case avec suffixe
+auth-service.ts
+chat-service.ts
+user-service.ts
+
+# ✅ Types - kebab-case avec suffixe
+user.types.ts
+chat.types.ts
+api.types.ts
+
+# ✅ Stores - kebab-case avec suffixe
+user-store.ts
+chat-store.ts
+contact-store.ts
+
+# ✅ Utils - kebab-case avec suffixe
+format.utils.ts
+validation.utils.ts
+date.utils.ts
+
+# ✅ Configuration - kebab-case avec suffixe
+database.config.ts
+jwt.config.ts
+app.config.ts
+```
+
+### 🏷️ **Exports et Imports**
+```typescript
+// ✅ Barrel exports pour les dossiers
+// components/ui/index.ts
+export { Button } from './button'
+export { Input } from './input'
+export { Modal } from './modal'
+
+// ✅ Import depuis barrel
+import { Button, Input, Modal } from '@/components/ui'
+
+// ✅ Import relatif pour fichiers proches
+import { UserCard } from './user-card'
+import { useAuth } from '../hooks/use-auth'
+
+// ✅ Import absolu pour fichiers distants
+import { useChatStore } from '@/features/chat/stores/chat-store'
+import { UserService } from '@/features/user/services/user-service'
+```
+
+## 🎯 Règles d'Organisation par Feature
+
+### Structure d'une Feature Complète
+```
+features/chat/
+├── 📁 components/             # Composants UI de la feature
+│   ├── 📄 chat-window.tsx
+│   ├── 📄 message-list.tsx
+│   ├── 📄 message-input.tsx
+│   └── 📄 index.ts           # Barrel export
+├── 📁 hooks/                 # Hooks spécifiques
+│   ├── 📄 use-chat.ts
+│   ├── 📄 use-messages.ts
+│   └── 📄 index.ts
+├── 📁 stores/                # Stores Zustand
+│   ├── 📄 chat-store.ts
+│   ├── 📄 chat-volatile-store.ts
+│   └── 📄 index.ts
+├── 📁 services/              # Services API
+│   ├── 📄 chat-service.ts
+│   ├── 📄 message-service.ts
+│   └── 📄 index.ts
+├── 📁 sockets/               # WebSocket clients
+│   ├── 📄 chat-socket.ts
+│   └── 📄 index.ts
+├── 📁 types/                 # Types spécifiques
+│   ├── 📄 chat.types.ts
+│   ├── 📄 message.types.ts
+│   └── 📄 index.ts
+├── 📁 utils/                 # Utilitaires spécifiques
+│   ├── 📄 chat.utils.ts
+│   ├── 📄 message.utils.ts
+│   └── 📄 index.ts
+└── 📄 index.ts               # Export principal de la feature
+```
+
+## 🚫 Anti-Patterns à Éviter
+
+### ❌ **Structure Plate**
+```bash
+# ❌ Mauvais - Tout dans src/
+src/
+├── UserCard.tsx
+├── ChatWindow.tsx
+├── MessageList.tsx
+├── useAuth.ts
+├── useChat.ts
+├── userService.ts
+├── chatService.ts
+└── ... (50+ fichiers)
+```
+
+### ❌ **Mélange des Responsabilités**
+```bash
+# ❌ Mauvais - Backend et frontend mélangés
+src/
+├── components/
+├── controllers/    # Backend dans frontend
+├── services/       # Ambiguë
+└── models/         # Ambiguë
+```
+
+### ❌ **Nommage Incohérent**
+```bash
+# ❌ Mauvais - Styles de nommage mélangés
+src/
+├── UserCard.tsx
+├── chat_window.tsx
+├── MessageList.jsx
+├── useAuth.js
+└── ChatService.ts
+```
+
+## 📦 Gestion des Imports
+
+### Alias de Chemins (tsconfig.json)
+```json
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/components/*": ["./src/components/*"],
+      "@/features/*": ["./src/features/*"],
+      "@/hooks/*": ["./src/hooks/*"],
+      "@/lib/*": ["./src/lib/*"],
+      "@/types/*": ["./src/types/*"],
+      "@/utils/*": ["./src/utils/*"]
+    }
+  }
+}
+```
+
+### Ordre des Imports
+```typescript
+// ✅ Bon - Ordre standardisé
+// 1. Imports React/Next.js
+import React, { useState, useEffect } from 'react'
+import { NextPage } from 'next'
+import Image from 'next/image'
+
+// 2. Imports de bibliothèques tierces
+import { z } from 'zod'
+import { create } from 'zustand'
+
+// 3. Imports internes absolus
+import { Button } from '@/components/ui'
+import { useChatStore } from '@/features/chat/stores'
+import { UserService } from '@/features/user/services'
+
+// 4. Imports relatifs
+import { ChatWindow } from './chat-window'
+import { useLocalChat } from '../hooks/use-local-chat'
+
+// 5. Imports de types (avec type)
+import type { User } from '@/types/user'
+import type { ChatMessage } from '../types/chat'
+```
+
+## 📋 Checklist d'Organisation
+
+### ✅ **Avant de créer un nouveau fichier :**
+- [ ] Le nom suit les conventions (kebab-case, PascalCase selon le type)
+- [ ] Le fichier est dans le bon dossier de feature
+- [ ] Les imports utilisent les alias configurés
+- [ ] Un barrel export existe si nécessaire
+
+### ✅ **Avant de créer une nouvelle feature :**
+- [ ] La structure suit le pattern recommandé
+- [ ] Les types sont définis dans types/
+- [ ] Les composants sont dans components/
+- [ ] Les hooks sont dans hooks/
+- [ ] Le store est dans stores/
+
+### ✅ **Maintenance régulière :**
+- [ ] Supprimer les fichiers non utilisés
+- [ ] Mettre à jour les barrel exports
+- [ ] Vérifier la cohérence des noms
+- [ ] Optimiser les imports
+
+Cette organisation garantit une codebase maintenable et scalable pour JootsHub ! 🗂️✨ 
