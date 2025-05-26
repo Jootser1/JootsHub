@@ -44,10 +44,10 @@ export class UsersService {
   }
 
   async findById(id: string): Promise<UserWithAuth> {
-    const user = await this.prisma.user.findUnique({ 
+    const user = await this.prisma.user.findUnique({
       where: { id },
-      include: { auth: true }
-  });
+      include: { auth: true },
+    });
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
     }
@@ -62,14 +62,17 @@ export class UsersService {
   async addUserInRedisOnlineUsers(client: Socket, userId: string) {
     await this.redis.sadd('online_users', userId);
     await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
-      this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur connecté`);
-
+    this.logger.log(
+      `[User Socket ${client.id}] ${userId} : Utilisateur connecté`
+    );
   }
 
   async removeUserInRedisOnlineUsers(client: Socket, userId: string) {
     await this.redis.srem('online_users', userId);
     await this.redis.set(`user:${userId}:last_seen`, Date.now().toString());
-    this.logger.log(`[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`);
+    this.logger.log(
+      `[User Socket ${client.id}] ${userId} : Utilisateur déconnecté`
+    );
   }
 
   async getOnlineUsers() {
@@ -83,11 +86,11 @@ export class UsersService {
     const user = await this.prisma.user.update({
       where: { id: userId },
       data: { isAvailableForChat },
-  });
+    });
 
     if (!user) {
       throw new NotFoundException('Utilisateur non trouvé');
-  }
+    }
 
     return user;
   }
@@ -96,48 +99,48 @@ export class UsersService {
     // Récupérer les IDs des utilisateurs avec qui nous avons déjà une conversation
     const existingConversations = await this.prisma.conversation.findMany({
       where: {
-          participants: {
+        participants: {
           some: {
-            userId: currentUserId
-          }
-        }
+            userId: currentUserId,
+          },
+        },
       },
       include: {
         participants: {
           select: {
-            userId: true
-          }
-        }
-      }
+            userId: true,
+          },
+        },
+      },
     });
-  
+
     // Créer un Set des IDs des utilisateurs avec qui nous avons déjà parlé
     const existingUserIds = new Set(
-      existingConversations.flatMap(conv => 
-        conv.participants.map(p => p.userId)
+      existingConversations.flatMap((conv) =>
+        conv.participants.map((p) => p.userId)
       )
     );
-  
+
     const availableUsers = await this.prisma.user.findMany({
       where: {
         AND: [
           { isOnline: true },
           { isAvailableForChat: true },
           { id: { not: currentUserId } }, // Exclure l'utilisateur actuel
-          { id: { notIn: Array.from(existingUserIds) } } // Exclure les utilisateurs avec qui nous avons déjà parlé
-        ]
+          { id: { notIn: Array.from(existingUserIds) } }, // Exclure les utilisateurs avec qui nous avons déjà parlé
+        ],
       },
       select: {
         id: true,
         username: true,
-        avatar: true
-      }
+        avatar: true,
+      },
     });
-  
+
     if (availableUsers.length === 0) {
       throw new NotFoundException('Aucun utilisateur disponible pour le chat');
     }
-  
+
     // Sélectionner un utilisateur aléatoire
     const randomIndex = Math.floor(Math.random() * availableUsers.length);
     return availableUsers[randomIndex];

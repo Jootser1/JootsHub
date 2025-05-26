@@ -1,4 +1,12 @@
-import { Controller, Get, UseGuards, Param, NotFoundException, Patch, Body } from '@nestjs/common'; // ✅ Add `UseGuards`, `NotFoundException`, `Patch`, and `Body`
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Param,
+  NotFoundException,
+  Patch,
+  Body,
+} from '@nestjs/common'; // ✅ Add `UseGuards`, `NotFoundException`, `Patch`, and `Body`
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -31,7 +39,7 @@ export class UsersController {
   async getUser(@Param('id') id: string) {
     const user = await this.usersService.findById(id);
     if (!user.auth) {
-      throw new NotFoundException('Données d\'authentification non trouvées');
+      throw new NotFoundException("Données d'authentification non trouvées");
     }
     return {
       id: user.id,
@@ -39,7 +47,7 @@ export class UsersController {
       username: user.username,
       avatar: user.avatar || null,
       isAvailableForChat: user.isAvailableForChat || false,
-      isOnline: user.isOnline || false
+      isOnline: user.isOnline || false,
     };
   }
 
@@ -47,7 +55,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async updateChatPreference(
     @Param('id') id: string,
-    @Body('isAvailableForChat') isAvailableForChat: boolean,
+    @Body('isAvailableForChat') isAvailableForChat: boolean
   ) {
     return this.usersService.updateChatPreference(id, isAvailableForChat);
   }
@@ -55,7 +63,7 @@ export class UsersController {
   @Get('random/available')
   @UseGuards(JwtAuthGuard)
   async getRandomAvailableUser(@CurrentUser() user: any) {
-    console.log('user dans getRandomAvailableUser')
+    console.log('user dans getRandomAvailableUser');
     return this.usersService.getRandomAvailableUser(user.id);
   }
 
@@ -63,7 +71,7 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   async updateUserStatus(
     @Param('id') id: string,
-    @Body('isOnline') isOnline: boolean,
+    @Body('isOnline') isOnline: boolean
   ) {
     return this.usersService.updateUserStatusinBDD(id, isOnline);
   }

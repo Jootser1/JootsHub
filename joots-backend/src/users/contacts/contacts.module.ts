@@ -7,6 +7,6 @@ import { RedisModule } from '../../redis/redis.module';
   imports: [PrismaModule, RedisModule],
   controllers: [UserContactsController],
   providers: [UserContactsService, Logger],
-  exports: [UserContactsService]
+  exports: [UserContactsService],
 })
-export class ContactsModule {} 
+export class ContactsModule {}

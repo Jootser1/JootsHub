@@ -1,0 +1,423 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Règles Générales TypeScript/JavaScript
+
+## Style de Code
+
+### Syntaxe de Base
+- Utiliser TypeScript pour tout le code
+- Préférer `interface` à `type` pour les objets
+- Éviter `any`, créer les types nécessaires
+- Utiliser l'égalité stricte (`===`) au lieu de `==`
+- **Omettre les semicolons** (sauf si requis pour disambiguation)
+- Utiliser des guillemets simples pour les chaînes
+- Utiliser 2 espaces pour l'indentation (pas de tabs)
+- Limiter les lignes à 100 caractères (avec exceptions pragmatiques)
+
+### Conventions de Nommage
+- **PascalCase** : Classes, composants, types, interfaces
+- **camelCase** : Variables, fonctions, méthodes, hooks, propriétés
+- **kebab-case** : Noms de fichiers et dossiers (sauf conventions métier NestJS)
+- **UPPERCASE** : Variables d'environnement, constantes globales
+
+### Suffixes d'Interfaces Standardisés
+- **Props** : Propriétés de composants React (`UserCardProps`)
+- **State** : État des stores Zustand (`ChatState`)
+- **Actions** : Actions des stores Zustand (`ChatActions`)
+- **Config** : Configuration (`DatabaseConfig`)
+- **Options** : Options de fonctions (`ApiOptions`)
+- **Response** : Réponses d'API (`UserResponse`)
+- **Request** : Requêtes d'API (`CreateUserRequest`)
+
+### Nommage Spécifique
+- Préfixer les booléens avec des verbes : `isLoading`, `hasError`, `canDelete`
+- Commencer les fonctions par un verbe : `getUserData`, `validateEmail`
+- Préfixer les event handlers : `handleClick`, `handleSubmit`
+- Préfixer les hooks personnalisés : `useAuth`, `useForm`
+- Utiliser des mots complets, éviter les abréviations sauf :
+  - `err` (error), `req` (request), `res` (response)
+  - `props` (properties), `ref` (reference)
+  - `i`, `j` (boucles), `ctx` (context)
+
+## Classes et Programmation Fonctionnelle
+
+### Règle Classes
+**Classes autorisées UNIQUEMENT pour NestJS** :
+- Controllers (`@Controller()`)
+- Services (`@Injectable()`)
+- Modules (`@Module()`)
+- Guards, Interceptors, Middlewares
+- DTOs avec class-validator
+
+**Partout ailleurs : Programmation fonctionnelle**
+```typescript
+// ✅ Bon - Frontend fonctionnel
+export function UserCard({ user }: UserCardProps) {
+  const handleClick = () => {
+    // logique
+  }
+  
+  return <div onClick={handleClick}>{user.name}</div>
+}
+
+// ✅ Bon - Backend avec classes (NestJS uniquement)
+@Injectable()
+export class UserService {
+  async createUser(dto: CreateUserDto): Promise<User> {
+    return this.prisma.user.create({ data: dto })
+  }
+}
+
+// ❌ Mauvais - Classes côté frontend
+class UserCard extends Component {
+  render() { /* ... */ }
+}
+```
+
+## Semicolons - Règle JootsHub
+
+### Omission des Semicolons
+```typescript
+// ✅ Bon - Sans semicolons
+const user = { name: 'John', age: 30 }
+const greeting = `Hello ${user.name}`
+
+function getUserData(id: string) {
+  return fetch(`/api/users/${id}`)
+}
+
+// ❌ Mauvais - Avec semicolons
+const user = { name: 'John', age: 30 };
+const greeting = `Hello ${user.name}`;
+
+// ⚠️ Exception - Semicolon requis pour disambiguation
+;(async () => {
+  await someFunction()
+})()
+
+;[1, 2, 3].forEach(item => console.log(item))
+```
+
+## Fonctions
+
+### Principes de Base
+- Écrire des fonctions courtes (< 20 instructions)
+- Une seule responsabilité par fonction
+- Utiliser le mot-clé `function` pour les fonctions pures
+- Éviter l'imbrication de blocs avec des retours précoces
+- Utiliser les fonctions d'ordre supérieur (map, filter, reduce)
+
+### Paramètres et Retours
+- Utiliser des valeurs par défaut au lieu de vérifier null/undefined
+- Appliquer le pattern RO-RO (Receive Object, Return Object) pour les fonctions complexes
+- Déclarer les types pour les paramètres d'entrée et de sortie
+- Utiliser un seul niveau d'abstraction
+
+### Exemple
+```typescript
+// ✅ Bon
+interface GetUserParams {
+  id: string
+  includeProfile?: boolean
+}
+
+interface GetUserResult {
+  user: User
+  profile?: Profile
+}
+
+function getUser({ id, includeProfile = false }: GetUserParams): GetUserResult {
+  if (!id) throw new Error('ID utilisateur requis')
+  
+  const user = findUserById(id)
+  const profile = includeProfile ? getUserProfile(id) : undefined
+  
+  return { user, profile }
+}
+
+// ❌ Mauvais
+function getUser(id, includeProfile) {
+  if (id) {
+    const user = findUserById(id)
+    if (includeProfile) {
+      const profile = getUserProfile(id)
+      return { user: user, profile: profile }
+    } else {
+      return { user: user }
+    }
+  }
+}
+```
+
+## Architecture Stores Zustand - JootsHub
+
+### Structure des 4 Stores
+```typescript
+// 1. UserStore - Authentification et données utilisateur
+interface UserState {
+  user: User | null
+  isAuthenticated: boolean
+  isLoading: boolean
+}
+
+interface UserActions {
+  setUser: (user: User) => void
+  logout: () => void
+  updateProfile: (data: Partial<User>) => void
+}
+
+export const useUserStore = create<UserState & UserActions>((set) => ({
+  user: null,
+  isAuthenticated: false,
+  isLoading: false,
+  
+  setUser: (user) => set({ user, isAuthenticated: true }),
+  logout: () => set({ user: null, isAuthenticated: false }),
+  updateProfile: (data) => set((state) => ({ 
+    user: state.user ? { ...state.user, ...data } : null 
+  }))
+}))
+
+// 2. ContactStore - Gestion des contacts
+interface ContactState {
+  contacts: Contact[]
+  pendingRequests: ContactRequest[]
+  isLoading: boolean
+}
+
+interface ContactActions {
+  loadContacts: () => Promise<void>
+  addContact: (contact: Contact) => void
+  removeContact: (contactId: string) => void
+  sendContactRequest: (userId: string) => Promise<void>
+}
+
+export const useContactStore = create<ContactState & ContactActions>((set, get) => ({
+  contacts: [],
+  pendingRequests: [],
+  isLoading: false,
+  
+  loadContacts: async () => {
+    set({ isLoading: true })
+    try {
+      const contacts = await fetchContacts()
+      set({ contacts, isLoading: false })
+    } catch (error) {
+      set({ isLoading: false })
+      throw error
+    }
+  },
+  
+  addContact: (contact) => set((state) => ({
+    contacts: [...state.contacts, contact]
+  })),
+  
+  removeContact: (contactId) => set((state) => ({
+    contacts: state.contacts.filter(c => c.id !== contactId)
+  })),
+  
+  sendContactRequest: async (userId) => {
+    // logique d'envoi de demande
+  }
+}))
+
+// 3. ChatStore - État persistant des conversations
+interface ChatState {
+  conversations: Record<string, Conversation>
+  activeConversationId: string | null
+  unreadCounts: Record<string, number>
+}
+
+interface ChatActions {
+  setActiveConversation: (id: string | null) => void
+  addMessage: (conversationId: string, message: Message) => void
+  markAsRead: (conversationId: string) => void
+  updateParticipantField: (conversationId: string, participantId: string, field: string, value: any) => void
+}
+
+export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
+  conversations: {},
+  activeConversationId: null,
+  unreadCounts: {},
+  
+  setActiveConversation: (id) => set({ activeConversationId: id }),
+  
+  addMessage: (conversationId, message) => set((state) => ({
+    conversations: {
+      ...state.conversations,
+      [conversationId]: {
+        ...state.conversations[conversationId],
+        messages: [...(state.conversations[conversationId]?.messages || []), message]
+      }
+    }
+  })),
+  
+  markAsRead: (conversationId) => set((state) => ({
+    unreadCounts: {
+      ...state.unreadCounts,
+      [conversationId]: 0
+    }
+  })),
+  
+  updateParticipantField: (conversationId, participantId, field, value) => set((state) => ({
+    conversations: {
+      ...state.conversations,
+      [conversationId]: {
+        ...state.conversations[conversationId],
+        participants: state.conversations[conversationId].participants.map(p =>
+          p.userId === participantId ? { ...p, [field]: value } : p
+        )
+      }
+    }
+  }))
+}))
+
+// 4. ChatVolatileStore - États temporaires et volatils
+interface ChatVolatileState {
+  typingUsers: Record<string, string[]> // conversationId -> userIds
+  onlineUsers: Set<string>
+  connectionStatus: 'connected' | 'connecting' | 'disconnected'
+  temporaryMessages: Record<string, Message[]>
+}
+
+interface ChatVolatileActions {
+  setUserTyping: (conversationId: string, userId: string, isTyping: boolean) => void
+  setUserOnline: (userId: string, isOnline: boolean) => void
+  setConnectionStatus: (status: ChatVolatileState['connectionStatus']) => void
+  addTemporaryMessage: (conversationId: string, message: Message) => void
+  removeTemporaryMessage: (conversationId: string, messageId: string) => void
+}
+
+export const useChatVolatileStore = create<ChatVolatileState & ChatVolatileActions>((set, get) => ({
+  typingUsers: {},
+  onlineUsers: new Set(),
+  connectionStatus: 'disconnected',
+  temporaryMessages: {},
+  
+  setUserTyping: (conversationId, userId, isTyping) => set((state) => {
+    const currentTyping = state.typingUsers[conversationId] || []
+    const newTyping = isTyping
+      ? [...currentTyping.filter(id => id !== userId), userId]
+      : currentTyping.filter(id => id !== userId)
+    
+    return {
+      typingUsers: {
+        ...state.typingUsers,
+        [conversationId]: newTyping
+      }
+    }
+  }),
+  
+  setUserOnline: (userId, isOnline) => set((state) => {
+    const newOnlineUsers = new Set(state.onlineUsers)
+    if (isOnline) {
+      newOnlineUsers.add(userId)
+    } else {
+      newOnlineUsers.delete(userId)
+    }
+    return { onlineUsers: newOnlineUsers }
+  }),
+  
+  setConnectionStatus: (status) => set({ connectionStatus: status }),
+  
+  addTemporaryMessage: (conversationId, message) => set((state) => ({
+    temporaryMessages: {
+      ...state.temporaryMessages,
+      [conversationId]: [...(state.temporaryMessages[conversationId] || []), message]
+    }
+  })),
+  
+  removeTemporaryMessage: (conversationId, messageId) => set((state) => ({
+    temporaryMessages: {
+      ...state.temporaryMessages,
+      [conversationId]: (state.temporaryMessages[conversationId] || []).filter(m => m.id !== messageId)
+    }
+  }))
+}))
+```
+
+## Structure des Fichiers
+
+### Organisation
+```typescript
+// 1. Imports
+import { ComponentProps } from 'react'
+import { apiClient } from '@/lib/api'
+
+// 2. Composant principal exporté
+export function UserProfile({ userId }: UserProfileProps) {
+  // Logique du composant
+}
+
+// 3. Sous-composants
+function UserAvatar({ src, alt }: UserAvatarProps) {
+  // Logique du sous-composant
+}
+
+// 4. Fonctions helper
+function formatUserName(firstName: string, lastName: string): string {
+  return `${firstName} ${lastName}`
+}
+
+// 5. Contenu statique
+const DEFAULT_AVATAR = '/images/default-avatar.png'
+
+// 6. Types et interfaces
+interface UserProfileProps {
+  userId: string
+}
+
+interface UserAvatarProps {
+  src: string
+  alt: string
+}
+```
+
+## Gestion d'Erreurs
+
+### Principes
+- Traiter les erreurs au début des fonctions
+- Utiliser des retours précoces pour éviter l'imbrication
+- Utiliser des garde-fous (guard clauses)
+- Placer le "happy path" à la fin
+- Éviter les `else` inutiles
+
+### Exemple
+```typescript
+function processUser(user: User | null): ProcessedUser {
+  // Guard clauses
+  if (!user) throw new Error('Utilisateur requis')
+  if (!user.email) throw new Error('Email requis')
+  if (!user.isActive) throw new Error('Utilisateur inactif')
+  
+  // Happy path
+  return {
+    id: user.id,
+    displayName: formatUserName(user.firstName, user.lastName),
+    email: user.email.toLowerCase()
+  }
+}
+```
+
+## Constantes et Configuration
+
+### Définition
+- Éviter les nombres magiques
+- Définir des constantes nommées
+- Grouper les constantes par domaine
+
+### Exemple
+```typescript
+// ✅ Bon
+const VALIDATION_RULES = {
+  PASSWORD_MIN_LENGTH: 8,
+  USERNAME_MAX_LENGTH: 50,
+  EMAIL_REGEX: /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+} as const
+
+// ❌ Mauvais
+if (password.length < 8) { /* ... */ }
+``` 

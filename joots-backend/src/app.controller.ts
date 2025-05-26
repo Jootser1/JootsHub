@@ -6,7 +6,7 @@ import { AppLogger } from './logger/logger.service';
 export class AppController {
   constructor(
     private readonly appService: AppService,
-    private readonly logger: AppLogger,
+    private readonly logger: AppLogger
   ) {
     // Test des différents niveaux de logs
     this.logger.log('Test de log INFO');

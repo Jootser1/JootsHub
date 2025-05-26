@@ -1,0 +1,747 @@
+# Règles Logging & Monitoring - JootsHub
+
+## 📊 Philosophie du Logging
+
+### Principes Fondamentaux
+- **Structured Logging** : Logs structurés en JSON pour faciliter l'analyse
+- **Contextual Information** : Toujours inclure le contexte (userId, conversationId, SocketId, etc.)
+- **Performance Tracking** : Mesurer les temps de réponse et performances
+- **Security Logging** : Tracer les actions sensibles sans exposer de données
+- **Environment Aware** : Comportement différent selon l'environnement
+
+## 🎯 Niveaux de Log Standardisés
+
+### Hiérarchie des Niveaux
+```typescript
+enum LogLevel {
+  ERROR = 0,    // Erreurs critiques qui cassent l'application
+  WARN = 1,     // Problèmes qui n'empêchent pas le fonctionnement
+  INFO = 2,     // Informations importantes sur le flux applicatif
+  DEBUG = 3,    // Informations détaillées pour le debugging
+  TRACE = 4     // Informations très détaillées (dev uniquement)
+}
+```
+
+### Quand utiliser chaque niveau
+
+#### 🔴 **ERROR** - Erreurs critiques
+```typescript
+// ✅ BON - Erreurs qui cassent l'application
+logger.error('Échec de connexion à la base de données', {
+  error: error.message,
+  stack: error.stack,
+  userId,
+  timestamp: new Date().toISOString()
+})
+
+logger.error('Échec d\'authentification JWT', {
+  token: 'REDACTED',
+  userId,
+  ip: request.ip,
+  userAgent: request.headers['user-agent']
+})
+```
+
+#### 🟡 **WARN** - Problèmes non-bloquants
+```typescript
+// ✅ BON - Problèmes qui méritent attention
+logger.warn('Rate limit approché pour utilisateur', {
+  userId,
+  currentRequests: 45,
+  limit: 50,
+  timeWindow: '1min'
+})
+
+logger.warn('Socket déconnecté de manière inattendue', {
+  userId,
+  socketId: client.id,
+  reason: 'transport close',
+  duration: connectionDuration
+})
+```
+
+#### 🔵 **INFO** - Flux applicatif important
+```typescript
+// ✅ BON - Actions importantes de l'utilisateur
+logger.info('Utilisateur connecté', {
+  userId,
+  email: user.email,
+  loginMethod: 'jwt',
+  ip: request.ip
+})
+
+logger.info('Message envoyé', {
+  messageId,
+  senderId,
+  conversationId,
+  messageLength: content.length,
+  timestamp: new Date().toISOString()
+})
+
+logger.info('Icebreaker complété', {
+  conversationId,
+  participants: [user1Id, user2Id],
+  questionId,
+  completionTime: endTime - startTime
+})
+```
+
+#### 🟢 **DEBUG** - Informations détaillées
+```typescript
+// ✅ BON - Debugging et développement
+logger.debug('Cache hit pour conversation', {
+  conversationId,
+  cacheKey: `conversation:${conversationId}`,
+  ttl: 3600
+})
+
+logger.debug('WebSocket événement reçu', {
+  event: 'icebreakerReady',
+  payload: data,
+  socketId: client.id,
+  userId
+})
+```
+
+#### ⚪ **TRACE** - Très détaillé (dev uniquement)
+```typescript
+// ✅ BON - Trace très détaillée
+logger.trace('Requête Prisma exécutée', {
+  query: 'findMany',
+  table: 'conversations',
+  filters: { userId },
+  executionTime: '15ms'
+})
+```
+
+## 🏗️ Structure des Logs
+
+### Format Standard JootsHub
+```typescript
+interface LogEntry {
+  timestamp: string          // ISO 8601
+  level: LogLevel            // ERROR, WARN, INFO, DEBUG, TRACE
+  message: string            // Message principal
+  service: string            // 'frontend' | 'backend'
+  module: string             // Module/feature concerné
+  userId?: string            // ID utilisateur (si applicable)
+  conversationId?: string    // ID conversation (si applicable)
+  requestId?: string         // ID de requête pour traçabilité
+  metadata?: Record<string, any>  // Données contextuelles
+  error?: {                  // Détails d'erreur (si applicable)
+    name: string
+    message: string
+    stack?: string
+    code?: string
+  }
+  performance?: {            // Métriques de performance
+    duration: number         // en millisecondes
+    memoryUsage?: number
+    cpuUsage?: number
+  }
+}
+```
+
+## 🖥️ Logging Backend (NestJS)
+
+### Configuration du Logger
+```typescript
+// logger/logger.service.ts
+import { Injectable, LoggerService } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
+import * as winston from 'winston'
+
+@Injectable()
+export class CustomLoggerService implements LoggerService {
+  private logger: winston.Logger
+
+  constructor(private configService: ConfigService) {
+    const logLevel = this.configService.get('LOG_LEVEL', 'info')
+    const environment = this.configService.get('NODE_ENV', 'development')
+
+    this.logger = winston.createLogger({
+      level: logLevel,
+      format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.errors({ stack: true }),
+        winston.format.json()
+      ),
+      defaultMeta: {
+        service: 'joots-backend',
+        environment
+      },
+      transports: [
+        // Console pour développement
+        new winston.transports.Console({
+          format: environment === 'development' 
+            ? winston.format.combine(
+                winston.format.colorize(),
+                winston.format.simple()
+              )
+            : winston.format.json()
+        }),
+        
+        // Fichiers pour production
+        new winston.transports.File({
+          filename: 'logs/error.log',
+          level: 'error'
+        }),
+        new winston.transports.File({
+          filename: 'logs/combined.log'
+        })
+      ]
+    })
+  }
+
+  log(message: string, context?: string, metadata?: any) {
+    this.logger.info(message, { context, ...metadata })
+  }
+
+  error(message: string, trace?: string, context?: string, metadata?: any) {
+    this.logger.error(message, { 
+      context, 
+      stack: trace,
+      ...metadata 
+    })
+  }
+
+  warn(message: string, context?: string, metadata?: any) {
+    this.logger.warn(message, { context, ...metadata })
+  }
+
+  debug(message: string, context?: string, metadata?: any) {
+    this.logger.debug(message, { context, ...metadata })
+  }
+
+  verbose(message: string, context?: string, metadata?: any) {
+    this.logger.verbose(message, { context, ...metadata })
+  }
+}
+```
+
+### Usage dans les Services
+```typescript
+// services/conversation.service.ts
+@Injectable()
+export class ConversationService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: CustomLoggerService
+  ) {}
+
+  async createConversation(participants: string[]): Promise<Conversation> {
+    const startTime = Date.now()
+    const requestId = crypto.randomUUID()
+
+    this.logger.log('Création de conversation démarrée', 'ConversationService', {
+      requestId,
+      participants,
+      participantCount: participants.length
+    })
+
+    try {
+      const conversation = await this.prisma.conversation.create({
+        data: {
+          participants: {
+            create: participants.map(userId => ({ userId }))
+          }
+        },
+        include: {
+          participants: { include: { user: true } }
+        }
+      })
+
+      const duration = Date.now() - startTime
+
+      this.logger.log('Conversation créée avec succès', 'ConversationService', {
+        requestId,
+        conversationId: conversation.id,
+        participants,
+        performance: { duration }
+      })
+
+      return conversation
+    } catch (error) {
+      const duration = Date.now() - startTime
+
+      this.logger.error('Échec de création de conversation', error.stack, 'ConversationService', {
+        requestId,
+        participants,
+        error: {
+          name: error.name,
+          message: error.message,
+          code: error.code
+        },
+        performance: { duration }
+      })
+
+      throw error
+    }
+  }
+}
+```
+
+### Logging WebSocket
+```typescript
+// gateways/chat.gateway.ts
+@SubscribeMessage('sendMessage')
+async handleSendMessage(
+  @ConnectedSocket() client: Socket,
+  @MessageBody() data: SendMessageDto
+) {
+  const startTime = Date.now()
+  const requestId = crypto.randomUUID()
+
+  this.logger.log('Message WebSocket reçu', 'ChatGateway', {
+    requestId,
+    event: 'sendMessage',
+    userId: client.data.userId,
+    conversationId: data.conversationId,
+    messageLength: data.content.length,
+    socketId: client.id
+  })
+
+  try {
+    const message = await this.messageService.createMessage(data)
+    const duration = Date.now() - startTime
+
+    // Émettre le message
+    this.server.to(data.conversationId).emit('newMessage', message)
+
+    this.logger.log('Message envoyé avec succès', 'ChatGateway', {
+      requestId,
+      messageId: message.id,
+      conversationId: data.conversationId,
+      userId: client.data.userId,
+      performance: { duration }
+    })
+
+    return { success: true, messageId: message.id }
+  } catch (error) {
+    const duration = Date.now() - startTime
+
+    this.logger.error('Échec d\'envoi de message', error.stack, 'ChatGateway', {
+      requestId,
+      userId: client.data.userId,
+      conversationId: data.conversationId,
+      error: {
+        name: error.name,
+        message: error.message
+      },
+      performance: { duration }
+    })
+
+    throw new WsException('Erreur lors de l\'envoi du message')
+  }
+}
+```
+
+## 🌐 Logging Frontend (React/Next.js)
+
+### Service de Logging Frontend
+```typescript
+// utils/logger.ts
+enum LogLevel {
+  ERROR = 0,
+  WARN = 1,
+  INFO = 2,
+  DEBUG = 3,
+  TRACE = 4
+}
+
+interface LogEntry {
+  timestamp: string
+  level: keyof typeof LogLevel
+  message: string
+  service: 'frontend'
+  module: string
+  userId?: string
+  conversationId?: string
+  sessionId: string
+  url: string
+  userAgent: string
+  metadata?: Record<string, any>
+  error?: {
+    name: string
+    message: string
+    stack?: string
+  }
+  performance?: {
+    duration?: number
+    memoryUsage?: number
+  }
+}
+
+class Logger {
+  private sessionId: string
+  private userId?: string
+  private logLevel: LogLevel
+
+  constructor() {
+    this.sessionId = crypto.randomUUID()
+    this.logLevel = this.getLogLevel()
+  }
+
+  private getLogLevel(): LogLevel {
+    if (typeof window === 'undefined') return LogLevel.INFO
+    
+    const env = process.env.NODE_ENV
+    if (env === 'development') return LogLevel.DEBUG
+    if (env === 'test') return LogLevel.WARN
+    return LogLevel.INFO
+  }
+
+  setUserId(userId: string) {
+    this.userId = userId
+  }
+
+  private shouldLog(level: LogLevel): boolean {
+    return level <= this.logLevel
+  }
+
+  private createLogEntry(
+    level: keyof typeof LogLevel,
+    message: string,
+    module: string,
+    metadata?: any,
+    error?: Error
+  ): LogEntry {
+    return {
+      timestamp: new Date().toISOString(),
+      level,
+      message,
+      service: 'frontend',
+      module,
+      userId: this.userId,
+      sessionId: this.sessionId,
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : '',
+      metadata,
+      error: error ? {
+        name: error.name,
+        message: error.message,
+        stack: error.stack
+      } : undefined,
+      performance: typeof window !== 'undefined' ? {
+        memoryUsage: (performance as any).memory?.usedJSHeapSize
+      } : undefined
+    }
+  }
+
+  private async sendToBackend(logEntry: LogEntry) {
+    // En production, envoyer les logs au backend
+    if (process.env.NODE_ENV === 'production') {
+      try {
+        await fetch('/api/logs', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(logEntry)
+        })
+      } catch (error) {
+        // Fallback vers console si l'envoi échoue
+        console.error('Failed to send log to backend:', error)
+      }
+    }
+  }
+
+  error(message: string, module: string, metadata?: any, error?: Error) {
+    if (!this.shouldLog(LogLevel.ERROR)) return
+
+    const logEntry = this.createLogEntry('ERROR', message, module, metadata, error)
+    console.error(`[${logEntry.timestamp}] ERROR [${module}]:`, message, metadata, error)
+    this.sendToBackend(logEntry)
+  }
+
+  warn(message: string, module: string, metadata?: any) {
+    if (!this.shouldLog(LogLevel.WARN)) return
+
+    const logEntry = this.createLogEntry('WARN', message, module, metadata)
+    console.warn(`[${logEntry.timestamp}] WARN [${module}]:`, message, metadata)
+    this.sendToBackend(logEntry)
+  }
+
+  info(message: string, module: string, metadata?: any) {
+    if (!this.shouldLog(LogLevel.INFO)) return
+
+    const logEntry = this.createLogEntry('INFO', message, module, metadata)
+    console.info(`[${logEntry.timestamp}] INFO [${module}]:`, message, metadata)
+    this.sendToBackend(logEntry)
+  }
+
+  debug(message: string, module: string, metadata?: any) {
+    if (!this.shouldLog(LogLevel.DEBUG)) return
+
+    const logEntry = this.createLogEntry('DEBUG', message, module, metadata)
+    console.debug(`[${logEntry.timestamp}] DEBUG [${module}]:`, message, metadata)
+  }
+
+  trace(message: string, module: string, metadata?: any) {
+    if (!this.shouldLog(LogLevel.TRACE)) return
+
+    const logEntry = this.createLogEntry('TRACE', message, module, metadata)
+    console.trace(`[${logEntry.timestamp}] TRACE [${module}]:`, message, metadata)
+  }
+}
+
+export const logger = new Logger()
+```
+
+### Usage dans les Composants
+```typescript
+// components/conversation-view.tsx
+import { logger } from '@/utils/logger'
+
+export function ConversationView({ conversationId }: ConversationViewProps) {
+  const { conversation, loadConversation } = useChatStore()
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    async function loadData() {
+      const startTime = Date.now()
+      
+      logger.info('Chargement de conversation démarré', 'ConversationView', {
+        conversationId
+      })
+
+      try {
+        setIsLoading(true)
+        await loadConversation(conversationId)
+        
+        const duration = Date.now() - startTime
+        logger.info('Conversation chargée avec succès', 'ConversationView', {
+          conversationId,
+          performance: { duration }
+        })
+      } catch (error) {
+        const duration = Date.now() - startTime
+        logger.error('Échec du chargement de conversation', 'ConversationView', {
+          conversationId,
+          performance: { duration }
+        }, error as Error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadData()
+  }, [conversationId, loadConversation])
+
+  if (isLoading) return <LoadingSpinner />
+  return <div>{conversation?.title}</div>
+}
+```
+
+### Logging dans les Stores Zustand
+```typescript
+// stores/chatStore.ts
+import { logger } from '@/utils/logger'
+
+export const useChatStore = create<ChatState & ChatActions>((set, get) => ({
+  conversations: {},
+  isLoading: false,
+
+  loadConversation: async (conversationId: string) => {
+    const startTime = Date.now()
+    
+    logger.debug('Store: Chargement conversation', 'ChatStore', {
+      conversationId,
+      cacheHit: !!get().conversations[conversationId]
+    })
+
+    set({ isLoading: true })
+
+    try {
+      const conversation = await apiCall(`/api/conversations/${conversationId}`)
+      const duration = Date.now() - startTime
+
+      set((state) => ({
+        conversations: {
+          ...state.conversations,
+          [conversationId]: conversation
+        },
+        isLoading: false
+      }))
+
+      logger.info('Store: Conversation chargée', 'ChatStore', {
+        conversationId,
+        messageCount: conversation.messages?.length || 0,
+        performance: { duration }
+      })
+    } catch (error) {
+      const duration = Date.now() - startTime
+      
+      set({ isLoading: false })
+      
+      logger.error('Store: Échec chargement conversation', 'ChatStore', {
+        conversationId,
+        performance: { duration }
+      }, error as Error)
+      
+      throw error
+    }
+  }
+}))
+```
+
+## 📈 Monitoring et Métriques
+
+### Métriques Business Importantes
+```typescript
+// utils/metrics.ts
+interface BusinessMetric {
+  name: string
+  value: number
+  unit: string
+  tags: Record<string, string>
+  timestamp: string
+}
+
+class MetricsCollector {
+  private metrics: BusinessMetric[] = []
+
+  // Métriques de conversation
+  trackConversationCreated(participants: string[]) {
+    this.addMetric('conversation.created', 1, 'count', {
+      participantCount: participants.length.toString()
+    })
+  }
+
+  trackMessageSent(conversationId: string, messageLength: number) {
+    this.addMetric('message.sent', 1, 'count', { conversationId })
+    this.addMetric('message.length', messageLength, 'characters', { conversationId })
+  }
+
+  trackIcebreakerCompleted(conversationId: string, duration: number) {
+    this.addMetric('icebreaker.completed', 1, 'count', { conversationId })
+    this.addMetric('icebreaker.duration', duration, 'milliseconds', { conversationId })
+  }
+
+  // Métriques de performance
+  trackApiCall(endpoint: string, duration: number, status: number) {
+    this.addMetric('api.call.duration', duration, 'milliseconds', {
+      endpoint,
+      status: status.toString()
+    })
+  }
+
+  trackSocketConnection(namespace: string, userId: string) {
+    this.addMetric('socket.connection', 1, 'count', {
+      namespace,
+      userId
+    })
+  }
+
+  private addMetric(name: string, value: number, unit: string, tags: Record<string, string>) {
+    const metric: BusinessMetric = {
+      name,
+      value,
+      unit,
+      tags,
+      timestamp: new Date().toISOString()
+    }
+
+    this.metrics.push(metric)
+    logger.debug('Métrique collectée', 'MetricsCollector', { metric })
+
+    // Envoyer périodiquement au backend
+    this.flushMetrics()
+  }
+
+  private async flushMetrics() {
+    if (this.metrics.length >= 10) {
+      const metricsToSend = [...this.metrics]
+      this.metrics = []
+
+      try {
+        await fetch('/api/metrics', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(metricsToSend)
+        })
+      } catch (error) {
+        logger.error('Échec envoi métriques', 'MetricsCollector', {}, error as Error)
+      }
+    }
+  }
+}
+
+export const metrics = new MetricsCollector()
+```
+
+## 🔍 Debugging et Développement
+
+### Debug Mode
+```typescript
+// utils/debug.ts
+class DebugHelper {
+  private isDebugMode: boolean
+
+  constructor() {
+    this.isDebugMode = process.env.NODE_ENV === 'development' || 
+                      typeof window !== 'undefined' && window.localStorage.getItem('debug') === 'true'
+  }
+
+  logStoreState(storeName: string, state: any) {
+    if (!this.isDebugMode) return
+
+    console.group(`🏪 Store State: ${storeName}`)
+    console.table(state)
+    console.groupEnd()
+  }
+
+  logSocketEvent(event: string, data: any, direction: 'in' | 'out') {
+    if (!this.isDebugMode) return
+
+    const arrow = direction === 'in' ? '⬇️' : '⬆️'
+    console.group(`${arrow} Socket Event: ${event}`)
+    console.log('Data:', data)
+    console.log('Timestamp:', new Date().toISOString())
+    console.groupEnd()
+  }
+
+  logApiCall(method: string, url: string, data?: any, response?: any) {
+    if (!this.isDebugMode) return
+
+    console.group(`🌐 API Call: ${method} ${url}`)
+    if (data) console.log('Request:', data)
+    if (response) console.log('Response:', response)
+    console.groupEnd()
+  }
+
+  measurePerformance<T>(name: string, fn: () => T): T {
+    if (!this.isDebugMode) return fn()
+
+    const start = performance.now()
+    const result = fn()
+    const end = performance.now()
+
+    console.log(`⏱️ Performance: ${name} took ${(end - start).toFixed(2)}ms`)
+    return result
+  }
+}
+
+export const debug = new DebugHelper()
+```
+
+## 📋 Checklist Logging
+
+### ✅ **Avant chaque log :**
+- [ ] Niveau approprié (ERROR/WARN/INFO/DEBUG/TRACE)
+- [ ] Message clair et actionnable
+- [ ] Contexte suffisant (userId, conversationId, etc.)
+- [ ] Pas de données sensibles (mots de passe, tokens)
+- [ ] Métadonnées structurées
+
+### ✅ **Performance :**
+- [ ] Mesurer les temps d'exécution critiques
+- [ ] Logger les métriques business importantes
+- [ ] Éviter les logs trop verbeux en production
+- [ ] Rotation des fichiers de logs
+
+### ✅ **Sécurité :**
+- [ ] Masquer les données sensibles
+- [ ] Logger les tentatives d'authentification
+- [ ] Tracer les actions administratives
+- [ ] Respecter le RGPD pour les logs utilisateur
+
+Cette structure garantit un logging robuste et un monitoring efficace pour JootsHub ! 🚀 

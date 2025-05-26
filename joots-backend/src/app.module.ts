@@ -25,18 +25,17 @@ import { IcebreakerModule } from './icebreakers/icebreaker.module';
     ConversationsModule,
     MessagesModule,
     QuestionModule,
-    IcebreakerModule
+    IcebreakerModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
 
-
 /* export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggingMiddleware)
-      .forRoutes('*');
+      .forRoutes('*')
   }
 } */

@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Req, UnauthorizedException } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  UseGuards,
+  Req,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { Request } from 'express';
@@ -19,10 +28,10 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.findAll(req.user.sub);
+    return this.conversationsService.findAllConversationsForAUserId(
+      req.user.sub
+    );
   }
-
-  
 
   @Get('/messages/:id')
   findMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
@@ -33,7 +42,10 @@ export class ConversationsController {
   }
 
   @Post()
-  create(@Body() body: { receiverId: string }, @Req() req: AuthenticatedRequest) {
+  create(
+    @Body() body: { receiverId: string },
+    @Req() req: AuthenticatedRequest
+  ) {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }

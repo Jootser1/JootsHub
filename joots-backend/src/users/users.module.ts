@@ -9,7 +9,6 @@ import { Logger } from '@nestjs/common';
   imports: [PrismaModule, ContactsModule, RedisModule],
   controllers: [UsersController],
   providers: [UsersService, Logger],
-  exports: [UsersService]
+  exports: [UsersService],
 })
 export class UsersModule {}
-

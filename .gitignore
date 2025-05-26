@@ -9,6 +9,9 @@
 /joots-backend/node_modules
 /joots-backend/logs
 /joots-backend/.dockerignore
+/joots-backend/prisma/*.js
+/joots-backend/prisma/*.js.map
+/joots-backend/prisma/*.d.ts
 
 #frontend NextJS
 /joots-frontend/dist
@@ -42,6 +45,9 @@ docker-compose.override.yml
 .env.development.local
 .env.production
 questions_structured_iso.json
+.env.docker.dev
+.env.docker.dev
+.env.*
 
 #archives
 *.zip

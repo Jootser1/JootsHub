@@ -1,0 +1,817 @@
+# Règles Internationalisation & Accessibilité - JootsHub
+
+## 🌍 Philosophie i18n & a11y
+
+### Principes Fondamentaux
+- **Inclusivité** : L'application doit être accessible à tous
+- **Multilinguisme** : Support natif français/anglais, extensible
+- **Standards Web** : Conformité WCAG 2.1 AA minimum
+- **Performance** : i18n sans impact sur les performances
+- **UX Cohérente** : Expérience uniforme dans toutes les langues
+
+### Langues Supportées JootsHub
+```typescript
+// Langues actuelles et futures
+enum LocaleCode {
+  fr_FR = 'fr_FR', // Français (France) - Principal
+  en_US = 'en_US', // Anglais (États-Unis) - Secondaire
+  // Futures extensions
+  es_ES = 'es_ES', // Espagnol (Espagne)
+  de_DE = 'de_DE', // Allemand (Allemagne)
+  it_IT = 'it_IT'  // Italien (Italie)
+}
+```
+
+## 🌐 Internationalisation (i18n)
+
+### ✅ **Configuration Next.js i18n**
+```typescript
+// joots-frontend/next.config.js
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  i18n: {
+    locales: ['fr', 'en'],
+    defaultLocale: 'fr',
+    localeDetection: true,
+    domains: [
+      {
+        domain: 'joots.fr',
+        defaultLocale: 'fr'
+      },
+      {
+        domain: 'joots.com',
+        defaultLocale: 'en'
+      }
+    ]
+  },
+  // Optimisation pour les traductions
+  experimental: {
+    optimizeCss: true
+  }
+}
+
+module.exports = nextConfig
+```
+
+### ✅ **Structure des Traductions**
+```typescript
+// joots-frontend/src/lib/i18n/index.ts
+import { createInstance } from 'i18next'
+import { initReactI18next } from 'react-i18next'
+import Backend from 'i18next-fs-backend'
+import LanguageDetector from 'i18next-browser-languagedetector'
+
+// Ressources de traduction
+import fr from './locales/fr.json'
+import en from './locales/en.json'
+
+const i18n = createInstance({
+  fallbackLng: 'fr',
+  debug: process.env.NODE_ENV === 'development',
+  
+  interpolation: {
+    escapeValue: false // React échappe déjà
+  },
+
+  resources: {
+    fr: { translation: fr },
+    en: { translation: en }
+  },
+
+  detection: {
+    order: ['localStorage', 'navigator', 'htmlTag'],
+    caches: ['localStorage']
+  }
+})
+
+i18n
+  .use(Backend)
+  .use(LanguageDetector)
+  .use(initReactI18next)
+  .init()
+
+export default i18n
+```
+
+### ✅ **Fichiers de Traduction**
+```json
+// joots-frontend/src/lib/i18n/locales/fr.json
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "send": "Envoyer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "close": "Fermer"
+  },
+  "auth": {
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "register": "Inscription",
+    "email": "Email",
+    "password": "Mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "rememberMe": "Se souvenir de moi",
+    "loginSuccess": "Connexion réussie !",
+    "loginError": "Identifiants incorrects",
+    "registerSuccess": "Inscription réussie !",
+    "passwordMismatch": "Les mots de passe ne correspondent pas"
+  },
+  "chat": {
+    "conversations": "Conversations",
+    "newConversation": "Nouvelle conversation",
+    "typeMessage": "Tapez votre message...",
+    "sendMessage": "Envoyer le message",
+    "messageDelivered": "Message livré",
+    "messageRead": "Message lu",
+    "typing": "{{username}} est en train d'écrire...",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "lastSeen": "Vu pour la dernière fois {{time}}"
+  },
+  "icebreaker": {
+    "title": "Brise-glace",
+    "question": "Question",
+    "answer": "Réponse",
+    "waiting": "En attente des autres participants...",
+    "ready": "Prêt !",
+    "notReady": "Pas encore prêt",
+    "allReady": "Tous les participants sont prêts !",
+    "reveal": "Révéler les réponses",
+    "yourAnswer": "Votre réponse",
+    "theirAnswer": "Leur réponse"
+  },
+  "profile": {
+    "username": "Nom d'utilisateur",
+    "bio": "Biographie",
+    "avatar": "Photo de profil",
+    "languages": "Langues",
+    "preferences": "Préférences",
+    "privacy": "Confidentialité",
+    "notifications": "Notifications",
+    "updateProfile": "Mettre à jour le profil",
+    "profileUpdated": "Profil mis à jour avec succès"
+  },
+  "validation": {
+    "required": "Ce champ est requis",
+    "email": "Email invalide",
+    "minLength": "Minimum {{count}} caractères",
+    "maxLength": "Maximum {{count}} caractères",
+    "passwordStrength": "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre"
+  },
+  "errors": {
+    "networkError": "Problème de connexion",
+    "serverError": "Erreur serveur",
+    "notFound": "Ressource non trouvée",
+    "unauthorized": "Non autorisé",
+    "forbidden": "Accès refusé",
+    "conflict": "Conflit de données",
+    "rateLimited": "Trop de requêtes",
+    "validationError": "Données invalides"
+  },
+  "accessibility": {
+    "skipToContent": "Aller au contenu principal",
+    "openMenu": "Ouvrir le menu",
+    "closeMenu": "Fermer le menu",
+    "toggleTheme": "Basculer le thème",
+    "userMenu": "Menu utilisateur",
+    "conversationList": "Liste des conversations",
+    "messageInput": "Zone de saisie de message",
+    "sendButton": "Bouton d'envoi",
+    "emojiPicker": "Sélecteur d'emoji",
+    "fileUpload": "Télécharger un fichier"
+  }
+}
+```
+
+```json
+// joots-frontend/src/lib/i18n/locales/en.json
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "send": "Send",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "close": "Close"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember Me",
+    "loginSuccess": "Login successful!",
+    "loginError": "Invalid credentials",
+    "registerSuccess": "Registration successful!",
+    "passwordMismatch": "Passwords don't match"
+  },
+  "chat": {
+    "conversations": "Conversations",
+    "newConversation": "New Conversation",
+    "typeMessage": "Type your message...",
+    "sendMessage": "Send message",
+    "messageDelivered": "Message delivered",
+    "messageRead": "Message read",
+    "typing": "{{username}} is typing...",
+    "online": "Online",
+    "offline": "Offline",
+    "lastSeen": "Last seen {{time}}"
+  }
+  // ... autres traductions
+}
+```
+
+### ✅ **Hook useTranslation Personnalisé**
+```typescript
+// joots-frontend/src/hooks/useTranslation.ts
+import { useTranslation as useI18nTranslation } from 'react-i18next'
+import { useRouter } from 'next/router'
+
+export function useTranslation(namespace?: string) {
+  const { t, i18n } = useI18nTranslation(namespace)
+  const router = useRouter()
+
+  const changeLanguage = async (locale: string) => {
+    await i18n.changeLanguage(locale)
+    
+    // Changer la locale Next.js
+    await router.push(router.asPath, router.asPath, { locale })
+  }
+
+  const formatDate = (date: Date | string, options?: Intl.DateTimeFormatOptions) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    return new Intl.DateTimeFormat(i18n.language, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      ...options
+    }).format(dateObj)
+  }
+
+  const formatRelativeTime = (date: Date | string) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - dateObj.getTime()) / 1000)
+
+    const rtf = new Intl.RelativeTimeFormat(i18n.language, { numeric: 'auto' })
+
+    if (diffInSeconds < 60) return rtf.format(-diffInSeconds, 'second')
+    if (diffInSeconds < 3600) return rtf.format(-Math.floor(diffInSeconds / 60), 'minute')
+    if (diffInSeconds < 86400) return rtf.format(-Math.floor(diffInSeconds / 3600), 'hour')
+    return rtf.format(-Math.floor(diffInSeconds / 86400), 'day')
+  }
+
+  const formatNumber = (number: number, options?: Intl.NumberFormatOptions) => {
+    return new Intl.NumberFormat(i18n.language, options).format(number)
+  }
+
+  return {
+    t,
+    i18n,
+    changeLanguage,
+    formatDate,
+    formatRelativeTime,
+    formatNumber,
+    currentLocale: i18n.language,
+    isRTL: ['ar', 'he', 'fa'].includes(i18n.language)
+  }
+}
+```
+
+### ✅ **Composant de Sélection de Langue**
+```typescript
+// joots-frontend/src/components/LanguageSelector.tsx
+import { useState } from 'react'
+import { useTranslation } from '@/hooks/useTranslation'
+import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Globe, Check } from 'lucide-react'
+
+const languages = [
+  { code: 'fr', name: 'Français', flag: '🇫🇷' },
+  { code: 'en', name: 'English', flag: '🇺🇸' }
+]
+
+export function LanguageSelector() {
+  const { currentLocale, changeLanguage, t } = useTranslation()
+  const [isChanging, setIsChanging] = useState(false)
+
+  const handleLanguageChange = async (locale: string) => {
+    if (locale === currentLocale) return
+    
+    setIsChanging(true)
+    try {
+      await changeLanguage(locale)
+    } catch (error) {
+      console.error('Failed to change language:', error)
+    } finally {
+      setIsChanging(false)
+    }
+  }
+
+  const currentLanguage = languages.find(lang => lang.code === currentLocale)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button 
+          variant="ghost" 
+          size="sm"
+          disabled={isChanging}
+          aria-label={t('accessibility.toggleLanguage')}
+        >
+          <Globe className="h-4 w-4 mr-2" />
+          <span className="hidden sm:inline">
+            {currentLanguage?.flag} {currentLanguage?.name}
+          </span>
+          <span className="sm:hidden">
+            {currentLanguage?.flag}
+          </span>
+        </Button>
+      </DropdownMenuTrigger>
+      
+      <DropdownMenuContent align="end">
+        {languages.map((language) => (
+          <DropdownMenuItem
+            key={language.code}
+            onClick={() => handleLanguageChange(language.code)}
+            className="flex items-center justify-between"
+          >
+            <span className="flex items-center">
+              <span className="mr-2">{language.flag}</span>
+              {language.name}
+            </span>
+            {currentLocale === language.code && (
+              <Check className="h-4 w-4 text-green-600" />
+            )}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+```
+
+## ♿ Accessibilité (a11y)
+
+### ✅ **Configuration Accessibilité**
+```typescript
+// joots-frontend/src/lib/accessibility.ts
+export const a11yConfig = {
+  // Niveaux de conformité WCAG
+  level: 'AA', // AA minimum, AAA pour certaines fonctionnalités critiques
+  
+  // Couleurs et contrastes
+  colorContrast: {
+    normal: 4.5, // Ratio minimum pour texte normal
+    large: 3,    // Ratio minimum pour texte large (18pt+ ou 14pt+ gras)
+    ui: 3        // Ratio minimum pour éléments UI
+  },
+  
+  // Tailles de police
+  fontSize: {
+    minimum: 16,  // Taille minimum en px
+    scalable: true // Doit pouvoir être agrandie jusqu'à 200%
+  },
+  
+  // Zones de clic
+  touchTarget: {
+    minimum: 44, // Taille minimum en px (44x44)
+    spacing: 8   // Espacement minimum entre les cibles
+  },
+  
+  // Animations
+  animations: {
+    respectsReducedMotion: true,
+    maxDuration: 500, // Durée max en ms pour les animations UI
+    allowDisable: true
+  }
+}
+```
+
+### ✅ **Hook useAccessibility**
+```typescript
+// joots-frontend/src/hooks/useAccessibility.ts
+import { useEffect, useState } from 'react'
+
+export function useAccessibility() {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+  const [prefersHighContrast, setPrefersHighContrast] = useState(false)
+  const [fontSize, setFontSize] = useState(16)
+
+  useEffect(() => {
+    // Détecter les préférences utilisateur
+    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const highContrastQuery = window.matchMedia('(prefers-contrast: high)')
+    
+    setPrefersReducedMotion(reducedMotionQuery.matches)
+    setPrefersHighContrast(highContrastQuery.matches)
+
+    // Écouter les changements
+    const handleReducedMotionChange = (e: MediaQueryListEvent) => {
+      setPrefersReducedMotion(e.matches)
+    }
+    
+    const handleHighContrastChange = (e: MediaQueryListEvent) => {
+      setPrefersHighContrast(e.matches)
+    }
+
+    reducedMotionQuery.addEventListener('change', handleReducedMotionChange)
+    highContrastQuery.addEventListener('change', handleHighContrastChange)
+
+    return () => {
+      reducedMotionQuery.removeEventListener('change', handleReducedMotionChange)
+      highContrastQuery.removeEventListener('change', handleHighContrastChange)
+    }
+  }, [])
+
+  const announceToScreenReader = (message: string, priority: 'polite' | 'assertive' = 'polite') => {
+    const announcement = document.createElement('div')
+    announcement.setAttribute('aria-live', priority)
+    announcement.setAttribute('aria-atomic', 'true')
+    announcement.className = 'sr-only'
+    announcement.textContent = message
+    
+    document.body.appendChild(announcement)
+    
+    setTimeout(() => {
+      document.body.removeChild(announcement)
+    }, 1000)
+  }
+
+  const focusElement = (selector: string | HTMLElement) => {
+    const element = typeof selector === 'string' 
+      ? document.querySelector(selector) as HTMLElement
+      : selector
+    
+    if (element) {
+      element.focus()
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  return {
+    prefersReducedMotion,
+    prefersHighContrast,
+    fontSize,
+    setFontSize,
+    announceToScreenReader,
+    focusElement
+  }
+}
+```
+
+### ✅ **Composants Accessibles**
+```typescript
+// joots-frontend/src/components/ui/Button.tsx
+import { forwardRef } from 'react'
+import { cn } from '@/lib/utils'
+import { useAccessibility } from '@/hooks/useAccessibility'
+
+interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: 'default' | 'destructive' | 'outline' | 'secondary' | 'ghost'
+  size?: 'default' | 'sm' | 'lg'
+  loading?: boolean
+  loadingText?: string
+}
+
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = 'default', size = 'default', loading, loadingText, children, disabled, ...props }, ref) => {
+    const { prefersReducedMotion } = useAccessibility()
+
+    return (
+      <button
+        className={cn(
+          // Base styles
+          'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+          'disabled:pointer-events-none disabled:opacity-50',
+          
+          // Taille minimum pour l'accessibilité (44x44px)
+          'min-h-[44px] min-w-[44px]',
+          
+          // Animations conditionnelles
+          !prefersReducedMotion && 'transition-all duration-200',
+          
+          // Variants
+          {
+            'bg-primary text-primary-foreground hover:bg-primary/90': variant === 'default',
+            'bg-destructive text-destructive-foreground hover:bg-destructive/90': variant === 'destructive',
+            'border border-input bg-background hover:bg-accent hover:text-accent-foreground': variant === 'outline',
+            'bg-secondary text-secondary-foreground hover:bg-secondary/80': variant === 'secondary',
+            'hover:bg-accent hover:text-accent-foreground': variant === 'ghost'
+          },
+          
+          // Sizes
+          {
+            'h-10 px-4 py-2': size === 'default',
+            'h-9 rounded-md px-3': size === 'sm',
+            'h-11 rounded-md px-8': size === 'lg'
+          },
+          
+          className
+        )}
+        ref={ref}
+        disabled={disabled || loading}
+        aria-disabled={disabled || loading}
+        aria-describedby={loading ? 'loading-description' : undefined}
+        {...props}
+      >
+        {loading && (
+          <>
+            <svg
+              className="mr-2 h-4 w-4 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+            <span className="sr-only" id="loading-description">
+              {loadingText || 'Chargement en cours'}
+            </span>
+          </>
+        )}
+        {children}
+      </button>
+    )
+  }
+)
+
+Button.displayName = 'Button'
+```
+
+### ✅ **Navigation Accessible**
+```typescript
+// joots-frontend/src/components/Navigation.tsx
+import { useTranslation } from '@/hooks/useTranslation'
+import { useAccessibility } from '@/hooks/useAccessibility'
+import { SkipLink } from '@/components/ui/SkipLink'
+
+export function Navigation() {
+  const { t } = useTranslation()
+  const { focusElement } = useAccessibility()
+
+  return (
+    <>
+      {/* Lien d'évitement pour les lecteurs d'écran */}
+      <SkipLink href="#main-content">
+        {t('accessibility.skipToContent')}
+      </SkipLink>
+      
+      <nav 
+        role="navigation" 
+        aria-label={t('accessibility.mainNavigation')}
+        className="bg-white border-b border-gray-200"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center">
+              <a 
+                href="/" 
+                className="flex-shrink-0 flex items-center focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-label={t('accessibility.homeLink')}
+              >
+                <img 
+                  className="h-8 w-auto" 
+                  src="/logo.svg" 
+                  alt="JootsHub"
+                />
+              </a>
+            </div>
+
+            {/* Navigation principale */}
+            <div className="hidden md:flex md:items-center md:space-x-8">
+              <a 
+                href="/hub" 
+                className="text-gray-900 hover:text-primary px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+                aria-current="page"
+              >
+                {t('navigation.hub')}
+              </a>
+              <a 
+                href="/conversations" 
+                className="text-gray-500 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {t('navigation.conversations')}
+              </a>
+            </div>
+
+            {/* Menu mobile */}
+            <div className="md:hidden">
+              <button
+                type="button"
+                className="bg-white p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+                aria-expanded="false"
+                aria-controls="mobile-menu"
+                aria-label={t('accessibility.openMenu')}
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Menu mobile */}
+        <div className="md:hidden" id="mobile-menu">
+          <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+            <a 
+              href="/hub" 
+              className="text-gray-900 block px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+              aria-current="page"
+            >
+              {t('navigation.hub')}
+            </a>
+            <a 
+              href="/conversations" 
+              className="text-gray-500 hover:text-gray-900 block px-3 py-2 rounded-md text-base font-medium focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {t('navigation.conversations')}
+            </a>
+          </div>
+        </div>
+      </nav>
+    </>
+  )
+}
+```
+
+### ✅ **Composant SkipLink**
+```typescript
+// joots-frontend/src/components/ui/SkipLink.tsx
+interface SkipLinkProps {
+  href: string
+  children: React.ReactNode
+}
+
+export function SkipLink({ href, children }: SkipLinkProps) {
+  return (
+    <a
+      href={href}
+      className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 bg-primary text-primary-foreground px-4 py-2 rounded-md z-50 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+    >
+      {children}
+    </a>
+  )
+}
+```
+
+## 🎨 Thèmes et Contraste
+
+### ✅ **Système de Thèmes Accessibles**
+```css
+/* joots-frontend/src/styles/themes.css */
+
+/* Thème clair (défaut) */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 222.2 84% 4.9%;
+  --primary: 221.2 83.2% 53.3%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96%;
+  --secondary-foreground: 222.2 84% 4.9%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --accent: 210 40% 96%;
+  --accent-foreground: 222.2 84% 4.9%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 221.2 83.2% 53.3%;
+  --radius: 0.5rem;
+}
+
+/* Thème sombre */
+[data-theme="dark"] {
+  --background: 222.2 84% 4.9%;
+  --foreground: 210 40% 98%;
+  --primary: 217.2 91.2% 59.8%;
+  --primary-foreground: 222.2 84% 4.9%;
+  --secondary: 217.2 32.6% 17.5%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217.2 32.6% 17.5%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 217.2 32.6% 17.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217.2 32.6% 17.5%;
+  --input: 217.2 32.6% 17.5%;
+  --ring: 224.3 76.3% 94.1%;
+}
+
+/* Thème haut contraste */
+[data-theme="high-contrast"] {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
+  --primary: 0 0% 0%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 90%;
+  --secondary-foreground: 0 0% 0%;
+  --muted: 0 0% 95%;
+  --muted-foreground: 0 0% 20%;
+  --accent: 0 0% 85%;
+  --accent-foreground: 0 0% 0%;
+  --destructive: 0 100% 40%;
+  --destructive-foreground: 0 0% 100%;
+  --border: 0 0% 50%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 0%;
+}
+
+/* Respect des préférences utilisateur */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+    /* ... autres variables du thème sombre */
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root:not([data-theme]) {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 0%;
+    /* ... autres variables du thème haut contraste */
+  }
+}
+
+/* Animations respectueuses */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+```
+
+## 📋 Checklist i18n & a11y
+
+### ✅ **Internationalisation :**
+- [ ] Configuration Next.js i18n complète
+- [ ] Fichiers de traduction structurés par namespace
+- [ ] Hook useTranslation avec formatage des dates/nombres
+- [ ] Sélecteur de langue accessible
+- [ ] URLs localisées (/fr/chat, /en/chat)
+- [ ] Détection automatique de la langue
+- [ ] Fallback vers la langue par défaut
+
+### ✅ **Accessibilité :**
+- [ ] Conformité WCAG 2.1 AA minimum
+- [ ] Navigation au clavier complète
+- [ ] Lecteurs d'écran supportés (NVDA, JAWS, VoiceOver)
+- [ ] Contrastes de couleur validés (4.5:1 minimum)
+- [ ] Tailles de clic minimum 44x44px
+- [ ] Skip links pour navigation rapide
+- [ ] Annonces aux lecteurs d'écran
+- [ ] Support des préférences utilisateur (reduced motion, high contrast)
+
+### ✅ **Tests :**
+- [ ] Tests avec lecteurs d'écran
+- [ ] Tests de navigation clavier
+- [ ] Validation des contrastes automatisée
+- [ ] Tests dans différentes langues
+- [ ] Tests avec zoom 200%
+- [ ] Validation HTML sémantique
+
+Cette architecture garantit une expérience inclusive et multilingue pour JootsHub ! 🌍♿ 

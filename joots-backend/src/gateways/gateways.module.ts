@@ -10,20 +10,22 @@ import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { MessagesService } from '../messages/messages.service';
 import { UsersService } from '../users/users.service';
+import { ConversationsService } from '../conversations/conversations.service';
 @Module({
   imports: [RedisModule],
   providers: [
-    UserGateway, 
-    ChatGateway,  
-    Logger, 
-    PrismaService, 
+    UserGateway,
+    ChatGateway,
+    Logger,
+    PrismaService,
     RedisService,
-    HeartbeatService, 
+    HeartbeatService,
     UserContactsService,
     UsersService,
     QuestionService,
     IcebreakerService,
-    MessagesService
+    MessagesService,
+    ConversationsService,
   ],
   exports: [UserGateway, ChatGateway],
 })
