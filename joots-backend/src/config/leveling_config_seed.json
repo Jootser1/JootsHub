@@ -3,7 +3,7 @@
     "level": 1,
     "difficulty": "EASY",
     "xpRequired": 0,
-    "reward": "one_more_conv",
+    "reward": "first_icebreaker",
     "photoRevealPercent": null
   },
   {
@@ -94,7 +94,7 @@
     "level": 1,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 0,
-    "reward": "one_more_conv",
+    "reward": "first_icebreaker",
     "photoRevealPercent": null
   },
   {

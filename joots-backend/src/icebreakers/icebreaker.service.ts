@@ -101,10 +101,13 @@ export class IcebreakerService {
     // Update participant status has given answer in DB
     await this.updateParticipantsHasGivenAnswerStatus(conversationId, userId);
 
-    const { allParticipantsHaveGivenAnswer } =
-      await this.areAllParticipantsHaveGivenAnswer(conversationId);
+    const { allParticipantsHaveGivenAnswer } = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+      
 
     if (allParticipantsHaveGivenAnswer) {
+      const conversation = await this.conversationsService.fetchConversationById(conversationId);
+      const newXp = await this.conversationsService.updateXpToConversationId(conversationId, conversation.difficulty);
+      const xpAndLevel = await this.conversationsService.getConversationLevel(newXp, conversation.difficulty);
       await this.processCompletedIcebreaker(conversationId, questionGroupId);
     }
   }
@@ -147,10 +150,7 @@ export class IcebreakerService {
     conversationId: string,
     questionGroupId: string
   ) {
-    const { userAnswers, questionGroupLocalized } = await this.getUserAnswers(
-      conversationId,
-      questionGroupId
-    );
+    const { conversation, userAnswers, questionGroupLocalized } = await this.getUserAnswers(conversationId, questionGroupId);
 
     if (userAnswers.length !== 2) {
       this.logger.warn(
@@ -173,9 +173,23 @@ export class IcebreakerService {
       userAnswerA,
       userAnswerB
     );
+
     await this.resetIcebreakerStatus(conversationId);
-    const xpAndLevel =
-      await this.conversationsService.addXpAndComputeLevel(conversationId);
+    const levelData = await this.conversationsService.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    
+    // Mapper les propriétés vers ProgressionResult
+    const xpAndLevel: ProgressionResult = {
+      xpPerQuestion: levelData.xpPerQuestion,
+      reachedXP: levelData.reachedXP,
+      reachedLevel: levelData.reachedLevel,
+      remainingXpAfterLevelUp: levelData.remainingXpAfterLevelUp,
+      requiredXpForCurrentLevel: levelData.requiredXpForCurrentLevel,
+      maxXpForNextLevel: levelData.maxXpForNextLevel,
+      nextLevel: levelData.nextLevel,
+      reward: levelData.reward,
+      photoRevealPercent: levelData.photoRevealPercent
+    };
+    
     await this.emitResponsesToAllParticipants(
       conversationId,
       questionLabel,
@@ -189,15 +203,13 @@ export class IcebreakerService {
     conversationId: string,
     questionGroupId: string
   ) {
-    const conversationLocale = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { locale: true },
-    });
+
+    const conversation = await this.conversationsService.fetchConversationById(conversationId);
 
 
     const questionGroupLocalized = await this.prisma.questionGroup.findUnique({
       where: { id: questionGroupId },
-      select: { questions: { where: { locale: conversationLocale?.locale } } },
+      select: { questions: { where: { locale: conversation.locale } } },
     });
 
     const userAnswers = await this.prisma.userAnswer.findMany({
@@ -217,7 +229,7 @@ export class IcebreakerService {
           include: {
             questions: {
               where: {
-                locale: conversationLocale?.locale,
+                locale: conversation.locale,
               },
               take: 1,
             },
@@ -226,7 +238,7 @@ export class IcebreakerService {
       },
     });
 
-    return { userAnswers, questionGroupLocalized };
+    return { conversation, userAnswers, questionGroupLocalized };
   }
 
   private formatUserAnswersForAddIcebreakerMessage(

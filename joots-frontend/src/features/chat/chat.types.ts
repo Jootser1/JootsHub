@@ -20,7 +20,6 @@ export interface Message {
 }
 
 export interface ChatState {
-  messages: Record<string, Message[]>
   conversations: Record<string, Conversation>
   activeConversationId: string | null
   currentQuestionGroup: string | null
@@ -75,6 +74,24 @@ export interface IcebreakerResponsesEvent {
   user1: string
   response2: string
   user2: string
+  xpAndLevel?: ProgressionResult
+}
+
+export interface ProgressionResult {
+  xpPerQuestion : number;
+  reachedXP : number;
+  reachedLevel: number;
+  remainingXpAfterLevelUp: number;
+  requiredXpForCurrentLevel: number;
+  maxXpForNextLevel: number;
+  nextLevel: number;
+  reward?: string;
+  photoRevealPercent?: number | null;
+}
+
+export interface XpLevelUpdateEvent {
+  conversationId: string
+  xpAndLevel: ProgressionResult
 }
 
 export type ChatActions = {
@@ -102,6 +119,9 @@ export type ChatActions = {
 
   // Icebreaker
   resetIcebreakerStatus: (conversationId: string) => void
+
+  // XP and Level progression
+  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => void
 
   // Helpers
   getMessagesFromConversation: (conversationId: string) => Message[]

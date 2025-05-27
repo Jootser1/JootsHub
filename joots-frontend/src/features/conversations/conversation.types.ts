@@ -1,5 +1,6 @@
 import { Message } from '@/features/chat/chat.types'
 import { User } from '../user/user.types'
+import { ProgressionResult } from '@/features/chat/chat.types'
 
 export interface ConversationParticipant {
   conversationId: string
@@ -26,4 +27,10 @@ export interface Conversation {
   unreadCount: number
   currentQuestionGroup?: string
   xpPoint?: number
+  level?: number
+  remainingXp?: number
+  xpToNextLevel?: number
+  reward?: string
+  photoRevealPercent?: number | null
+  xpAndLevel?: ProgressionResult
 }

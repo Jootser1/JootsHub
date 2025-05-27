@@ -9,14 +9,16 @@ import { useChatStore } from '../stores/chat-store'
 import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
+import { ProgressionResult } from '../chat.types'
 
 
 
 interface ChatContainerProps {
   conversation: Conversation
+  xpAndLevel?: ProgressionResult | null
 }
 
-export function ChatContainer({ conversation }: ChatContainerProps) {
+export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
   const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } =
     useChatStore()
   const currentQuestionGroup = activeConversationId
@@ -93,6 +95,7 @@ export function ChatContainer({ conversation }: ChatContainerProps) {
           otherUser={otherUser}
           isOnline={otherUser.isOnline}
           conversationId={activeConversationId}
+          xpAndLevel={xpAndLevel || conversation.xpAndLevel}
         />
         <div className='flex-1 overflow-y-auto'>
           <ChatMessages

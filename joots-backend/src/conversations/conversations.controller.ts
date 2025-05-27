@@ -7,6 +7,7 @@ import {
   UseGuards,
   Req,
   UnauthorizedException,
+  NotFoundException,
 } from '@nestjs/common';
 import { ConversationsService } from './conversations.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -57,6 +58,18 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.findOne(id, req.user.sub);
+    return this.conversationsService.fetchConversationById(id);
+  }
+
+  @Get('level/:id')
+  async getConversationLevel(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
+    if (!req.user?.sub) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+    const conversation = await this.conversationsService.fetchConversationById(id);
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée');
+    }
+    return this.conversationsService.getConversationLevel(conversation.xpPoint, conversation.difficulty);
   }
 }

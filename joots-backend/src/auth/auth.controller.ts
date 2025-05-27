@@ -23,11 +23,13 @@ export class AuthController {
         loginDto.password
       );
       console.log('Connexion réussie pour:', loginDto.email);
+      console.log('token', result.access_token);
       return {
         success: true,
         user: result.user,
         access_token: result.access_token,
       };
+      
     } catch (error) {
       console.error('Erreur de connexion:', error);
       throw new BadRequestException(error.message || 'Invalid credentials');

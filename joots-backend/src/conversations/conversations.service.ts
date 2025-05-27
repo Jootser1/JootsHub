@@ -3,7 +3,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { ProgressionResult } from '../types/chat';
-import { XP_CONFIG } from 'src/config/leveling';
+import { XP_CONFIG } from 'src/config/points_per_difficulty';
+import levelConfig from '../config/leveling_config_seed.json';
 
 @Injectable()
 export class ConversationsService {
@@ -73,15 +74,19 @@ export class ConversationsService {
     return conversations.map((conversation) => conversation.id);
   }
 
-  async findOne(id: string, userId: string) {
+  async fetchConversationById(id: string, userId?: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         id,
         participants: {
-          some: { userId },
+          some: { userId: userId ?? undefined },
         },
       },
-      include: {
+      select: {
+        id: true,
+        xpPoint: true,
+        difficulty: true,
+        locale: true,
         participants: {
           include: {
             user: { select: this.userSelect },
@@ -97,7 +102,12 @@ export class ConversationsService {
       throw new NotFoundException('Conversation non trouvée');
     }
 
-    return conversation;
+    const xpAndLevel = await this.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    
+    return {
+      ...conversation,
+      xpAndLevel
+    };
   }
 
   async findConversation(userId: string, receiverId: string) {
@@ -108,7 +118,11 @@ export class ConversationsService {
           { participants: { some: { userId: receiverId } } },
         ],
       },
-      include: {
+      select: {
+        id: true,
+        xpPoint: true,
+        difficulty: true,
+        locale: true,
         participants: {
           include: {
             user: { select: this.userSelect },
@@ -277,101 +291,43 @@ export class ConversationsService {
     );
   }
 
-  async getConversationLevel(conversationId: string) {
-    const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { id: true, xpPoint: true, difficulty: true },
-    });
-
-    if (!conversation) {
-      throw new NotFoundException('Conversation non trouvée');
+  async getConversationLevel(xpPoint: number, difficulty: string) {
+    const levels = levelConfig.filter(config => config.difficulty === difficulty);
+    const currentXp = xpPoint;
+    
+    // je veux le dernier niveau qui a un xpRequired inférieur ou égal à currentXp
+    const currentLevel = levels.reduce((prev, curr) => {
+      return (currentXp >= curr.xpRequired) ? curr : prev;
+    }, null);
+    if (!currentLevel) {
+      throw new NotFoundException('Level non trouvé');
     }
-
-    const levels = await this.prisma.levelingConfig.findMany({
-      where: { difficulty: conversation.difficulty },
-      orderBy: { xpRequired: 'asc' },
-    });
-
-    let currentLevel = 0;
-    let nextXp = 0;
-
-    for (const level of levels) {
-      if (conversation.xpPoint >= level.xpRequired) {
-        currentLevel = level.level;
-      } else {
-        nextXp = level.xpRequired - conversation.xpPoint;
-        break;
-      }
+    const nextLevel = levels.find(config => config.xpRequired > currentXp);
+    const levelData = {
+      xpPerQuestion: XP_CONFIG.QUESTION_DIFFICULTY[difficulty],
+      reachedXP: currentXp,
+      reachedLevel: currentLevel.level,
+      remainingXpAfterLevelUp: currentXp - currentLevel.xpRequired,
+      requiredXpForCurrentLevel: currentLevel.xpRequired,
+      maxXpForNextLevel: nextLevel ? nextLevel.xpRequired : 0,
+      nextLevel: nextLevel ? nextLevel.level : 0,
+      reward: currentLevel.reward,
+      photoRevealPercent: currentLevel.photoRevealPercent
     }
-
-    return {
-      level: currentLevel,
-      remainingXp: nextXp,
-    };
+    return levelData;
   }
 
-  async addXpToConversation(conversationId: string, xp: number) {
-    const updated = await this.prisma.conversation.update({
-      where: { id: conversationId },
-      data: {
-        xpPoint: { increment: xp },
-      },
-    });
-
-    return updated;
-  }
-
-  async addXpAndComputeLevel(
-    conversationId: string
-  ): Promise<ProgressionResult> {
-    // Étape 1 — Récupérer la conversation
-    const conversation = await this.prisma.conversation.findUnique({
-      where: { id: conversationId },
-      select: { id: true, xpPoint: true, difficulty: true },
-    });
-
-    if (!conversation) throw new Error('Conversation not found');
-    const difficulty = conversation.difficulty;
-    const xpPerQuestion = XP_CONFIG.QUESTION_DIFFICULTY[difficulty];
+  async updateXpToConversationId(conversationId: string, difficulty: string) {
+    if (!conversationId) throw new Error('Conversation not found'); 
+   const xpPerQuestion = XP_CONFIG.QUESTION_DIFFICULTY[difficulty];
 
     // Étape 2 — Ajouter l'XP
-    const updated = await this.addXpToConversation(
-      conversation.id,
-      xpPerQuestion
-    );
-    const totalXp = updated.xpPoint;
-
-    // Étape 3 — Récupérer la courbe d'XP pour cette difficulté
-    const levels = await this.prisma.levelingConfig.findMany({
-      where: { difficulty: conversation.difficulty },
-      orderBy: { xpRequired: 'asc' },
+    const updatedXp = await this.prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        xpPoint: { increment: xpPerQuestion },
+      },
     });
-
-    // Étape 4 — Calcul du niveau actuel
-    let currentLevel = 0;
-    let reward: string | undefined;
-    let photoRevealPercent: number | undefined;
-    let nextXp = 0;
-
-    for (let i = 0; i < levels.length; i++) {
-      const level = levels[i];
-
-      if (totalXp >= level.xpRequired) {
-        currentLevel = level.level;
-        reward = level.reward ?? undefined;
-        photoRevealPercent = level.photoRevealPercent ?? undefined;
-      } else {
-        nextXp = level.xpRequired - totalXp;
-        break;
-      }
-    }
-
-    return {
-      newXp: totalXp,
-      level: currentLevel,
-      remainingXp: nextXp,
-      reward,
-      photoRevealPercent,
-    };
+    return updatedXp.xpPoint
   }
 }
