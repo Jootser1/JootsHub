@@ -83,6 +83,7 @@ export interface ProgressionResult {
   reachedLevel: number;
   remainingXpAfterLevelUp: number;
   requiredXpForCurrentLevel: number;
+  requiredXpForNextLevel: number;
   maxXpForNextLevel: number;
   nextLevel: number;
   reward?: string;
