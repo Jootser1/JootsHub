@@ -1,42 +1,70 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { socketManager } from '@/lib/sockets/socket-manager'
 import { logger } from '@/utils/logger'
 import { ChatSocketService } from '@/features/chat/sockets/chat-socket-service'
 
+interface SocketState {
+  isUserConnected: boolean
+  isChatConnected: boolean
+}
+
 /**
  * Hook personnalisé pour accéder aux fonctionnalités du socketManager
- * VERSION PUREMENT RÉACTIVE - Aucune logique de connexion
+ * VERSION OPTIMISÉE - Utilise le système d'événements du socket manager
  */
 export function useSocketManager() {
-  // États pour la réactivité dans les composants React
-  const [isUserConnected, setIsUserConnected] = useState(socketManager.isUserSocketConnected())
-  const [isChatConnected, setIsChatConnected] = useState(socketManager.isChatSocketConnected())
+  const [socketState, setSocketState] = useState<SocketState>(() => ({
+    isUserConnected: socketManager.isUserSocketConnected(),
+    isChatConnected: socketManager.isChatSocketConnected()
+  }))
+  const mountedRef = useRef(true)
 
-  // Synchronisation de l'état avec l'état réel des sockets (avec polling léger)
+  // ✅ Abonnement direct au socket manager (plus efficace que le polling)
   useEffect(() => {
-    const updateConnectionState = () => {
-      const currentUserConnected = socketManager.isUserSocketConnected()
-      const currentChatConnected = socketManager.isChatSocketConnected()
+    mountedRef.current = true
 
-      if (currentUserConnected !== isUserConnected) {
-        setIsUserConnected(currentUserConnected)
-        logger.debug(`useSocketManager: État utilisateur mis à jour: ${currentUserConnected}`)
-      }
+    // S'abonner aux changements d'état du socket manager
+    const unsubscribe = socketManager.onStateChange((isUserConnected, isChatConnected) => {
+      if (mountedRef.current) {
+        const newState = { isUserConnected, isChatConnected }
+        
+        // ✅ Seulement mettre à jour si l'état a vraiment changé
+        setSocketState(prevState => {
+          if (
+            prevState.isUserConnected !== newState.isUserConnected ||
+            prevState.isChatConnected !== newState.isChatConnected
+          ) {
+            const changes: string[] = []
+            
+            if (prevState.isUserConnected !== newState.isUserConnected) {
+              changes.push(`utilisateur: ${newState.isUserConnected}`)
+            }
+            
+            if (prevState.isChatConnected !== newState.isChatConnected) {
+              changes.push(`chat: ${newState.isChatConnected}`)
+            }
 
-      if (currentChatConnected !== isChatConnected) {
-        setIsChatConnected(currentChatConnected)
-        logger.debug(`useSocketManager: État chat mis à jour: ${currentChatConnected}`)
+            logger.debug(`useSocketManager: États mis à jour - ${changes.join(', ')}`)
+            return newState
+          }
+          
+          return prevState
+        })
       }
+    })
+
+    return () => {
+      mountedRef.current = false
+      unsubscribe()
     }
+  }, []) // ✅ Pas de dépendances - évite les re-abonnements
 
-    // Vérifier immédiatement
-    updateConnectionState()
-
-    // Polling léger pour détecter les changements d'état
-    const interval = setInterval(updateConnectionState, 1000)
-
-    return () => clearInterval(interval)
-  }, [isUserConnected, isChatConnected])
+  // ✅ Cleanup au démontage
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
+    }
+  }, [])
 
   // ========================================
   // FONCTIONS PUREMENT RÉACTIVES (sans connexion)
@@ -71,18 +99,17 @@ export function useSocketManager() {
 
   const disconnectUserSocket = useCallback(() => {
     socketManager.disconnectUserSocket()
-    setIsUserConnected(false)
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
   }, [])
 
   const disconnectChatSocket = useCallback(() => {
     socketManager.disconnectChatSocket()
-    setIsChatConnected(false)
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
   }, [])
 
   const disconnectAll = useCallback(() => {
     socketManager.disconnectAll()
-    setIsUserConnected(false)
-    setIsChatConnected(false)
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
   }, [])
 
   const leaveConversation = useCallback((conversationId: string) => {
@@ -173,8 +200,8 @@ export function useSocketManager() {
   // Retourner l'interface publique (SANS fonctions de connexion)
   return {
     // États
-    isUserConnected,
-    isChatConnected,
+    isUserConnected: socketState.isUserConnected,
+    isChatConnected: socketState.isChatConnected,
     
     // Fonctions utilitaires
     disconnectUserSocket,

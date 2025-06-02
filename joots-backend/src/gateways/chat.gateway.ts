@@ -183,7 +183,11 @@ export class ChatGateway extends BaseGateway {
         },
         include: {
           sender: {
-            select: { id: true, username: true, avatar: true },
+            select: {
+              id: true,
+              username: true,
+              avatar: true,
+            },
           },
         },
       });

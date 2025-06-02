@@ -5,7 +5,6 @@ import { authorize } from 'passport';
 import path from 'path';
 import * as argon2 from 'argon2';
 
-import data from './leveling_config_seed.json';
 const prisma = new PrismaClient();
 
 const CATEGORY_TRANSLATIONS = [
@@ -159,7 +158,7 @@ async function main() {
     });
   }
 
-  console.log('Seeding leveling config...');
+  /* console.log('Seeding leveling config...');
   for (const entry of data) {
     await prisma.levelingConfig.create({
       data: {
@@ -172,7 +171,7 @@ async function main() {
     });
   }
 
-  console.log('✅ Seed completed.');
+  console.log('✅ Seed completed.'); */
 }
 
 main()

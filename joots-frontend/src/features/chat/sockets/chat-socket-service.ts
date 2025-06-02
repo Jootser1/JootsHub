@@ -33,7 +33,6 @@ export class ChatSocketService extends BaseSocketService {
       logger.warn("Impossible d'enregistrer les événements chat: socket non initialisé")
       return
     }
-    logger.debug(`[EVENTS_REGISTER] Socket.id=${this.socket?.id}, events count`)
 
     Object.entries(chatEventRegistry).forEach(([event, handler]) => {
       this.socket?.on(event, data => handler(data))

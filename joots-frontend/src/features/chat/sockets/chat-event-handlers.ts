@@ -23,10 +23,7 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
       logger.warn('Received empty message from gateway')
       return
     }
-    
-    // Loggons le message complet pour le debug
-    //logger.info('Message brut reçu du gateway:', message)
-    
+        
     // Utiliser l'ID de conversation du message si disponible
     const conversationId = message.conversationId
     
@@ -48,7 +45,6 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
     // Vérifier que la date est valide avant d'ajouter le message
     
     chatStore.addMessage(conversationId, newMessage)
-    //logger.debug('newMessage reçu et ajouté au store', newMessage)
   } catch (error) {
     logger.error(
       'Erreur lors du traitement du message:',
@@ -63,7 +59,6 @@ export function handleTypingEvent(data: TypingEvent) {
     
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isTyping', isTyping)
-      //logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`)
     }
   } catch (error) {
     logger.error(
@@ -157,9 +152,7 @@ export function handleIcebreakerResponsesEvent(data: any) {
     chatStore.addMessage(data.conversationId, message)
     
     // Mettre à jour les données XP et niveau si disponibles
-    if (data.xpAndLevel) {
-      console.log('🔍 Structure complète de data.xpAndLevel:', data.xpAndLevel)
-      
+    if (data.xpAndLevel) {      
       // Mettre à jour le store de chat - AnimatedProgressionBar détectera automatiquement le changement
       chatStore.updateConversationXpAndLevel(data.conversationId, data.xpAndLevel)
     }

@@ -48,7 +48,6 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
       optionId,
       activeConversationId
     )
-    logger.debug(`Réponse validée: Question ${questionGroupId}, Option ${optionId}`)
     setShowQuestion(false)
   }
 
