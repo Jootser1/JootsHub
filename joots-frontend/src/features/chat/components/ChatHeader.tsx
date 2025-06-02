@@ -1,8 +1,8 @@
 import { User } from '@/features/user/user.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
-import { LevelProgress } from '@/features/icebreakers/components/ProgressionBar'
-import { TargetIcon } from 'lucide-react'
+import { AnimatedLevelProgress } from '@/features/icebreakers/components/AnimatedProgressionBar'
+import { ProgressionResult } from '@/features/chat/chat.types'
 import Image from 'next/image'
 
 interface ChatHeaderProps {
@@ -10,9 +10,11 @@ interface ChatHeaderProps {
   isOnline: boolean
   isTyping?: boolean
   conversationId: string
+  xpAndLevel?: ProgressionResult
 }
 
-export function ChatHeader({ otherUser, conversationId }: ChatHeaderProps) {
+export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeaderProps) {
+  
   // Écoute réactive du statut 'isTyping' depuis le store
   const isTyping = useChatStore(state => {
     const conversation = state.conversations[conversationId]
@@ -54,11 +56,9 @@ export function ChatHeader({ otherUser, conversationId }: ChatHeaderProps) {
         </div>
       </div>
       <div className='flex-1 flex items-center justify-end'>
-        <LevelProgress
-          level={7}
-          current={60}
-          max={75}
-          icon={<TargetIcon className='w-8 h-8 text-orange-400' />}
+        <AnimatedLevelProgress
+          conversationId={conversationId}
+          initialXpAndLevel={xpAndLevel}
         />
       </div>
     </div>

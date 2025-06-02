@@ -57,7 +57,6 @@ export abstract class BaseSocketService {
       this.socket.removeAllListeners()
       this.socket.disconnect()
       this.socket = null
-      logger.info(`4. Socket ${this.namespace} déconnecté et events désenregistrés`)
     }
 
     if (this.reconnectTimer) {

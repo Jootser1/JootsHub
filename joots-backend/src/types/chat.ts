@@ -36,11 +36,15 @@ export interface Conversation {
 }
 
 export type ProgressionResult = {
-  newXp: number;
-  level: number;
-  remainingXp: number;
+  xpPerQuestion : number;
+  reachedXP : number;
+  reachedLevel: number;
+  remainingXpAfterLevelUp: number;
+  requiredXpForCurrentLevel: number;
+  maxXpForNextLevel: number;
+  nextLevel: number;
   reward?: string;
-  photoRevealPercent?: number;
+  photoRevealPercent?: number | null;
 };
 
 export interface ChatState {

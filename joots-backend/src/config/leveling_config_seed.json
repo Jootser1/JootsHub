@@ -3,273 +3,273 @@
     "level": 1,
     "difficulty": "EASY",
     "xpRequired": 0,
-    "reward": "one_more_conv",
+    "reward": "FIRST_ICEBREAKER",
     "photoRevealPercent": null
   },
   {
     "level": 2,
     "difficulty": "EASY",
     "xpRequired": 20,
-    "reward": "one_more_conv",
+    "reward": "ONE_MORE_CONV",
     "photoRevealPercent": null
   },
   {
     "level": 3,
     "difficulty": "EASY",
     "xpRequired": 60,
-    "reward": "living_city",
+    "reward": "CITY",
     "photoRevealPercent": null
   },
   {
     "level": 4,
     "difficulty": "EASY",
     "xpRequired": 100,
-    "reward": "gender",
+    "reward": "GENDER",
     "photoRevealPercent": 10
   },
   {
     "level": 5,
     "difficulty": "EASY",
     "xpRequired": 160,
-    "reward": "Passions",
+    "reward": "PASSIONS",
     "photoRevealPercent": 20
   },
   {
     "level": 6,
     "difficulty": "EASY",
     "xpRequired": 220,
-    "reward": "greatest_quality",
+    "reward": "QUALITY",
     "photoRevealPercent": 30
   },
   {
     "level": 7,
     "difficulty": "EASY",
     "xpRequired": 300,
-    "reward": "origin",
+    "reward": "ORIGIN",
     "photoRevealPercent": 40
   },
   {
     "level": 8,
     "difficulty": "EASY",
     "xpRequired": 380,
-    "reward": "Voice",
+    "reward": "VOICE",
     "photoRevealPercent": 50
   },
   {
     "level": 9,
     "difficulty": "EASY",
     "xpRequired": 480,
-    "reward": "age",
+    "reward": "AGE",
     "photoRevealPercent": 60
   },
   {
     "level": 10,
     "difficulty": "EASY",
     "xpRequired": 580,
-    "reward": "pro_activity",
+    "reward": "JOB",
     "photoRevealPercent": 70
   },
   {
     "level": 11,
     "difficulty": "EASY",
     "xpRequired": 700,
-    "reward": "biggest_flaw",
+    "reward": "FLAW",
     "photoRevealPercent": 80
   },
   {
     "level": 12,
     "difficulty": "EASY",
     "xpRequired": 840,
-    "reward": "sexual_orientation",
+    "reward": "ORIENTATION",
     "photoRevealPercent": 90
   },
   {
     "level": 13,
     "difficulty": "EASY",
     "xpRequired": 1000,
-    "reward": "celebration",
+    "reward": "BIO",
     "photoRevealPercent": 100
   },
   {
     "level": 1,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 0,
-    "reward": "one_more_conv",
+    "reward": "FIRST_ICEBREAKER",
     "photoRevealPercent": null
   },
   {
     "level": 2,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 20,
-    "reward": "one_more_conv",
+    "reward": "ONE_MORE_CONV",
     "photoRevealPercent": null
   },
   {
     "level": 3,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 50,
-    "reward": "living_city",
+    "reward": "CITY",
     "photoRevealPercent": null
   },
   {
     "level": 4,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 90,
-    "reward": "gender",
+    "reward": "GENDER",
     "photoRevealPercent": 10
   },
   {
     "level": 5,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 140,
-    "reward": "Passions",
+    "reward": "PASSIONS",
     "photoRevealPercent": 20
   },
   {
     "level": 6,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 200,
-    "reward": "greatest_quality",
+    "reward": "QUALITY",
     "photoRevealPercent": 30
   },
   {
     "level": 7,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 280,
-    "reward": "origin",
+    "reward": "ORIGIN",
     "photoRevealPercent": 40
   },
   {
     "level": 8,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 370,
-    "reward": "Voice",
+    "reward": "VOICE",
     "photoRevealPercent": 50
   },
   {
     "level": 9,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 470,
-    "reward": "age",
+    "reward": "AGE",
     "photoRevealPercent": 60
   },
   {
     "level": 10,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 580,
-    "reward": "pro_activity",
+    "reward": "JOB",
     "photoRevealPercent": 70
   },
   {
     "level": 11,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 700,
-    "reward": "biggest_flaw",
+    "reward": "FLAW",
     "photoRevealPercent": 80
   },
   {
     "level": 12,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 840,
-    "reward": "sexual_orientation",
+    "reward": "ORIENTATION",
     "photoRevealPercent": 90
   },
   {
     "level": 13,
     "difficulty": "INTERMEDIATE",
     "xpRequired": 1000,
-    "reward": "celebration",
+    "reward": "BIO",
     "photoRevealPercent": 100
   },
   {
     "level": 1,
     "difficulty": "HARDCORE",
     "xpRequired": 0,
-    "reward": "one_more_conv",
+    "reward": "ONE_MORE_CONV",
     "photoRevealPercent": null
   },
   {
     "level": 2,
     "difficulty": "HARDCORE",
     "xpRequired": 20,
-    "reward": "one_more_conv",
+    "reward": "ONE_MORE_CONV",
     "photoRevealPercent": null
   },
   {
     "level": 3,
     "difficulty": "HARDCORE",
     "xpRequired": 50,
-    "reward": "living_city",
+    "reward": "CITY",
     "photoRevealPercent": null
   },
   {
     "level": 4,
     "difficulty": "HARDCORE",
     "xpRequired": 90,
-    "reward": "gender",
+    "reward": "GENDER",
     "photoRevealPercent": 10
   },
   {
     "level": 5,
     "difficulty": "HARDCORE",
     "xpRequired": 140,
-    "reward": "Passions",
+    "reward": "PASSIONS",
     "photoRevealPercent": 20
   },
   {
     "level": 6,
     "difficulty": "HARDCORE",
     "xpRequired": 200,
-    "reward": "greatest_quality",
+    "reward": "QUALITY",
     "photoRevealPercent": 30
   },
   {
     "level": 7,
     "difficulty": "HARDCORE",
     "xpRequired": 280,
-    "reward": "origin",
+    "reward": "ORIGIN",
     "photoRevealPercent": 40
   },
   {
     "level": 8,
     "difficulty": "HARDCORE",
     "xpRequired": 370,
-    "reward": "Voice",
+    "reward": "VOICE",
     "photoRevealPercent": 50
   },
   {
     "level": 9,
     "difficulty": "HARDCORE",
     "xpRequired": 470,
-    "reward": "age",
+    "reward": "AGE",
     "photoRevealPercent": 60
   },
   {
     "level": 10,
     "difficulty": "HARDCORE",
     "xpRequired": 580,
-    "reward": "pro_activity",
+    "reward": "JOB",
     "photoRevealPercent": 70
   },
   {
     "level": 11,
     "difficulty": "HARDCORE",
     "xpRequired": 700,
-    "reward": "biggest_flaw",
+    "reward": "FLAW",
     "photoRevealPercent": 80
   },
   {
     "level": 12,
     "difficulty": "HARDCORE",
     "xpRequired": 840,
-    "reward": "sexual_orientation",
+    "reward": "ORIENTATION",
     "photoRevealPercent": 90
   },
   {
     "level": 13,
     "difficulty": "HARDCORE",
     "xpRequired": 1000,
-    "reward": "celebration",
+    "reward": "BIO",
     "photoRevealPercent": 100
   }
 ]

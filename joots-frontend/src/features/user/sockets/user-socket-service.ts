@@ -60,7 +60,6 @@ export class UserSocketService extends BaseSocketService {
       if (userId === this.userId) {
         userStore.setUserStatus(isOnline)
         this.socket.emit('updateUserStatus', { isOnline })
-        logger.info(`Émission du statut utilisateur: ${isOnline ? 'en ligne' : 'hors ligne'}`)
       }
     } catch (error) {
       logger.error(
@@ -97,6 +96,23 @@ export class UserSocketService extends BaseSocketService {
     } catch (error) {
       logger.error(
         'Erreur lors de la sortie des rooms:',
+        error instanceof Error ? error : new Error(String(error))
+      )
+    }
+  }
+
+  public requestContactsOnlineStatus(contactIds: string[]): void {
+    if (!this.socket?.connected) {
+      logger.warn('userSocketService: Impossible de demander les statuts: non connecté')
+      return
+    }
+
+    try {
+      this.socket.emit('getContactsOnlineStatus', { contactIds })
+      logger.debug(`UserSocketService: Demande des statuts en ligne pour ${contactIds.length} contacts`)
+    } catch (error) {
+      logger.error(
+        'Erreur lors de la demande des statuts en ligne:',
         error instanceof Error ? error : new Error(String(error))
       )
     }

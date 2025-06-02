@@ -1,13 +1,12 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { Message, ChatState, ChatStore, MessageStatus } from '@/features/chat/chat.types'
+import { Message, ChatState, ChatStore, MessageStatus, ProgressionResult } from '@/features/chat/chat.types'
 import { Conversation } from '@/features/conversations/conversation.types'
 import { getUnreadCount } from '../../conversations/utils/conversation-utils'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
 
 const initialState: ChatState = {
-  messages: {},
   conversations: {},
   activeConversationId: null,
   error: null,
@@ -39,16 +38,16 @@ export const useChatStore = create<ChatStore>()(
             const response = await axiosInstance.get('/conversations')
             set(state => {
               const newConversations = { ...state.conversations }
-              const newMessages = { ...state.messages }
 
               response.data.forEach((conversation: Conversation) => {
-                newConversations[conversation.id] = conversation
-                newMessages[conversation.id] = conversation.messages
+                newConversations[conversation.id] = {
+                  ...conversation,
+                  messages: conversation.messages || [],
+                };
               })
 
               return {
                 conversations: newConversations,
-                messages: newMessages,
               }
             })
             logger.info(
@@ -81,89 +80,89 @@ export const useChatStore = create<ChatStore>()(
           set(state => ({
             conversations: {
               ...state.conversations,
-              [conversation.id]: conversation,
-            },
-            messages: {
-              ...state.messages,
-              [conversation.id]: conversation.messages || [],
+              [conversation.id]: {
+                ...conversation,
+                messages: conversation.messages || [],
+              },
             },
           })),
 
         // Messages
         addMessage: (conversationId: string, message: Message) =>
           set(state => {
-            logger.info(`Ajout d'un nouveau message dans la conversation ${conversationId}`)
-            const conversationMessages = state.messages[conversationId] || []
-            const conversation = state.conversations[conversationId]
+            logger.info(`Ajout d'un nouveau message dans la conversation ${conversationId}`);
+            const conversation = state.conversations[conversationId];
+
             if (!conversation) {
               logger.warn(
                 `Tentative d'ajout de message dans une conversation inexistante: ${conversationId}`
-              )
-              return {
-                ...state,
-                messages: {
-                  ...state.messages,
-                  [conversationId]: [...conversationMessages, message],
-                },
-              }
+              );
+              // Si la conversation n'existe pas, on ne peut pas y ajouter de message.
+              // On pourrait choisir de créer une entrée messages à la racine ici,
+              // mais pour la cohérence, il vaut mieux ne rien faire ou créer la conversation d'abord.
+              // Pour l'instant, on retourne l'état inchangé si la conversation n'est pas trouvée.
+              return state;
             }
+
+            // Assurer que le tableau messages existe sur la conversation
+            const existingMessages = conversation.messages || [];
+            
             return {
-              messages: {
-                ...state.messages,
-                [conversationId]: [...conversationMessages, message],
-              },
+
               conversations: {
                 ...state.conversations,
                 [conversationId]: {
                   ...conversation,
+                  messages: [...existingMessages, message], // Ajouter le message ici
                   lastMessage: message,
                   unreadCount: getUnreadCount(conversation, message.senderId),
                 },
               },
-            }
+            };
           }),
 
         updateMessageStatus: (conversationId: string, messageId: string, status: MessageStatus) =>
           set(state => {
-            const conversationMessages = state.messages[conversationId]
-            if (!conversationMessages) return state
-            const updatedMessages = conversationMessages.map(msg =>
-              msg.id === messageId ? { ...msg, status } : msg
-            )
-            return {
-              messages: {
-                ...state.messages,
-                [conversationId]: updatedMessages,
-              },
-            }
-          }),
+            const conversation = state.conversations[conversationId];
+            if (!conversation || !conversation.messages) return state;
 
-        markMessagesAsRead: (conversationId: string) =>
-          set(state => {
-            const conversation = state.conversations[conversationId]
-            if (!conversation) return state
-            const messages = state.messages[conversationId] || []
-            const updatedMessages = messages.map(msg => ({
-              ...msg,
-              status: msg.status === 'sent' ? ('read' as MessageStatus) : msg.status,
-            }))
+            const updatedMessages = conversation.messages.map(msg =>
+              msg.id === messageId ? { ...msg, status } : msg
+            );
             return {
-              messages: {
-                ...state.messages,
-                [conversationId]: updatedMessages,
-              },
               conversations: {
                 ...state.conversations,
                 [conversationId]: {
                   ...conversation,
+                  messages: updatedMessages,
+                },
+              },
+            };
+          }),
+
+        markMessagesAsRead: (conversationId: string) =>
+          set(state => {
+            const conversation = state.conversations[conversationId];
+            if (!conversation || !conversation.messages) return state;
+
+            const updatedMessages = conversation.messages.map(msg => ({
+              ...msg,
+              status: msg.status === 'sent' ? ('read' as MessageStatus) : msg.status,
+            }));
+            return {
+              conversations: {
+                ...state.conversations,
+                [conversationId]: {
+                  ...conversation,
+                  messages: updatedMessages,
                   unreadCount: 0,
                 },
               },
-            }
+            };
           }),
 
         getMessagesFromConversation: (conversationId: string) =>
-          get().messages[conversationId] || [],
+          get().conversations[conversationId]?.messages || [],
 
         getConversation: (conversationId: string) => get().conversations[conversationId],
 
@@ -296,16 +295,20 @@ export const useChatStore = create<ChatStore>()(
           return participant?.response || null
         },
 
-        updateConversationXP: (conversationId: string, xp: number) => {
+
+        updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => {
           set(state => {
-            const conv = state.conversations[conversationId]
-            if (!conv) return state
+            const conversation = state.conversations[conversationId]
+            if (!conversation) return state
+
             return {
               conversations: {
                 ...state.conversations,
                 [conversationId]: {
-                  ...conv,
-                  xpPoint: (conv.xpPoint ?? 0) + xp,
+                  ...conversation,
+                  xpAndLevel: {
+                    ...xpAndLevel,
+                  },
                 },
               },
             }
@@ -316,7 +319,6 @@ export const useChatStore = create<ChatStore>()(
         name: 'chat-storage',
         partialize: state => {
           return {
-            messages: state.messages,
             conversations: state.conversations,
             activeConversationId: state.activeConversationId,
             conversationsIds: state.conversationsIds,

@@ -98,7 +98,7 @@ export function MobileMenu() {
 
           {/* Profil utilisateur */}
           <Link
-            href='/profile'
+            href={`/profile/${user?.id ?? ''}`}
             className='flex items-center bg-gray-100 rounded-full py-2 px-4 mb-4'
           >
             <div className='relative w-10 h-10 mr-3'>

@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { RedisService } from '../redis/redis.service';
 import { Logger } from '@nestjs/common';
 import { Socket } from 'socket.io';
+import { AttributeKey } from '@prisma/client';
 
 // Définir notre propre type User avec Auth sans dépendre des types Prisma
 type UserWithAuth = {
@@ -83,8 +84,8 @@ export class UsersService {
   }
 
   async updateChatPreference(userId: string, isAvailableForChat: boolean) {
-    const user = await this.prisma.user.update({
-      where: { id: userId },
+    const user = await this.prisma.userSettings.update({
+      where: { userId },
       data: { isAvailableForChat },
     });
 
@@ -117,7 +118,7 @@ export class UsersService {
     // Créer un Set des IDs des utilisateurs avec qui nous avons déjà parlé
     const existingUserIds = new Set(
       existingConversations.flatMap((conv) =>
-        conv.participants.map((p) => p.userId)
+        conv.participants.map((p: { userId: string }) => p.userId)
       )
     );
 
@@ -125,7 +126,7 @@ export class UsersService {
       where: {
         AND: [
           { isOnline: true },
-          { isAvailableForChat: true },
+          { UserSettings: { isAvailableForChat: true } },
           { id: { not: currentUserId } }, // Exclure l'utilisateur actuel
           { id: { notIn: Array.from(existingUserIds) } }, // Exclure les utilisateurs avec qui nous avons déjà parlé
         ],

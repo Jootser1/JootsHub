@@ -11,13 +11,14 @@ import { Conversation } from '@/features/conversations/conversation.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ExperienceLogo } from '@/components/ExperienceLogo'
+import { ProgressionResult } from '@/features/chat/chat.types'
 // ChatSocketHandler supprimé - redondant avec ChatSocketProvider
 
 // Définition du composant de contenu de conversation
-function ConversationContent({ conversation }: { conversation: Conversation }) {
+function ConversationContent({ conversation, xpAndLevel }: { conversation: Conversation, xpAndLevel?: ProgressionResult | null }) {
   return (
     <div className='max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full'>
-      <ChatContainer conversation={conversation} />
+      <ChatContainer conversation={conversation} xpAndLevel={xpAndLevel} />
       <ExperienceLogo experience='icebreaker' />
     </div>
   )
@@ -30,7 +31,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const [isLoading, setIsLoading] = useState(true)
   const fetchAttemptedRef = useRef(false)
   const conversationInitializedRef = useRef(false)
-
+  const [xpAndLevel, setXpAndLevel] = useState<ProgressionResult | null>(null)
   useEffect(() => {
     const fetchConversation = async () => {
       // Éviter les appels multiples
@@ -40,8 +41,9 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       try {
         const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
         const conversationData = response.data
+        const xpAndLevel = response.data.xpAndLevel
         setConversation(conversationData)
-
+        setXpAndLevel(xpAndLevel)
         // Ajout de la conversation entière au chatStore, une seule fois
         if (conversationData && !conversationInitializedRef.current) {
           conversationInitializedRef.current = true
@@ -102,7 +104,7 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
 
   return (
     <AppLayout>
-      <ConversationContent conversation={conversation} />
+      <ConversationContent conversation={conversation} xpAndLevel={xpAndLevel} />
     </AppLayout>
   )
 }

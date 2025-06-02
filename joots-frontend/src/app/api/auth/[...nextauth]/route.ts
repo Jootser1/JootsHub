@@ -63,7 +63,6 @@ const authOptions = {
       return token
     },
     async session({ session, token }: { session: Session; token: JWT }) {
-      //logger.debug('Callback Session', { session, token })
       return {
         user: {
           id: token.id as string,

@@ -21,35 +21,32 @@ model Auth {
 }
 
 model User {
-  id                  String                    @id @default(cuid())
-  createdAt           DateTime                  @default(now())
-  username            String                    @unique
-  userNumber          Int                       @unique @default(autoincrement())
-  isOnline            Boolean                   @default(false)
-  avatar              String?
-  bio                 String?
-  isAvailableForChat  Boolean                   @default(true)
-  updatedAt           DateTime                  @default(now()) @updatedAt
-  role                UserRole                  @default(USER)
-  languages           String[]                  @default(["fr_FR"])
-  auth                Auth?
-  conversations       ConversationParticipant[]
-  sentMessages        Message[]                 @relation("SentMessages")
-  questionGroups      QuestionGroup[]
-  answers             UserAnswer[]
-  contactOf           UserContact[]             @relation("ContactOf")
-  contacts            UserContact[]             @relation("UserContacts")
-  questionPreferences UserQuestionPreference[]
-  UserAttribute       UserAttribute[]
+  id                     String                    @id @default(cuid())
+  createdAt              DateTime                  @default(now())
+  username               String                    @unique
+  userNumber             Int                       @unique @default(autoincrement())
+  avatar                 String?
+  isOnline               Boolean                   @default(false)
+  updatedAt              DateTime                  @default(now()) @updatedAt
+  role                   UserRole                  @default(USER)
+  auth                   Auth?
+  conversations          ConversationParticipant[]
+  sentMessages           Message[]                 @relation("SentMessages")
+  questionGroups         QuestionGroup[]
+  answers                UserAnswer[]
+  contactOf              UserContact[]             @relation("ContactOf")
+  contacts               UserContact[]             @relation("UserContacts")
+  UserAttribute          UserAttribute[]
+  UserSettings           UserSettings?
+  UserQuestionPreference UserQuestionPreference[]
 }
 
 model UserAttribute {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
-
+  id            String       @id @default(cuid())
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  userId        String
+  user          User         @relation(fields: [userId], references: [id])
   key           AttributeKey
   value         String
   levelRevealed Int
@@ -58,16 +55,15 @@ model UserAttribute {
   @@index([userId])
 }
 
-enum AttributeKey {
-  CITY
-  AGE
-  GENDER
-  JOB
-  ORIGIN
-  ORIENTATION
-  PASSIONS
-  QUALITY
-  FLAW
+model UserSettings {
+  id                            String                   @id @default(cuid())
+  userId                        String                   @unique
+  user                          User                     @relation(fields: [userId], references: [id])
+  Applanguage                   String                   @default("fr_FR")
+  questionPreferences           UserQuestionPreference[]
+  acceptedLanguages             String[]                 @default(["fr_FR"])
+  isAvailableForChat            Boolean                  @default(true)
+  allowInvitationsFromStrangers Boolean                  @default(true)
 }
 
 model UserContact {
@@ -194,12 +190,14 @@ model QuestionGroupCategory {
 }
 
 model UserQuestionPreference {
-  userId     String
-  categoryId Int
-  enabled    Boolean  @default(true)
-  updatedAt  DateTime @updatedAt
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  categoryId     Int
+  Opinion        Opinion       @default(NEUTRAL)
+  updatedAt      DateTime      @updatedAt
+  category       Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  UserSettings   UserSettings? @relation(fields: [userSettingsId], references: [id])
+  userSettingsId String?
 
   @@id([userId, categoryId])
   @@index([categoryId])
@@ -225,17 +223,6 @@ model UserAnswer {
   @@index([conversationId])
 }
 
-model LevelingConfig {
-  id                 Int        @id @default(autoincrement())
-  level              Int
-  difficulty         Difficulty
-  xpRequired         Int
-  reward             String?
-  photoRevealPercent Int?
-
-  @@unique([level, difficulty])
-}
-
 enum UserRole {
   USER
   LISTENER
@@ -255,4 +242,23 @@ enum Difficulty {
   EASY
   INTERMEDIATE
   HARDCORE
+}
+
+enum Opinion {
+  DISLIKE
+  NEUTRAL
+  LIKE
+}
+
+enum AttributeKey {
+  CITY
+  AGE
+  GENDER
+  JOB
+  ORIGIN
+  ORIENTATION
+  PASSIONS
+  QUALITY
+  FLAW
+  BIO
 }

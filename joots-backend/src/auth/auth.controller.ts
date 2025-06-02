@@ -16,18 +16,19 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
-    console.log('loginDto', loginDto);
     try {
       const result = await this.authService.login(
         loginDto.email,
         loginDto.password
       );
       console.log('Connexion réussie pour:', loginDto.email);
+      console.log('token', result.access_token);
       return {
         success: true,
         user: result.user,
         access_token: result.access_token,
       };
+      
     } catch (error) {
       console.error('Erreur de connexion:', error);
       throw new BadRequestException(error.message || 'Invalid credentials');

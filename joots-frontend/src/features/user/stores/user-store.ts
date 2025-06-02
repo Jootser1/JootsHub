@@ -41,10 +41,6 @@ export const useUserStore = create<UserStore>()(
             if (!state.user) return state
 
             const newUser = { ...state.user, isOnline }
-            logger.info(
-              `[UserStore] ${newUser.username} est maintenant ${isOnline ? 'en ligne' : 'hors ligne'}`
-            )
-
             return { user: newUser }
           })
         },
@@ -79,7 +75,6 @@ export const useUserStore = create<UserStore>()(
             }
 
             set({ user: userData })
-            logger.info('Données utilisateur récupérées depuis bdd et syncstore')
           } catch (error) {
             logger.error(
               'Erreur lors de la synchronisation des données utilisateur:',

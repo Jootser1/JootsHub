@@ -23,18 +23,15 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
       logger.warn('Received empty message from gateway')
       return
     }
-
-    // Loggons le message complet pour le debug
-    //logger.info('Message brut reçu du gateway:', message)
-
+        
     // Utiliser l'ID de conversation du message si disponible
     const conversationId = message.conversationId
-
+    
     if (!conversationId) {
       logger.warn('Message reçu sans ID de conversation')
       return
     }
-
+    
     const newMessage: Message = {
       id: message.id,
       content: message.content,
@@ -44,11 +41,10 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
       createdAt: new Date(message.createdAt || message.timestamp || new Date()),
       status: 'delivered',
     }
-
+    
     // Vérifier que la date est valide avant d'ajouter le message
-
+    
     chatStore.addMessage(conversationId, newMessage)
-    //logger.debug('newMessage reçu et ajouté au store', newMessage)
   } catch (error) {
     logger.error(
       'Erreur lors du traitement du message:',
@@ -60,10 +56,9 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
 export function handleTypingEvent(data: TypingEvent) {
   try {
     const { conversationId, userId, isTyping } = data
-
+    
     if (conversationId && userId) {
       chatStore.updateParticipantField(conversationId, userId, 'isTyping', isTyping)
-      //logger.debug(`Statut de frappe mis à jour pour l'utilisateur ${userId}: ${isTyping ? 'en train d\'écrire' : 'inactif'}`)
     }
   } catch (error) {
     logger.error(
@@ -92,7 +87,7 @@ export function handleMessageReadEvent(data: MessageReadEvent) {
 export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) {
   try {
     const { conversationId, userId, isIcebreakerReady, timestamp } = data
-
+    
     if (conversationId && userId) {
       chatStore.updateParticipantField(
         conversationId,
@@ -101,7 +96,7 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
         isIcebreakerReady
       )
     }
-
+    
   } catch (error) {
     logger.error(
       "Erreur lors du traitement de la mise à jour du statut de l'icebreaker:",
@@ -133,13 +128,13 @@ export function handleIcebreakerResponsesEvent(data: any) {
       chatStore.resetIcebreakerStatus(data.conversationId)
       return
     }
-
+    
     // Format normal avec questionLabel
     if (!data.questionLabel) {
       logger.warn('questionLabel manquant dans icebreakerResponses, abandon')
       return
-    }
-
+    }  
+    
     const message: Message = {
       id: data.id || Date.now().toString(),
       content: data.questionLabel,
@@ -153,8 +148,15 @@ export function handleIcebreakerResponsesEvent(data: any) {
       userBId: data.user2,
       createdAt: new Date(),
     }
-
+    
     chatStore.addMessage(data.conversationId, message)
+    
+    // Mettre à jour les données XP et niveau si disponibles
+    if (data.xpAndLevel) {      
+      // Mettre à jour le store de chat - AnimatedProgressionBar détectera automatiquement le changement
+      chatStore.updateConversationXpAndLevel(data.conversationId, data.xpAndLevel)
+    }
+    
     chatStore.resetIcebreakerStatus(data.conversationId)
   } catch (error) {
     logger.error(
