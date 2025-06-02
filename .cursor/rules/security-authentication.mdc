@@ -1,0 +1,1065 @@
+# Règles Sécurité & Authentification - JootsHub
+
+## 🔐 Philosophie de Sécurité
+
+### Principes Fondamentaux
+- **Defense in Depth** : Plusieurs couches de sécurité
+- **Principle of Least Privilege** : Accès minimal nécessaire
+- **Zero Trust** : Vérifier chaque requête, même interne
+- **Security by Design** : Sécurité intégrée dès la conception
+- **Fail Secure** : En cas d'erreur, refuser l'accès par défaut
+- **Performance & Security** : Optimisations sans compromettre la sécurité
+
+## 🎫 Authentification Hybride NextAuth + JWT
+
+### ⚠️ **IMPORTANT : Architecture Existante**
+JootsHub utilise **NextAuth** côté frontend avec des **JWT personnalisés** côté backend.
+Les règles ci-dessous s'adaptent à cette architecture existante.
+
+### Configuration NextAuth (Existant - À Sécuriser)
+```typescript
+// joots-frontend/src/app/api/auth/[...nextauth]/route.ts
+const authOptions = {
+  providers: [
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email || !credentials?.password) {
+          logger.warn('Tentative d\'authentification sans credentials')
+          throw new Error('Email et mot de passe requis')
+        }
+
+        try {
+          // ✅ SÉCURISÉ - Validation côté backend
+          const res = await axios.post(`${process.env.API_INTERNAL_URL}/auth/login`, {
+            email: credentials.email,
+            password: credentials.password,
+          })
+
+          if (res.data?.user?.id && res.data?.access_token) {
+            logger.info('Authentification réussie', { userId: res.data.user.id })
+            return { 
+              id: res.data.user.id, 
+              email: res.data.user.email,
+              role: res.data.user.role, // ✅ AJOUT - Inclure le rôle
+              token: res.data.access_token 
+            }
+          }
+          
+          throw new Error('Réponse invalide du serveur')
+        } catch (error) {
+          logger.error('Erreur d\'authentification', { error: error.message })
+          throw new Error('Erreur d\'authentification')
+        }
+      },
+    }),
+  ],
+  callbacks: {
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id
+        token.role = user.role // ✅ AJOUT - Inclure le rôle dans le token
+        token.accessToken = user.token
+      }
+      return token
+    },
+    async session({ session, token }) {
+      return {
+        user: {
+          id: token.id as string,
+          email: session.user?.email,
+          role: token.role as string // ✅ AJOUT - Inclure le rôle dans la session
+        },
+        accessToken: token.accessToken as string,
+        expires: session.expires
+      }
+    },
+  },
+  secret: process.env.NEXTAUTH_SECRET,
+  pages: {
+    signIn: "/login",
+  },
+}
+```
+
+### Service d'Authentification Backend (Adaptation)
+```typescript
+// joots-backend/src/auth/auth.service.ts (Amélioration de l'existant)
+import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { PrismaService } from '../../prisma/prisma.service'
+import { JwtService } from '@nestjs/jwt'
+import * as argon2 from 'argon2'
+import { logger } from '../logger/logger.service'
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
+  ) {}
+
+  async login(email: string, password: string) {
+    const auth = await this.prisma.auth.findUnique({
+      where: { email },
+      include: { user: true },
+    })
+    
+    if (!auth) {
+      // ✅ SÉCURISÉ - Logging sans exposer l'email complet
+      logger.warn('Tentative de connexion avec email inexistant', 'AuthService', {
+        email: email.substring(0, 3) + '***',
+        ip: this.getClientIp()
+      })
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    const passwordValid = await argon2.verify(auth.password, password)
+    if (!passwordValid) {
+      // ✅ SÉCURISÉ - Logging des tentatives échouées
+      logger.warn('Tentative de connexion avec mauvais mot de passe', 'AuthService', {
+        userId: auth.userId,
+        email: email.substring(0, 3) + '***',
+        ip: this.getClientIp()
+      })
+      throw new UnauthorizedException('Invalid credentials')
+    }
+
+    // ✅ SÉCURISÉ - Vérifier que le compte n'est pas verrouillé
+    if (auth.user.lockedUntil && auth.user.lockedUntil > new Date()) {
+      logger.warn('Tentative de connexion sur compte verrouillé', 'AuthService', {
+        userId: auth.userId,
+        lockedUntil: auth.user.lockedUntil
+      })
+      throw new UnauthorizedException('Compte temporairement verrouillé')
+    }
+
+    // Mise à jour du statut en ligne
+    await this.prisma.user.update({
+      where: { id: auth.userId },
+      data: { isOnline: true },
+    })
+
+    // ✅ SÉCURISÉ - Payload JWT enrichi
+    const payload = { 
+      sub: auth.userId,
+      email: auth.email,
+      username: auth.user.username,
+      role: auth.user.role, // ✅ AJOUT - Inclure le rôle
+      iat: Math.floor(Date.now() / 1000),
+      exp: Math.floor(Date.now() / 1000) + (24 * 60 * 60) // 24h
+    }
+    
+    const access_token = this.jwtService.sign(payload)
+
+    // ✅ SÉCURISÉ - Logging de connexion réussie
+    logger.info('Utilisateur connecté avec succès', 'AuthService', {
+      userId: auth.userId,
+      email: auth.email,
+      role: auth.user.role,
+      ip: this.getClientIp()
+    })
+    
+    return { 
+      user: {
+        ...auth.user,
+        email: auth.email
+      },
+      access_token
+    }
+  }
+
+  // ✅ AJOUT - Méthodes utilitaires pour la sécurité
+  private getClientIp(): string {
+    // Implémentation pour récupérer l'IP client
+    return 'unknown'
+  }
+
+  async logout(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { isOnline: false },
+    })
+    
+    logger.info('Utilisateur déconnecté', 'AuthService', { userId })
+    return { message: 'Logged out successfully' }
+  }
+}
+```
+
+## 🛡️ Autorisation et Permissions (Extension du Système Existant)
+
+### Système de Rôles Étendu
+```typescript
+// auth/roles.enum.ts (Extension de l'existant)
+export enum UserRole {
+  USER = 'USER',           // ✅ Existant
+  LISTENER = 'LISTENER',   // ✅ Existant  
+  MODERATOR = 'MODERATOR', // ✅ NOUVEAU
+  ADMIN = 'ADMIN'          // ✅ NOUVEAU
+}
+
+// auth/permissions.enum.ts (Nouveau système granulaire)
+export enum Permission {
+  // Utilisateur de base
+  READ_OWN_PROFILE = 'read:own_profile',
+  UPDATE_OWN_PROFILE = 'update:own_profile',
+  
+  // Conversations
+  CREATE_CONVERSATION = 'create:conversation',
+  READ_OWN_CONVERSATIONS = 'read:own_conversations',
+  SEND_MESSAGE = 'send:message',
+  
+  // Listener (rôle existant)
+  LISTEN_CONVERSATIONS = 'listen:conversations',
+  PROVIDE_SUPPORT = 'provide:support',
+  
+  // Modération
+  READ_ALL_CONVERSATIONS = 'read:all_conversations',
+  DELETE_MESSAGE = 'delete:message',
+  BAN_USER = 'ban:user',
+  
+  // Administration
+  MANAGE_USERS = 'manage:users',
+  MANAGE_SYSTEM = 'manage:system',
+  VIEW_ANALYTICS = 'view:analytics'
+}
+
+// auth/role-permissions.ts
+export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  [UserRole.USER]: [
+    Permission.READ_OWN_PROFILE,
+    Permission.UPDATE_OWN_PROFILE,
+    Permission.CREATE_CONVERSATION,
+    Permission.READ_OWN_CONVERSATIONS,
+    Permission.SEND_MESSAGE
+  ],
+  
+  [UserRole.LISTENER]: [
+    ...ROLE_PERMISSIONS[UserRole.USER],
+    Permission.LISTEN_CONVERSATIONS,
+    Permission.PROVIDE_SUPPORT
+  ],
+  
+  [UserRole.MODERATOR]: [
+    ...ROLE_PERMISSIONS[UserRole.LISTENER],
+    Permission.READ_ALL_CONVERSATIONS,
+    Permission.DELETE_MESSAGE,
+    Permission.BAN_USER
+  ],
+  
+  [UserRole.ADMIN]: [
+    ...ROLE_PERMISSIONS[UserRole.MODERATOR],
+    Permission.MANAGE_USERS,
+    Permission.MANAGE_SYSTEM,
+    Permission.VIEW_ANALYTICS
+  ]
+}
+```
+
+### Guard JWT Sécurisé (Amélioration de l'existant)
+```typescript
+// joots-backend/src/auth/jwt-auth.guard.ts (Amélioration)
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { ConfigService } from '@nestjs/config'
+import { UsersService } from '../users/users.service'
+import { logger } from '../logger/logger.service'
+
+@Injectable()
+export class JwtAuthGuard implements CanActivate {
+  constructor(
+    private jwtService: JwtService,
+    private configService: ConfigService,
+    private usersService: UsersService
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest()
+    const authHeader = request.headers['authorization'] as string | undefined
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      logger.warn('Tentative d\'accès sans token', 'JwtAuthGuard', {
+        ip: request.ip,
+        path: request.path
+      })
+      throw new UnauthorizedException('Token requis')
+    }
+
+    try {
+      const token = authHeader.split(' ')[1]
+      
+      // ✅ SÉCURISÉ - Validation complète du JWT
+      const payload = this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_SECRET')
+      })
+
+      // ✅ SÉCURISÉ - Vérifier que l'utilisateur existe toujours
+      const user = await this.usersService.findById(payload.sub)
+      if (!user) {
+        logger.warn('Token valide mais utilisateur inexistant', 'JwtAuthGuard', {
+          userId: payload.sub,
+          ip: request.ip
+        })
+        throw new UnauthorizedException('Utilisateur non trouvé')
+      }
+
+      // ✅ SÉCURISÉ - Vérifier que l'utilisateur est actif
+      if (!user.isActive) {
+        logger.warn('Tentative d\'accès avec compte désactivé', 'JwtAuthGuard', {
+          userId: payload.sub,
+          ip: request.ip
+        })
+        throw new UnauthorizedException('Compte désactivé')
+      }
+
+      // Ajouter les données utilisateur à la requête
+      request.user = {
+        id: payload.sub,
+        sub: payload.sub,
+        email: payload.email,
+        role: payload.role,
+        username: payload.username
+      }
+
+      return true
+    } catch (error) {
+      logger.error('Erreur de validation JWT', 'JwtAuthGuard', {
+        error: error.message,
+        ip: request.ip,
+        path: request.path
+      })
+      throw new UnauthorizedException('Token invalide')
+    }
+  }
+}
+```
+
+## 🔒 Sécurité WebSocket (Adaptation de l'existant)
+
+### BaseGateway Sécurisé (Amélioration)
+```typescript
+// joots-backend/src/gateways/base.gateway.ts (Amélioration de l'existant)
+import { WebSocketServer, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets'
+import { Server, Socket } from 'socket.io'
+import { Logger } from '@nestjs/common'
+import { JwtService } from '@nestjs/jwt'
+import { ConfigService } from '@nestjs/config'
+import { UsersService } from '../users/users.service'
+import { logger } from '../logger/logger.service'
+
+export abstract class BaseGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server
+  
+  protected readonly logger: Logger
+  
+  constructor(
+    name: string,
+    protected jwtService: JwtService,
+    protected configService: ConfigService,
+    protected usersService: UsersService
+  ) {
+    this.logger = new Logger(name)
+  }
+  
+  afterInit(server: Server) {
+    server.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token
+        const userId = socket.handshake.auth.userId
+        
+        if (!token || !userId) {
+          logger.warn('Tentative de connexion WebSocket sans authentification', 'BaseGateway', {
+            socketId: socket.id,
+            ip: socket.handshake.address
+          })
+          return next(new Error('Authentification requise'))
+        }
+        
+        // ✅ SÉCURISÉ - Validation JWT complète
+        const payload = this.validateJwtToken(token)
+        if (!payload || payload.sub !== userId) {
+          logger.warn('Tentative de connexion WebSocket avec token invalide', 'BaseGateway', {
+            socketId: socket.id,
+            userId,
+            ip: socket.handshake.address
+          })
+          return next(new Error('Token invalide'))
+        }
+
+        // ✅ SÉCURISÉ - Vérifier que l'utilisateur existe et est actif
+        const user = await this.usersService.findById(userId)
+        if (!user || !user.isActive) {
+          logger.warn('Tentative de connexion WebSocket avec utilisateur invalide', 'BaseGateway', {
+            socketId: socket.id,
+            userId,
+            ip: socket.handshake.address
+          })
+          return next(new Error('Utilisateur invalide'))
+        }
+        
+        // Ajouter les données utilisateur au socket
+        socket.data.userId = userId
+        socket.data.userRole = user.role
+        socket.data.connectedAt = new Date()
+        
+        logger.info('Connexion WebSocket authentifiée', 'BaseGateway', {
+          socketId: socket.id,
+          userId,
+          userRole: user.role,
+          ip: socket.handshake.address
+        })
+        
+        next()
+      } catch (error) {
+        logger.error('Erreur d\'authentification WebSocket', 'BaseGateway', {
+          socketId: socket.id,
+          error: error.message,
+          ip: socket.handshake.address
+        })
+        next(new Error('Erreur d\'authentification'))
+      }
+    })
+  }
+  
+  // ✅ SÉCURISÉ - Validation JWT avec vérification complète
+  private validateJwtToken(token: string): any | null {
+    try {
+      return this.jwtService.verify(token, {
+        secret: this.configService.get('JWT_SECRET')
+      })
+    } catch (error) {
+      return null
+    }
+  }
+
+  // ✅ AMÉLIORATION - Extraction sécurisée (fallback pour compatibilité)
+  protected extractUserIdFromToken(token: string): string | null {
+    try {
+      // Essayer d'abord la validation complète
+      const payload = this.validateJwtToken(token)
+      if (payload) return payload.sub
+
+      // Fallback vers l'ancienne méthode (pour compatibilité)
+      const tokenParts = token.split('.')
+      if (tokenParts.length !== 3) return null
+      
+      const payload = JSON.parse(
+        Buffer.from(tokenParts[1], 'base64').toString()
+      )
+      
+      return payload.sub
+    } catch (error) {
+      return null
+    }
+  }
+  
+  abstract handleConnection(client: Socket): void
+  abstract handleDisconnect(client: Socket): void
+}
+```
+
+## 🚫 Rate Limiting (Nouveau - À Implémenter)
+
+### Configuration Rate Limiting
+```typescript
+// config/rate-limit.config.ts
+import { ThrottlerModule } from '@nestjs/throttler'
+import { ThrottlerStorageRedisService } from 'nestjs-throttler-storage-redis'
+
+export const rateLimitConfig = ThrottlerModule.forRoot({
+  ttl: 60, // 1 minute
+  limit: 100, // 100 requêtes par minute par IP
+  storage: new ThrottlerStorageRedisService(redisInstance)
+})
+```
+
+### Rate Limiting WebSocket (Nouveau)
+```typescript
+// guards/websocket-rate-limit.guard.ts
+@Injectable()
+export class WebSocketRateLimitGuard implements CanActivate {
+  private rateLimiters = new Map<string, Map<string, number[]>>()
+
+  canActivate(context: ExecutionContext): boolean {
+    const client = context.switchToWs().getClient()
+    const userId = client.data.userId
+    const eventName = context.getHandler().name
+
+    if (!this.checkRateLimit(userId, eventName)) {
+      logger.warn('Rate limit dépassé pour WebSocket', 'WebSocketRateLimitGuard', {
+        userId,
+        eventName,
+        socketId: client.id
+      })
+      throw new WsException('Rate limit dépassé')
+    }
+
+    return true
+  }
+
+  private checkRateLimit(userId: string, eventName: string): boolean {
+    const now = Date.now()
+    const limits = {
+      sendMessage: { max: 30, window: 60000 },      // 30 messages/minute
+      typing: { max: 60, window: 60000 },           // 60 typing/minute
+      icebreakerReady: { max: 10, window: 60000 },  // 10 icebreaker/minute
+      joinConversation: { max: 20, window: 60000 }  // 20 join/minute
+    }
+
+    const limit = limits[eventName] || { max: 100, window: 60000 }
+    
+    if (!this.rateLimiters.has(userId)) {
+      this.rateLimiters.set(userId, new Map())
+    }
+
+    const userLimiters = this.rateLimiters.get(userId)
+    const eventHistory = userLimiters.get(eventName) || []
+
+    // Nettoyer l'historique (garder seulement la fenêtre actuelle)
+    const recentEvents = eventHistory.filter(time => now - time < limit.window)
+
+    if (recentEvents.length >= limit.max) {
+      return false
+    }
+
+    recentEvents.push(now)
+    userLimiters.set(eventName, recentEvents)
+
+    return true
+  }
+}
+```
+
+## 📋 Migration Progressive
+
+### Phase 1 : Sécurisation Immédiate (Compatible)
+- [ ] Améliorer le logging dans AuthService
+- [ ] Renforcer la validation JWT dans JwtAuthGuard
+- [ ] Ajouter le rôle dans les tokens NextAuth
+- [ ] Sécuriser BaseGateway avec validation JWT complète
+
+### Phase 2 : Extensions Sécuritaires
+- [ ] Implémenter le système de permissions granulaires
+- [ ] Ajouter le rate limiting API et WebSocket
+- [ ] Mettre en place la validation/sanitization
+- [ ] Configurer les headers de sécurité
+
+### Phase 3 : Fonctionnalités Avancées
+- [ ] Système de refresh tokens
+- [ ] Révocation de tokens
+- [ ] Audit trail complet
+- [ ] Monitoring de sécurité
+
+Cette approche respecte l'architecture existante tout en renforçant significativement la sécurité ! 🔐 
+
+## 🚀 Performance Sécurisée
+
+### Validation et Sanitisation Optimisées
+```typescript
+// ✅ Bon - Validation côté backend avec cache
+export class CreateUserDto {
+  @IsEmail({}, { message: 'Email invalide' })
+  @Transform(({ value }) => value?.toLowerCase()?.trim())
+  email: string
+
+  @IsString()
+  @Length(2, 50, { message: 'Le nom doit contenir entre 2 et 50 caractères' })
+  @Transform(({ value }) => value?.trim())
+  firstName: string
+
+  @IsOptional()
+  @IsUrl({}, { message: 'URL avatar invalide' })
+  avatar?: string
+}
+
+// ✅ Bon - Validation côté frontend avec mémorisation
+const userSchema = z.object({
+  email: z.string().email('Email invalide').transform(val => val.toLowerCase().trim()),
+  firstName: z.string().min(2, 'Minimum 2 caractères').max(50, 'Maximum 50 caractères'),
+  avatar: z.string().url('URL invalide').optional()
+})
+
+// Cache des validations pour éviter la revalidation
+const validationCache = new Map<string, boolean>()
+
+export function validateWithCache<T>(schema: z.ZodSchema<T>, data: unknown): T {
+  const cacheKey = JSON.stringify(data)
+  
+  if (validationCache.has(cacheKey)) {
+    return data as T
+  }
+  
+  const result = schema.parse(data)
+  validationCache.set(cacheKey, true)
+  
+  // Nettoyer le cache périodiquement
+  if (validationCache.size > 1000) {
+    validationCache.clear()
+  }
+  
+  return result
+}
+```
+
+### Protection XSS et CSRF Optimisée
+```typescript
+// Sanitisation HTML côté frontend avec cache
+import DOMPurify from 'dompurify'
+
+const sanitizationCache = new Map<string, string>()
+
+export function SafeHtml({ content }: { content: string }) {
+  const getCachedSanitized = (html: string): string => {
+    if (sanitizationCache.has(html)) {
+      return sanitizationCache.get(html)!
+    }
+    
+    const sanitized = DOMPurify.sanitize(html, {
+      ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u'],
+      ALLOWED_ATTR: []
+    })
+    
+    sanitizationCache.set(html, sanitized)
+    
+    // Limiter la taille du cache
+    if (sanitizationCache.size > 500) {
+      const firstKey = sanitizationCache.keys().next().value
+      sanitizationCache.delete(firstKey)
+    }
+    
+    return sanitized
+  }
+  
+  const sanitizedContent = getCachedSanitized(content)
+  
+  return <div dangerouslySetInnerHTML={{ __html: sanitizedContent }} />
+}
+
+// Backend - Protection CSRF avec cache des origines
+@Injectable()
+export class CsrfMiddleware implements NestMiddleware {
+  private allowedOriginsCache = new Set<string>()
+  
+  constructor() {
+    // Pré-charger les origines autorisées
+    const origins = process.env.ALLOWED_ORIGINS?.split(',') || []
+    origins.forEach(origin => this.allowedOriginsCache.add(origin))
+  }
+  
+  use(req: Request, res: Response, next: NextFunction) {
+    const origin = req.get('origin')
+    
+    if (origin && !this.allowedOriginsCache.has(origin)) {
+      throw new ForbiddenException('Origine non autorisée')
+    }
+    
+    next()
+  }
+}
+```
+
+### Optimisation Base de Données Sécurisée
+```typescript
+// ✅ Bon - Requêtes optimisées avec Prisma et sécurité
+export class ConversationService {
+  private conversationCache = new Map<string, { data: any; timestamp: number }>()
+  private readonly CACHE_TTL = 5 * 60 * 1000 // 5 minutes
+
+  async getConversationWithMessages(conversationId: string, userId: string) {
+    // Vérification d'autorisation AVANT la requête
+    await this.verifyUserAccess(conversationId, userId)
+    
+    // Cache sécurisé par utilisateur
+    const cacheKey = `${conversationId}:${userId}`
+    const cached = this.conversationCache.get(cacheKey)
+    
+    if (cached && Date.now() - cached.timestamp < this.CACHE_TTL) {
+      return cached.data
+    }
+    
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { 
+        id: conversationId,
+        // Sécurité : s'assurer que l'utilisateur fait partie de la conversation
+        participants: {
+          some: { userId }
+        }
+      },
+      include: {
+        participants: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true
+                // Exclure les champs sensibles (email, etc.)
+              }
+            }
+          }
+        },
+        messages: {
+          orderBy: { createdAt: 'desc' },
+          take: 50, // Pagination pour performance
+          include: {
+            sender: {
+              select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                avatar: true
+              }
+            }
+          }
+        }
+      }
+    })
+    
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée ou accès refusé')
+    }
+    
+    // Mise en cache sécurisée
+    this.conversationCache.set(cacheKey, {
+      data: conversation,
+      timestamp: Date.now()
+    })
+    
+    return conversation
+  }
+
+  private async verifyUserAccess(conversationId: string, userId: string): Promise<void> {
+    const participant = await this.prisma.conversationParticipant.findUnique({
+      where: {
+        conversationId_userId: {
+          conversationId,
+          userId
+        }
+      }
+    })
+    
+    if (!participant) {
+      throw new ForbiddenException('Accès refusé à cette conversation')
+    }
+  }
+
+  // Cache avec Redis sécurisé
+  async getCachedConversation(conversationId: string, userId: string) {
+    await this.verifyUserAccess(conversationId, userId)
+    
+    const cacheKey = `conversation:${conversationId}:${userId}`
+    const cached = await this.redis.get(cacheKey)
+    
+    if (cached) {
+      return JSON.parse(cached)
+    }
+    
+    const conversation = await this.getConversationWithMessages(conversationId, userId)
+    
+    // Cache avec TTL court pour les données sensibles
+    await this.redis.setex(cacheKey, 300, JSON.stringify(conversation)) // 5 min
+    
+    return conversation
+  }
+}
+```
+
+### Optimisation Frontend Sécurisée
+```typescript
+// ✅ Bon - Mémorisation et lazy loading sécurisés
+export const ConversationList = React.memo(function ConversationList({ 
+  userId 
+}: { userId: string }) {
+  const [conversations, setConversations] = useState<Conversation[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // Cache sécurisé par utilisateur
+  const conversationsCache = useMemo(() => new Map<string, Conversation[]>(), [])
+  
+  const loadConversations = useCallback(async () => {
+    // Vérifier que l'utilisateur est authentifié
+    if (!userId) {
+      throw new Error('Utilisateur non authentifié')
+    }
+    
+    const cacheKey = `conversations:${userId}`
+    
+    if (conversationsCache.has(cacheKey)) {
+      setConversations(conversationsCache.get(cacheKey)!)
+      setIsLoading(false)
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/conversations?userId=${userId}`, {
+        headers: {
+          'Authorization': `Bearer ${await getAuthToken()}`,
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      if (!response.ok) {
+        throw new Error('Erreur de chargement')
+      }
+      
+      const data = await response.json()
+      
+      // Validation côté client pour sécurité supplémentaire
+      const validatedConversations = data.filter((conv: any) => 
+        conv.participants?.some((p: any) => p.userId === userId)
+      )
+      
+      conversationsCache.set(cacheKey, validatedConversations)
+      setConversations(validatedConversations)
+    } catch (error) {
+      console.error('Erreur de chargement des conversations:', error)
+      // Ne pas exposer les détails de l'erreur
+      throw new Error('Impossible de charger les conversations')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [userId, conversationsCache])
+  
+  useEffect(() => {
+    loadConversations()
+  }, [loadConversations])
+  
+  if (isLoading) return <LoadingSpinner />
+  
+  return (
+    <div className="space-y-2">
+      {conversations.map(conversation => (
+        <ConversationItem 
+          key={conversation.id} 
+          conversation={conversation}
+          currentUserId={userId}
+        />
+      ))}
+    </div>
+  )
+})
+
+// Composant optimisé avec sécurité
+const ConversationItem = React.memo(function ConversationItem({
+  conversation,
+  currentUserId
+}: {
+  conversation: Conversation
+  currentUserId: string
+}) {
+  // Vérifier que l'utilisateur fait partie de la conversation
+  const isParticipant = conversation.participants.some(p => p.userId === currentUserId)
+  
+  if (!isParticipant) {
+    return null // Ne pas afficher si pas autorisé
+  }
+  
+  const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId)
+  
+  return (
+    <div className="p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+      <div className="flex items-center space-x-3">
+        <img 
+          src={otherParticipant?.user.avatar || '/default-avatar.png'} 
+          alt={`${otherParticipant?.user.firstName} ${otherParticipant?.user.lastName}`}
+          className="w-10 h-10 rounded-full"
+          loading="lazy"
+        />
+        <div>
+          <h3 className="font-medium">
+            {otherParticipant?.user.firstName} {otherParticipant?.user.lastName}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {conversation.messages?.[0]?.content?.substring(0, 50)}...
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+})
+```
+
+### Rate Limiting Avancé
+```typescript
+// Backend - Rate limiting avec Redis
+@Injectable()
+export class RateLimitGuard implements CanActivate {
+  constructor(private readonly redis: RedisService) {}
+  
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest()
+    const userId = request.user?.id
+    const endpoint = request.route?.path
+    
+    if (!userId) return false
+    
+    const key = `rate_limit:${userId}:${endpoint}`
+    const current = await this.redis.get(key)
+    
+    const limits = {
+      '/api/messages': { max: 30, window: 60 }, // 30 messages/minute
+      '/api/conversations': { max: 10, window: 60 }, // 10 conversations/minute
+      '/api/auth/login': { max: 5, window: 300 } // 5 tentatives/5min
+    }
+    
+    const limit = limits[endpoint] || { max: 100, window: 60 }
+    
+    if (current && parseInt(current) >= limit.max) {
+      throw new TooManyRequestsException('Rate limit dépassé')
+    }
+    
+    // Incrémenter le compteur
+    const multi = this.redis.multi()
+    multi.incr(key)
+    multi.expire(key, limit.window)
+    await multi.exec()
+    
+    return true
+  }
+}
+
+// Frontend - Rate limiting côté client
+class ClientRateLimit {
+  private requests = new Map<string, number[]>()
+  
+  canMakeRequest(endpoint: string, maxRequests: number = 30, windowMs: number = 60000): boolean {
+    const now = Date.now()
+    const windowStart = now - windowMs
+    
+    if (!this.requests.has(endpoint)) {
+      this.requests.set(endpoint, [])
+    }
+    
+    const endpointRequests = this.requests.get(endpoint)!
+    
+    // Nettoyer les anciennes requêtes
+    const validRequests = endpointRequests.filter(time => time > windowStart)
+    
+    if (validRequests.length >= maxRequests) {
+      return false
+    }
+    
+    validRequests.push(now)
+    this.requests.set(endpoint, validRequests)
+    
+    return true
+  }
+}
+
+export const clientRateLimit = new ClientRateLimit()
+```
+
+### Gestion des Variables d'Environnement Sécurisées
+```typescript
+// ✅ Bon - Variables typées et validées avec performance
+export class EnvironmentVariables {
+  @IsString()
+  @IsNotEmpty()
+  DATABASE_URL: string
+
+  @IsString()
+  @IsNotEmpty()
+  JWT_SECRET: string
+
+  @IsString()
+  @IsNotEmpty()
+  NEXTAUTH_SECRET: string
+
+  @IsOptional()
+  @IsString()
+  JWT_EXPIRES_IN: string = '24h'
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(65535)
+  PORT: number = 3001
+
+  // Variables de performance
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  REDIS_TTL: number = 300
+
+  @IsOptional()
+  @IsNumber()
+  @Min(10)
+  @Max(1000)
+  RATE_LIMIT_MAX: number = 100
+
+  @IsOptional()
+  @IsNumber()
+  @Min(1)
+  @Max(3600)
+  RATE_LIMIT_WINDOW: number = 60
+}
+
+// Configuration optimisée pour la production
+export const getOptimizedConfig = () => {
+  const isProduction = process.env.NODE_ENV === 'production'
+  
+  return {
+    // Cache plus agressif en production
+    cacheTTL: isProduction ? 600 : 60, // 10min vs 1min
+    
+    // Rate limiting plus strict en production
+    rateLimit: {
+      max: isProduction ? 50 : 1000,
+      window: isProduction ? 60 : 10
+    },
+    
+    // Logging moins verbeux en production
+    logLevel: isProduction ? 'warn' : 'debug',
+    
+    // Compression activée en production
+    compression: isProduction,
+    
+    // CORS plus strict en production
+    cors: {
+      origin: isProduction 
+        ? ['https://joots.app', 'https://www.joots.app']
+        : ['http://localhost:3000', 'http://127.0.0.1:3000']
+    }
+  }
+}
+```
+
+## 📋 Checklist Sécurité & Performance
+
+### ✅ **Sécurité :**
+- [ ] Validation stricte côté serveur ET client
+- [ ] Sanitisation de toutes les entrées utilisateur
+- [ ] Rate limiting sur tous les endpoints sensibles
+- [ ] Authentification JWT sécurisée
+- [ ] Autorisation basée sur les rôles
+- [ ] Protection CSRF et XSS
+- [ ] Variables d'environnement sécurisées
+- [ ] Logging des actions sensibles
+- [ ] Chiffrement des données sensibles
+
+### ✅ **Performance :**
+- [ ] Cache Redis pour les données fréquentes
+- [ ] Mémorisation des composants React
+- [ ] Lazy loading des ressources
+- [ ] Optimisation des requêtes base de données
+- [ ] Compression des réponses API
+- [ ] CDN pour les assets statiques
+- [ ] Pagination des listes longues
+- [ ] Debouncing des recherches
+- [ ] Service Workers pour le cache offline
+
+### ✅ **Monitoring :**
+- [ ] Métriques de performance en temps réel
+- [ ] Alertes sur les tentatives d'intrusion
+- [ ] Monitoring des taux d'erreur
+- [ ] Surveillance de l'utilisation des ressources
+- [ ] Logs structurés pour l'analyse
+- [ ] Health checks automatisés
+
+Cette architecture garantit une sécurité robuste avec des performances optimales pour JootsHub ! 🔐🚀 

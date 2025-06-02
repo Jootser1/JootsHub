@@ -3,11 +3,11 @@ interface StatusProps {
   className?: string
 }
 
-export const ConversationStatus = ({ isOnline, className = '' }: StatusProps) => {
+export function ConversationStatus({ isOnline, className = '' }: StatusProps) {
   return (
-    <div 
+    <div
       className={`w-2.5 h-2.5  ${isOnline ? 'rounded-full bg-green-500' : ' squared-full bg-transparent'} ${className}`}
-      role="status"
+      role='status'
       aria-label={isOnline ? 'En ligne' : 'Hors ligne'}
     />
   )

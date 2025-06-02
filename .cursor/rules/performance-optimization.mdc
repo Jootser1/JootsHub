@@ -1,0 +1,854 @@
+# Règles Performance & Optimisation - JootsHub
+
+## 🚀 Philosophie de Performance
+
+### Principes Fondamentaux
+- **Performance by Design** : Optimisation intégrée dès la conception
+- **Measure First** : Mesurer avant d'optimiser
+- **User-Centric Performance** : Prioriser l'expérience utilisateur
+- **Progressive Enhancement** : Fonctionnalités de base rapides, améliorations progressives
+- **Resource Efficiency** : Utilisation optimale des ressources serveur et client
+
+## 📊 Métriques de Performance Clés
+
+### Frontend (Core Web Vitals)
+```typescript
+// utils/performance-metrics.ts
+interface PerformanceMetrics {
+  // Core Web Vitals
+  LCP: number  // Largest Contentful Paint < 2.5s
+  FID: number  // First Input Delay < 100ms
+  CLS: number  // Cumulative Layout Shift < 0.1
+  
+  // Métriques JootsHub spécifiques
+  chatLoadTime: number        // Temps de chargement du chat < 1s
+  messageDeliveryTime: number // Temps de livraison message < 200ms
+  icebreakerResponseTime: number // Temps réponse icebreaker < 500ms
+  connectionTime: number      // Temps connexion WebSocket < 300ms
+}
+
+// Monitoring des performances
+export class PerformanceMonitor {
+  private static metrics: Map<string, number> = new Map()
+
+  static startTimer(label: string): void {
+    this.metrics.set(label, performance.now())
+  }
+
+  static endTimer(label: string): number {
+    const startTime = this.metrics.get(label)
+    if (!startTime) return 0
+    
+    const duration = performance.now() - startTime
+    this.metrics.delete(label)
+    
+    // Log si dépasse les seuils
+    this.checkThresholds(label, duration)
+    
+    return duration
+  }
+
+  private static checkThresholds(label: string, duration: number): void {
+    const thresholds = {
+      chatLoad: 1000,
+      messageDelivery: 200,
+      icebreakerResponse: 500,
+      socketConnection: 300
+    }
+
+    const threshold = thresholds[label]
+    if (threshold && duration > threshold) {
+      logger.warn('Performance threshold exceeded', {
+        metric: label,
+        duration,
+        threshold,
+        userId: getCurrentUserId()
+      })
+    }
+  }
+}
+```
+
+### Backend (Métriques Serveur)
+```typescript
+// middleware/performance.middleware.ts
+import { Injectable, NestMiddleware } from '@nestjs/common'
+import { Request, Response, NextFunction } from 'express'
+import { logger } from '../logger/logger.service'
+
+@Injectable()
+export class PerformanceMiddleware implements NestMiddleware {
+  use(req: Request, res: Response, next: NextFunction) {
+    const startTime = process.hrtime.bigint()
+    
+    res.on('finish', () => {
+      const endTime = process.hrtime.bigint()
+      const duration = Number(endTime - startTime) / 1000000 // Convert to ms
+      
+      // Log des requêtes lentes (> 500ms)
+      if (duration > 500) {
+        logger.warn('Slow request detected', {
+          method: req.method,
+          path: req.path,
+          duration,
+          statusCode: res.statusCode,
+          userId: req.user?.id,
+          ip: req.ip
+        })
+      }
+      
+      // Métriques par endpoint
+      this.trackEndpointMetrics(req.path, duration)
+    })
+    
+    next()
+  }
+
+  private trackEndpointMetrics(path: string, duration: number): void {
+    // Seuils spécifiques par endpoint
+    const thresholds = {
+      '/api/conversations': 300,
+      '/api/messages': 200,
+      '/api/auth/login': 1000,
+      '/api/users': 250
+    }
+
+    const threshold = thresholds[path] || 500
+    if (duration > threshold) {
+      logger.warn('Endpoint performance issue', {
+        path,
+        duration,
+        threshold
+      })
+    }
+  }
+}
+```
+
+## ⚡ Optimisations Frontend React/Next.js
+
+### Optimisation des Composants
+```typescript
+// ✅ BON - Composant optimisé avec memo et callbacks
+import { memo, useCallback, useMemo } from 'react'
+import { Message } from '@/types/chat'
+
+interface MessageListProps {
+  messages: Message[]
+  onMessageClick: (messageId: string) => void
+  currentUserId: string
+}
+
+export const MessageList = memo<MessageListProps>(({ 
+  messages, 
+  onMessageClick, 
+  currentUserId 
+}) => {
+  // ✅ Mémoriser les calculs coûteux
+  const sortedMessages = useMemo(() => 
+    messages.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()),
+    [messages]
+  )
+
+  // ✅ Mémoriser les callbacks pour éviter les re-renders
+  const handleMessageClick = useCallback((messageId: string) => {
+    PerformanceMonitor.startTimer('messageClick')
+    onMessageClick(messageId)
+    PerformanceMonitor.endTimer('messageClick')
+  }, [onMessageClick])
+
+  return (
+    <div className="message-list">
+      {sortedMessages.map(message => (
+        <MessageItem
+          key={message.id}
+          message={message}
+          onClick={handleMessageClick}
+          isOwn={message.senderId === currentUserId}
+        />
+      ))}
+    </div>
+  )
+})
+
+// ❌ MAUVAIS - Re-render à chaque props change
+export function BadMessageList({ messages, onMessageClick, currentUserId }) {
+  return (
+    <div>
+      {messages
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)) // Recalcul à chaque render
+        .map(message => (
+          <MessageItem
+            key={message.id}
+            message={message}
+            onClick={() => onMessageClick(message.id)} // Nouvelle fonction à chaque render
+            isOwn={message.senderId === currentUserId}
+          />
+        ))}
+    </div>
+  )
+}
+```
+
+### Optimisation Zustand (Architecture Existante)
+```typescript
+// features/chat/stores/chatStore.ts (Optimisation)
+import { create } from 'zustand'
+import { subscribeWithSelector } from 'zustand/middleware'
+import { immer } from 'zustand/middleware/immer'
+
+interface ChatStore {
+  // État optimisé
+  conversations: Map<string, Conversation>  // ✅ Map pour accès O(1)
+  messages: Map<string, Message[]>          // ✅ Messages par conversation
+  
+  // Actions optimisées
+  addMessage: (conversationId: string, message: Message) => void
+  updateMessage: (conversationId: string, messageId: string, updates: Partial<Message>) => void
+  
+  // Sélecteurs optimisés
+  getConversationMessages: (conversationId: string) => Message[]
+  getUnreadCount: () => number
+}
+
+export const useChatStore = create<ChatStore>()(
+  subscribeWithSelector(
+    immer((set, get) => ({
+      conversations: new Map(),
+      messages: new Map(),
+
+      // ✅ Action optimisée - Mise à jour immutable
+      addMessage: (conversationId, message) => set(state => {
+        const conversationMessages = state.messages.get(conversationId) || []
+        
+        // Éviter les doublons
+        if (conversationMessages.some(m => m.id === message.id)) {
+          return
+        }
+        
+        // Limiter le nombre de messages en mémoire (performance)
+        const updatedMessages = [...conversationMessages, message]
+        if (updatedMessages.length > 100) {
+          updatedMessages.splice(0, updatedMessages.length - 100)
+        }
+        
+        state.messages.set(conversationId, updatedMessages)
+      }),
+
+      // ✅ Sélecteur optimisé avec mémorisation
+      getConversationMessages: (conversationId) => {
+        return get().messages.get(conversationId) || []
+      },
+
+      // ✅ Calcul optimisé du nombre de messages non lus efficacement
+      getUnreadCount: () => {
+        const { conversations } = get()
+        let count = 0
+        
+        conversations.forEach(conversation => {
+          count += conversation.unreadCount || 0
+        })
+        
+        return count
+      }
+    }))
+  )
+)
+
+// ✅ Hook optimisé pour éviter les re-renders inutiles
+export const useConversationMessages = (conversationId: string) => {
+  return useChatStore(
+    useCallback(
+      state => state.getConversationMessages(conversationId),
+      [conversationId]
+    )
+  )
+}
+```
+
+### Optimisation des Images et Assets
+```typescript
+// components/ui/OptimizedImage.tsx
+import Image from 'next/image'
+import { useState, memo } from 'react'
+
+interface OptimizedImageProps {
+  src: string
+  alt: string
+  width?: number
+  height?: number
+  priority?: boolean
+  className?: string
+}
+
+export const OptimizedImage = memo<OptimizedImageProps>(({
+  src,
+  alt,
+  width = 40,
+  height = 40,
+  priority = false,
+  className
+}) => {
+  const [isLoading, setIsLoading] = useState(true)
+  const [hasError, setHasError] = useState(false)
+
+  // ✅ Placeholder optimisé avec jdenticon (déjà utilisé dans JootsHub)
+  const generatePlaceholder = (seed: string) => {
+    return `data:image/svg+xml;base64,${btoa(
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">
+        <rect width="100%" height="100%" fill="#f3f4f6"/>
+        <text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="#9ca3af">
+          ${seed.charAt(0).toUpperCase()}
+        </text>
+      </svg>`
+    )}`
+  }
+
+  if (hasError) {
+    return (
+      <div 
+        className={`bg-gray-100 flex items-center justify-center ${className}`}
+        style={{ width, height }}
+      >
+        <span className="text-gray-400 text-xs">?</span>
+      </div>
+    )
+  }
+
+  return (
+    <div className={`relative ${className}`} style={{ width, height }}>
+      {isLoading && (
+        <div 
+          className="absolute inset-0 bg-gray-100 animate-pulse rounded"
+          style={{ width, height }}
+        />
+      )}
+      <Image
+        src={src || generatePlaceholder(alt)}
+        alt={alt}
+        width={width}
+        height={height}
+        priority={priority}
+        className={`rounded transition-opacity duration-200 ${
+          isLoading ? 'opacity-0' : 'opacity-100'
+        }`}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false)
+          setHasError(true)
+        }}
+        // ✅ Optimisations Next.js
+        sizes={`${width}px`}
+        quality={85}
+        placeholder="blur"
+        blurDataURL={generatePlaceholder(alt)}
+      />
+    </div>
+  )
+})
+```
+
+## 🔧 Optimisations Backend NestJS
+
+### Optimisation Base de Données (Prisma)
+```typescript
+// services/conversations.service.ts (Optimisation)
+import { Injectable } from '@nestjs/common'
+import { PrismaService } from '../../prisma/prisma.service'
+import { RedisService } from '../redis/redis.service'
+
+@Injectable()
+export class ConversationsService {
+  constructor(
+    private prisma: PrismaService,
+    private redis: RedisService
+  ) {}
+
+  // ✅ Requête optimisée avec cache Redis
+  async findUserConversations(userId: string) {
+    const cacheKey = `user:${userId}:conversations`
+    
+    // Vérifier le cache d'abord
+    const cached = await this.redis.get(cacheKey)
+    if (cached) {
+      return JSON.parse(cached)
+    }
+
+    // ✅ Requête optimisée avec select et include spécifiques
+    const conversations = await this.prisma.conversation.findMany({
+      where: {
+        participants: {
+          some: { userId }
+        }
+      },
+      select: {
+        id: true,
+        createdAt: true,
+        updatedAt: true,
+        difficulty: true,
+        participants: {
+          select: {
+            userId: true,
+            isIcebreakerReady: true,
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                isOnline: true
+              }
+            }
+          }
+        },
+        // ✅ Optimisation - Seulement le dernier message
+        sentMessages: {
+          select: {
+            id: true,
+            content: true,
+            createdAt: true,
+            senderId: true,
+            messageType: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 1
+        },
+        // ✅ Compter les messages non lus efficacement
+        _count: {
+          select: {
+            sentMessages: {
+              where: {
+                isRead: false,
+                senderId: { not: userId }
+              }
+            }
+          }
+        }
+      },
+      orderBy: { updatedAt: 'desc' }
+    })
+
+    // ✅ Transformer et mettre en cache
+    const result = conversations.map(conv => ({
+      ...conv,
+      lastMessage: conv.sentMessages[0] || null,
+      unreadCount: conv._count.sentMessages,
+      sentMessages: undefined,
+      _count: undefined
+    }))
+
+    // Cache pendant 5 minutes
+    await this.redis.setex(cacheKey, 300, JSON.stringify(result))
+    
+    return result
+  }
+
+  // ✅ Invalidation de cache intelligente
+  async addMessage(conversationId: string, messageData: any) {
+    const message = await this.prisma.message.create({
+      data: messageData,
+      include: {
+        sender: {
+          select: {
+            id: true,
+            username: true,
+            avatar: true
+          }
+        }
+      }
+    })
+
+    // Invalider les caches des participants
+    const participants = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId },
+      select: { userId: true }
+    })
+
+    const cacheKeys = participants.map(p => `user:${p.userId}:conversations`)
+    await this.redis.del(...cacheKeys)
+
+    return message
+  }
+}
+```
+
+### Optimisation WebSocket (Architecture Existante)
+```typescript
+// gateways/chat.gateway.ts (Optimisations)
+import { WebSocketGateway, SubscribeMessage } from '@nestjs/websockets'
+import { BaseGateway } from './base.gateway'
+
+@WebSocketGateway({
+  cors: {
+    origin: process.env.NODE_ENV === 'production' 
+      ? 'https://joots.app' 
+      : 'http://localhost:3000',
+    credentials: true
+  },
+  namespace: 'chat',
+  // ✅ Optimisations WebSocket
+  transports: ['websocket'], // Forcer WebSocket (plus rapide que polling)
+  pingTimeout: 60000,
+  pingInterval: 25000
+})
+export class ChatGateway extends BaseGateway {
+  // ✅ Optimisation - Batch des événements typing
+  private typingBatch = new Map<string, NodeJS.Timeout>()
+
+  @SubscribeMessage('typing')
+  handleTyping(client: Socket, data: { conversationId: string, isTyping: boolean }) {
+    const userId = client.data.userId
+    const { conversationId, isTyping } = data
+
+    // ✅ Debounce des événements typing pour éviter le spam
+    const batchKey = `${conversationId}:${userId}`
+    
+    if (this.typingBatch.has(batchKey)) {
+      clearTimeout(this.typingBatch.get(batchKey))
+    }
+
+    this.typingBatch.set(batchKey, setTimeout(() => {
+      // Émettre seulement aux autres participants
+      client.to(conversationId).emit('typing', {
+        conversationId,
+        userId,
+        isTyping,
+        timestamp: new Date().toISOString()
+      })
+      
+      this.typingBatch.delete(batchKey)
+    }, 100)) // Debounce de 100ms
+  }
+
+  @SubscribeMessage('sendMessage')
+  async handleSendMessage(client: Socket, data: any) {
+    const startTime = process.hrtime.bigint()
+    
+    try {
+      // Traitement du message...
+      const message = await this.messagesService.create(data)
+      
+      // ✅ Optimisation - Émettre seulement aux participants
+      const participants = await this.getConversationParticipants(data.conversationId)
+      
+      participants.forEach(participantId => {
+        const participantSocket = this.findSocketByUserId(participantId)
+        if (participantSocket) {
+          participantSocket.emit('newMessage', message)
+        }
+      })
+
+      // Mesurer les performances
+      const endTime = process.hrtime.bigint()
+      const duration = Number(endTime - startTime) / 1000000
+
+      if (duration > 200) {
+        this.logger.warn('Slow message processing', {
+          duration,
+          conversationId: data.conversationId,
+          userId: client.data.userId
+        })
+      }
+
+    } catch (error) {
+      this.logger.error('Message processing error', {
+        error: error.message,
+        conversationId: data.conversationId,
+        userId: client.data.userId
+      })
+    }
+  }
+
+  // ✅ Cache des participants pour éviter les requêtes répétées
+  private participantsCache = new Map<string, { participants: string[], expiry: number }>()
+
+  private async getConversationParticipants(conversationId: string): Promise<string[]> {
+    const cached = this.participantsCache.get(conversationId)
+    const now = Date.now()
+
+    if (cached && cached.expiry > now) {
+      return cached.participants
+    }
+
+    const participants = await this.prisma.conversationParticipant.findMany({
+      where: { conversationId },
+      select: { userId: true }
+    })
+
+    const participantIds = participants.map(p => p.userId)
+    
+    // Cache pendant 5 minutes
+    this.participantsCache.set(conversationId, {
+      participants: participantIds,
+      expiry: now + 300000
+    })
+
+    return participantIds
+  }
+}
+```
+
+## 🗄️ Optimisations Redis et Cache
+
+### Stratégies de Cache
+```typescript
+// services/cache.service.ts
+import { Injectable } from '@nestjs/common'
+import { RedisService } from './redis.service'
+
+@Injectable()
+export class CacheService {
+  constructor(private redis: RedisService) {}
+
+  // ✅ Cache avec TTL adaptatif
+  async setWithAdaptiveTTL(key: string, value: any, baseSeconds: number = 300) {
+    const serialized = JSON.stringify(value)
+    
+    // TTL adaptatif basé sur la taille des données
+    const size = Buffer.byteLength(serialized, 'utf8')
+    const ttl = size > 10000 ? baseSeconds / 2 : baseSeconds // Réduire TTL pour gros objets
+    
+    await this.redis.setex(key, ttl, serialized)
+  }
+
+  // ✅ Cache avec compression pour gros objets
+  async setCompressed(key: string, value: any, seconds: number = 300) {
+    const serialized = JSON.stringify(value)
+    
+    if (Buffer.byteLength(serialized, 'utf8') > 5000) {
+      // Compresser les gros objets
+      const compressed = await this.compress(serialized)
+      await this.redis.setex(`${key}:compressed`, seconds, compressed)
+    } else {
+      await this.redis.setex(key, seconds, serialized)
+    }
+  }
+
+  // ✅ Invalidation de cache en batch
+  async invalidatePattern(pattern: string): Promise<void> {
+    const keys = await this.redis.keys(pattern)
+    
+    if (keys.length > 0) {
+      // Traiter par batch de 100 pour éviter de bloquer Redis
+      const batches = this.chunkArray(keys, 100)
+      
+      for (const batch of batches) {
+        await this.redis.del(...batch)
+      }
+    }
+  }
+
+  private chunkArray<T>(array: T[], size: number): T[][] {
+    const chunks: T[][] = []
+    for (let i = 0; i < array.length; i += size) {
+      chunks.push(array.slice(i, i + size))
+    }
+    return chunks
+  }
+
+  private async compress(data: string): Promise<string> {
+    // Implémentation de compression (zlib, etc.)
+    return data // Placeholder
+  }
+}
+
+// Patterns de cache pour JootsHub
+export const CACHE_PATTERNS = {
+  USER_CONVERSATIONS: (userId: string) => `user:${userId}:conversations`,
+  CONVERSATION_MESSAGES: (convId: string) => `conversation:${convId}:messages`,
+  USER_PROFILE: (userId: string) => `user:${userId}:profile`,
+  ICEBREAKER_QUESTIONS: (category: string) => `icebreaker:${category}:questions`,
+  USER_CONTACTS: (userId: string) => `user:${userId}:contacts`
+} as const
+```
+
+## 📱 Optimisations Spécifiques Mobile
+
+### Optimisation Touch et Gestures
+```typescript
+// hooks/useOptimizedTouch.ts
+import { useCallback, useRef } from 'react'
+
+export const useOptimizedTouch = () => {
+  const touchStartRef = useRef<{ x: number, y: number, time: number } | null>(null)
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0]
+    touchStartRef.current = {
+      x: touch.clientX,
+      y: touch.clientY,
+      time: Date.now()
+    }
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent, onTap?: () => void) => {
+    if (!touchStartRef.current) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = Math.abs(touch.clientX - touchStartRef.current.x)
+    const deltaY = Math.abs(touch.clientY - touchStartRef.current.y)
+    const deltaTime = Date.now() - touchStartRef.current.time
+
+    // ✅ Détecter un tap (pas un swipe)
+    if (deltaX < 10 && deltaY < 10 && deltaTime < 300) {
+      onTap?.()
+    }
+
+    touchStartRef.current = null
+  }, [])
+
+  return { handleTouchStart, handleTouchEnd }
+}
+```
+
+### Lazy Loading Intelligent
+```typescript
+// components/chat/MessageList.tsx (Optimisation mobile)
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useRef, useMemo } from 'react'
+
+export const VirtualizedMessageList = ({ messages, containerHeight = 400 }) => {
+  const parentRef = useRef<HTMLDivElement>(null)
+
+  // ✅ Virtualisation pour de longues listes de messages
+  const virtualizer = useVirtualizer({
+    count: messages.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 60, // Hauteur estimée d'un message
+    overscan: 5 // Garder 5 éléments hors vue pour la fluidité
+  })
+
+  const items = virtualizer.getVirtualItems()
+
+  return (
+    <div
+      ref={parentRef}
+      className="message-container"
+      style={{ height: containerHeight, overflow: 'auto' }}
+    >
+      <div
+        style={{
+          height: virtualizer.getTotalSize(),
+          width: '100%',
+          position: 'relative'
+        }}
+      >
+        {items.map(virtualItem => (
+          <div
+            key={virtualItem.key}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: virtualItem.size,
+              transform: `translateY(${virtualItem.start}px)`
+            }}
+          >
+            <MessageItem message={messages[virtualItem.index]} />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+```
+
+## 📊 Monitoring et Alertes
+
+### Dashboard de Performance
+```typescript
+// utils/performance-dashboard.ts
+export class PerformanceDashboard {
+  private static metrics = new Map<string, number[]>()
+
+  static recordMetric(name: string, value: number): void {
+    if (!this.metrics.has(name)) {
+      this.metrics.set(name, [])
+    }
+
+    const values = this.metrics.get(name)!
+    values.push(value)
+
+    // Garder seulement les 100 dernières valeurs
+    if (values.length > 100) {
+      values.shift()
+    }
+  }
+
+  static getMetricStats(name: string) {
+    const values = this.metrics.get(name) || []
+    if (values.length === 0) return null
+
+    const sorted = [...values].sort((a, b) => a - b)
+    
+    return {
+      count: values.length,
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      avg: values.reduce((a, b) => a + b, 0) / values.length,
+      p50: sorted[Math.floor(sorted.length * 0.5)],
+      p95: sorted[Math.floor(sorted.length * 0.95)],
+      p99: sorted[Math.floor(sorted.length * 0.99)]
+    }
+  }
+
+  static generateReport(): string {
+    const report = ['=== Performance Report ===']
+    
+    for (const [name, _] of this.metrics) {
+      const stats = this.getMetricStats(name)
+      if (stats) {
+        report.push(`${name}:`)
+        report.push(`  Avg: ${stats.avg.toFixed(2)}ms`)
+        report.push(`  P95: ${stats.p95.toFixed(2)}ms`)
+        report.push(`  Max: ${stats.max.toFixed(2)}ms`)
+      }
+    }
+    
+    return report.join('\n')
+  }
+}
+```
+
+## 📋 Checklist Performance
+
+### ✅ **Frontend :**
+- [ ] Composants mémorisés avec `memo()`
+- [ ] Callbacks optimisés avec `useCallback()`
+- [ ] Calculs coûteux avec `useMemo()`
+- [ ] Images optimisées avec Next.js Image
+- [ ] Lazy loading des composants non critiques
+- [ ] Virtualisation des longues listes
+- [ ] Bundle splitting et code splitting
+- [ ] Service Worker pour le cache
+
+### ✅ **Backend :**
+- [ ] Requêtes Prisma optimisées (select, include)
+- [ ] Cache Redis avec TTL adaptatif
+- [ ] Invalidation de cache intelligente
+- [ ] Connection pooling configuré
+- [ ] Middleware de monitoring des performances
+- [ ] Rate limiting pour protéger les ressources
+
+### ✅ **WebSocket :**
+- [ ] Debounce des événements fréquents (typing)
+- [ ] Batch des émissions multiples
+- [ ] Cache des participants de conversation
+- [ ] Nettoyage des connexions inactives
+- [ ] Compression des gros payloads
+
+### ✅ **Base de Données :**
+- [ ] Index sur les colonnes fréquemment requêtées
+- [ ] Requêtes avec pagination
+- [ ] Éviter les N+1 queries
+- [ ] Monitoring des requêtes lentes
+- [ ] Archivage des anciennes données
+
+### ✅ **Monitoring :**
+- [ ] Métriques Core Web Vitals
+- [ ] Temps de réponse API < 500ms
+- [ ] Temps de livraison WebSocket < 200ms
+- [ ] Utilisation mémoire surveillée
+- [ ] Alertes sur les seuils de performance
+
+Cette architecture garantit des performances optimales pour JootsHub ! ⚡ 

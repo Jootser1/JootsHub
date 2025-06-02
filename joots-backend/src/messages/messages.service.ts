@@ -1,5 +1,17 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+
+
+
+
+// Définir l'interface UserAnswer à l'extérieur de la classe
+interface IcebreakerUserAnswer {
+  userId: string;
+  questionOption: string;
+}
 
 @Injectable()
 export class MessagesService {
@@ -17,7 +29,9 @@ export class MessagesService {
     });
 
     if (!conversation) {
-      throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
+      throw new NotFoundException(
+        'Conversation non trouvée ou accès non autorisé'
+      );
     }
 
     // Marquer tous les messages reçus comme lus
@@ -33,5 +47,26 @@ export class MessagesService {
     });
 
     return { success: true };
+  }
+
+  async addIcebreakerMessage(
+    conversationId: string,
+    questionLabel: string,
+    userAnswerA: IcebreakerUserAnswer,
+    userAnswerB: IcebreakerUserAnswer
+  ) {
+
+
+    await this.prisma.message.create({
+      data: {
+        conversationId,
+        messageType: 'ANSWER',
+        content: questionLabel,
+        userAId: userAnswerA.userId,
+        userAAnswer: userAnswerA.questionOption,
+        userBId: userAnswerB.userId,
+        userBAnswer: userAnswerB.questionOption,
+      },
+    });
   }
 }

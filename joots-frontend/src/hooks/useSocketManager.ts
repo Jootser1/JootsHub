@@ -1,225 +1,223 @@
-import { useState, useCallback } from 'react';
-import { socketManager } from '@/lib/sockets/socketManager';
-import { logger } from '@/utils/logger';
-import { ChatSocketService } from '@/features/chat/sockets/chatSocketService';
-import axiosInstance from '@/app/api/axiosInstance';
+import { useState, useCallback, useEffect, useRef } from 'react'
+import { socketManager } from '@/lib/sockets/socket-manager'
+import { logger } from '@/utils/logger'
+import { ChatSocketService } from '@/features/chat/sockets/chat-socket-service'
+
+interface SocketState {
+  isUserConnected: boolean
+  isChatConnected: boolean
+}
 
 /**
  * Hook personnalisé pour accéder aux fonctionnalités du socketManager
- * Remplace les stores chatSocketStore et userSocketStore
+ * VERSION OPTIMISÉE - Utilise le système d'événements du socket manager
  */
 export function useSocketManager() {
-  // États pour la réactivité dans les composants React
-  const [isUserConnected, setIsUserConnected] = useState(socketManager.isUserSocketConnected());
-  const [isChatConnected, setIsChatConnected] = useState(socketManager.isChatSocketConnected());
-  
-  // Méthodes d'authentification et de connexion
-  const setCredentials = useCallback((userId: string, token: string) => {
-    socketManager.setCredentials(userId, token);
-  }, []);
-  
-  // Connexion du socket utilisateur
-  const connectUserSocket = useCallback(async (userId: string, token: string) => {
-    try {
-      socketManager.setCredentials(userId, token);
-      const userSocket = await socketManager.connectUserSocket();
-      setIsUserConnected(userSocket.isConnected());
-      return userSocket;
-    } catch (error) {
-      logger.error('useSocketManager: Erreur lors de la connexion du socket utilisateur', error);
-      throw error;
+  const [socketState, setSocketState] = useState<SocketState>(() => ({
+    isUserConnected: socketManager.isUserSocketConnected(),
+    isChatConnected: socketManager.isChatSocketConnected()
+  }))
+  const mountedRef = useRef(true)
+
+  // ✅ Abonnement direct au socket manager (plus efficace que le polling)
+  useEffect(() => {
+    mountedRef.current = true
+
+    // S'abonner aux changements d'état du socket manager
+    const unsubscribe = socketManager.onStateChange((isUserConnected, isChatConnected) => {
+      if (mountedRef.current) {
+        const newState = { isUserConnected, isChatConnected }
+        
+        // ✅ Seulement mettre à jour si l'état a vraiment changé
+        setSocketState(prevState => {
+          if (
+            prevState.isUserConnected !== newState.isUserConnected ||
+            prevState.isChatConnected !== newState.isChatConnected
+          ) {
+            const changes: string[] = []
+            
+            if (prevState.isUserConnected !== newState.isUserConnected) {
+              changes.push(`utilisateur: ${newState.isUserConnected}`)
+            }
+            
+            if (prevState.isChatConnected !== newState.isChatConnected) {
+              changes.push(`chat: ${newState.isChatConnected}`)
+            }
+
+            logger.debug(`useSocketManager: États mis à jour - ${changes.join(', ')}`)
+            return newState
+          }
+          
+          return prevState
+        })
+      }
+    })
+
+    return () => {
+      mountedRef.current = false
+      unsubscribe()
     }
-  }, []);
-  
-  // Connexion du socket chat
-  const connectChatSocket = useCallback(async (userId: string, token: string, conversationIds?: string[]) => {
-    try {
-      socketManager.setCredentials(userId, token);
-      const chatSocket = await socketManager.connectChatSocket(conversationIds);
-      setIsChatConnected(chatSocket.isConnected());
-      return chatSocket;
-    } catch (error) {
-      logger.error('useSocketManager: Erreur lors de la connexion du socket chat', error);
-      throw error;
+  }, []) // ✅ Pas de dépendances - évite les re-abonnements
+
+  // ✅ Cleanup au démontage
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false
     }
-  }, []);
-  
-  // Connexion avec toutes les conversations de l'utilisateur
-  const connectWithAllUserConversations = useCallback(async (userId: string, token: string) => {
-    try {
-      // Récupérer les conversations de l'utilisateur
-      const conversationIds = await fetchUserConversations();
-      
-      // Connexion du socket chat avec ces conversations
-      socketManager.setCredentials(userId, token);
-      const chatSocket = await socketManager.connectChatSocket(conversationIds);
-      
-      const isConnected = chatSocket.isConnected();
-      setIsChatConnected(isConnected);
-      
-      logger.info(`useSocketManager: Socket connecté avec ${conversationIds.length} conversations: ${isConnected}`);
-      return isConnected;
-    } catch (error) {
-      logger.error("useSocketManager: Erreur lors de la connexion avec les conversations:", error);
-      return false;
-    }
-  }, []);
-  
-  // Récupération des conversations de l'utilisateur
-  const fetchUserConversations = useCallback(async () => {
-    try {
-      const response = await axiosInstance.get('/conversations');
-      const conversationIds = response.data.map((conv: any) => conv.id);
-      logger.info(`${conversationIds.length} conversation(s) récupérées depuis la bdd`);
-      return conversationIds;
-    } catch (error) {
-      logger.error("useSocketManager: Erreur lors du chargement des conversations:", error);
-      return [];
-    }
-  }, []);
-  
-  // Déconnexion des sockets
-  const disconnectUserSocket = useCallback(() => {
-    socketManager.disconnectUserSocket();
-    setIsUserConnected(false);
-  }, []);
-  
-  const disconnectChatSocket = useCallback(() => {
-    socketManager.disconnectChatSocket();
-    setIsChatConnected(false);
-  }, []);
-  
-  const disconnectAll = useCallback(() => {
-    socketManager.disconnectAll();
-    setIsUserConnected(false);
-    setIsChatConnected(false);
-  }, []);
-  
-  // Fonctions pour les conversations
-  const joinConversation = useCallback((conversationId: string) => {
-    const chatSocket = socketManager.getChatSocket();
-    if (chatSocket?.isConnected()) {
-      chatSocket.joinConversation(conversationId);
-      logger.info(`useSocketManager: Conversation rejointe: ${conversationId}`);
-    } else {
-      logger.warn(`useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`);
-    }
-  }, []);
-  
-  const leaveConversation = useCallback((conversationId: string) => {
-    const chatSocket = socketManager.getChatSocket();
-    if (chatSocket?.isConnected()) {
-      chatSocket.leaveConversation(conversationId);
-      logger.info(`useSocketManager: Conversation quittée: ${conversationId}`);
-    }
-  }, []);
-  
-  const joinMultipleConversations = useCallback((conversationIds: string[]) => {
-    const chatSocket = socketManager.getChatSocket();
-    if (chatSocket?.isConnected() && conversationIds.length > 0) {
-      chatSocket.joinAllConversations(conversationIds);
-      logger.info(`useSocketManager: ${conversationIds.length} conversations rejointes`);
-    }
-  }, []);
-  
+  }, [])
+
+  // ========================================
+  // FONCTIONS PUREMENT RÉACTIVES (sans connexion)
+  // ========================================
+
+  // Fonction pour vérifier si une conversation est active
   const isConversationActive = useCallback((conversationId: string) => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
-    return chatSocket ? chatSocket.isInConversation(conversationId) : false;
-  }, []);
-  
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService
+    return chatSocket ? chatSocket.isInConversation(conversationId) : false
+  }, [])
+
+  // Fonction pour rejoindre une conversation
+  const joinConversation = useCallback((conversationId: string) => {
+    const chatSocket = socketManager.getChatSocket()
+    if (chatSocket?.isConnected()) {
+      if (!isConversationActive(conversationId)) {
+        chatSocket.joinConversation(conversationId)
+        // Log déjà fait dans chat-socket-service.ts
+      } else {
+        logger.debug(`useSocketManager: Déjà dans la conversation: ${conversationId}`)
+      }
+    } else {
+      logger.warn(
+        `useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`
+      )
+    }
+  }, [isConversationActive])
+
+  // ========================================
+  // FONCTIONS UTILITAIRES (PUREMENT RÉACTIVES)
+  // ========================================
+
+  const disconnectUserSocket = useCallback(() => {
+    socketManager.disconnectUserSocket()
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
+  }, [])
+
+  const disconnectChatSocket = useCallback(() => {
+    socketManager.disconnectChatSocket()
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
+  }, [])
+
+  const disconnectAll = useCallback(() => {
+    socketManager.disconnectAll()
+    // ✅ Pas besoin de forcer la mise à jour - le système d'événements s'en charge
+  }, [])
+
+  const leaveConversation = useCallback((conversationId: string) => {
+    const chatSocket = socketManager.getChatSocket()
+    if (chatSocket?.isConnected()) {
+      chatSocket.leaveConversation(conversationId)
+    }
+  }, [])
+
+  const joinMultipleConversations = useCallback((conversationIds: string[]) => {
+    const chatSocket = socketManager.getChatSocket()
+    if (chatSocket?.isConnected() && conversationIds.length > 0) {
+      chatSocket.joinAllConversations(conversationIds)
+      // Log déjà fait dans chat-socket-service.ts
+    }
+  }, [])
+
   const getActiveConversations = useCallback(() => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
-    return chatSocket ? chatSocket.getActiveConversations() : [];
-  }, []);
-  
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService
+    return chatSocket ? chatSocket.getActiveConversations() : []
+  }, [])
+
   // Fonctions pour les messages
   const sendChatMessage = useCallback((conversationId: string, content: string, userId: string) => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService
     if (!chatSocket) {
-      logger.warn('useSocketManager: Impossible d\'envoyer le message: socket non initialisé');
-      return false;
+      logger.warn("useSocketManager: Impossible d'envoyer le message: socket non initialisé")
+      return false
     }
-    
-    // S'assurer que la conversation est rejointe avant d'envoyer
-    if (!chatSocket.isInConversation(conversationId)) {
-      joinConversation(conversationId);
+
+    if (!chatSocket.isConnected()) {
+      logger.warn("useSocketManager: Impossible d'envoyer le message: socket non connecté")
+      return false
     }
-    
-    const result = chatSocket.sendMessage(conversationId, content, userId);
-    
-    // Si le résultat est une promesse (cas de reconnexion)
-    if (result instanceof Promise) {
-      return result;
+
+    if (!isConversationActive(conversationId)) {
+      chatSocket.joinConversation(conversationId)
+      // Log déjà fait dans chat-socket-service.ts
     }
-    
-    return result;
-  }, [joinConversation]);
-  
+
+    return chatSocket.sendMessage(conversationId, content, userId)
+  }, [isConversationActive])
+
   const sendTypingStatus = useCallback((conversationId: string, isTyping: boolean) => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
-    if (chatSocket?.isConnected()) {
-      // S'assurer que la conversation est rejointe avant d'envoyer
-      if (!chatSocket.isInConversation(conversationId)) {
-        joinConversation(conversationId);
-      }
-      
-      chatSocket.sendTypingStatus(conversationId, isTyping);
-    }
-  }, [joinConversation]);
-  
-  const sendIcebreakerReady = useCallback((conversationId: string, isIcebreakerReady: boolean) => {
-    const chatSocket = socketManager.getChatSocket() as ChatSocketService;
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService
     if (!chatSocket?.isConnected()) {
-      logger.warn('useSocketManager: Impossible d\'envoyer le statut icebreaker: socket non connecté');
-      return;
+      logger.warn(
+        `useSocketManager: Impossible de rejoindre la conversation ${conversationId}: socket non connecté`
+      )
+      return
     }
-    
-    const userId = chatSocket.getUserId();
+
+    if (!isConversationActive(conversationId)) {
+      chatSocket.joinConversation(conversationId)
+      // Log déjà fait dans chat-socket-service.ts
+    }
+
+    chatSocket.sendTypingStatus(conversationId, isTyping)
+  }, [isConversationActive])
+
+  const sendIcebreakerReady = useCallback((conversationId: string, isReady: boolean) => {
+    const chatSocket = socketManager.getChatSocket() as ChatSocketService
+    const userId = socketManager.getUserId()
+
+    if (!chatSocket?.isConnected()) {
+      logger.warn(
+        "useSocketManager: Impossible d'envoyer le statut icebreaker: socket non connecté"
+      )
+      return false
+    }
+
     if (!userId) {
-      logger.warn('useSocketManager: Impossible d\'envoyer le statut icebreaker: utilisateur non identifié');
-      return;
+      logger.warn(
+        "useSocketManager: Impossible d'envoyer le statut icebreaker: utilisateur non identifié"
+      )
+      return false
     }
-    
-    // S'assurer que la conversation est rejointe avant d'envoyer
-    if (!chatSocket.isInConversation(conversationId)) {
-      joinConversation(conversationId);
+
+    if (!isConversationActive(conversationId)) {
+      chatSocket.joinConversation(conversationId)
+      // Log déjà fait dans chat-socket-service.ts
     }
-    
-    chatSocket.sendIcebreakerReady(conversationId, userId, isIcebreakerReady);
-  }, [joinConversation]);
-  
-  // Retourne toutes les fonctionnalités
+
+    chatSocket.sendIcebreakerReady(conversationId, userId, isReady)
+    return true
+  }, [isConversationActive])
+
+  // Retourner l'interface publique (SANS fonctions de connexion)
   return {
-    // État
-    isUserConnected,
-    isChatConnected,
+    // États
+    isUserConnected: socketState.isUserConnected,
+    isChatConnected: socketState.isChatConnected,
     
-    // Méthodes d'authentification et de connexion
-    setCredentials,
-    connectUserSocket,
-    connectChatSocket,
-    connectWithAllUserConversations,
-    fetchUserConversations,
-    
-    // Méthodes de déconnexion
+    // Fonctions utilitaires
     disconnectUserSocket,
     disconnectChatSocket,
     disconnectAll,
     
-    // Méthodes de gestion des conversations
+    // Fonctions de conversation
     joinConversation,
     leaveConversation,
     joinMultipleConversations,
     isConversationActive,
     getActiveConversations,
     
-    // Méthodes de gestion des messages
+    // Fonctions de message
     sendChatMessage,
     sendTypingStatus,
     sendIcebreakerReady,
-    
-    // Accès direct aux services
-    getUserSocket: socketManager.getUserSocket.bind(socketManager),
-    getChatSocket: socketManager.getChatSocket.bind(socketManager)
-  };
-} 
+  }
+}

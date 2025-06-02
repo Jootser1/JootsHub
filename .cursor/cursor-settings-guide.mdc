@@ -1,0 +1,113 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Guide Configuration Cursor Settings - JootsHub
+
+## 🎯 Configuration Optimale
+
+### **Cursor Settings > Project Rules**
+
+#### ✅ **Configuration Recommandée (Minimale)**
+```
+Always:
+.cursor/rules.mdc
+.cursor/user-rules.mdc
+```
+
+#### ✅ **Configuration Avancée (Si besoin de plus de détails)**
+```
+Always:
+.cursor/rules.mdc
+.cursor/user-rules.mdc
+
+Manual (selon contexte):
+.cursor/rules/general-typescript.mdc
+.cursor/rules/file-structure.mdc
+.cursor/rules/react-nextjs.mdc
+.cursor/rules/nestjs-backend.mdc
+```
+
+#### ❌ **À Éviter**
+```
+# Ne PAS ajouter tous les 16 fichiers
+.cursor/rules/README.md
+.cursor/rules/security-authentication.md
+.cursor/rules/error-handling-validation.md
+.cursor/rules/database-prisma.md
+# ... etc (trop de contexte)
+```
+
+## 🔧 **Autres Paramètres Cursor Recommandés**
+
+### **Cursor Settings > General**
+- ✅ **Auto-completion** : Activé
+- ✅ **Code suggestions** : Activé
+- ✅ **Context awareness** : Activé
+
+### **Cursor Settings > AI**
+- ✅ **Model** : Claude 3.5 Sonnet (recommandé pour JootsHub)
+- ✅ **Temperature** : 0.3 (équilibre créativité/précision)
+- ✅ **Max tokens** : 4000 (suffisant avec règles optimisées)
+
+## 📋 **Workflow Recommandé**
+
+### **1. Configuration Initiale**
+```bash
+# Ajouter les fichiers essentiels
+Cursor Settings > Project Rules > Add File
+> .cursor/rules.md
+> .cursor/user-rules.md
+```
+
+### **2. Développement Quotidien**
+- **Cursor** : Utilise automatiquement `.cursor/rules.md` + `.cursor/user-rules.md`
+- **Vous** : Consultez les fichiers spécifiques au besoin
+- **Références** : Utilisez les liens dans le fichier principal
+
+### **3. Cas Spéciaux**
+```bash
+# Frontend intensif : Ajouter temporairement
++ .cursor/rules/react-nextjs.md
++ .cursor/rules/ui-styling.md
+
+# Backend intensif : Ajouter temporairement  
++ .cursor/rules/nestjs-backend.md
++ .cursor/rules/database-prisma.md
+
+# Debugging : Ajouter temporairement
++ .cursor/rules/error-handling-validation.md
++ .cursor/rules/logging-monitoring.md
+```
+
+## 🎯 **Avantages de cette Approche**
+
+### ✅ **Performance**
+- Traitement plus rapide par Cursor
+- Moins de tokens utilisés
+- Réponses plus ciblées
+
+### ✅ **Maintenabilité**
+- Configuration simple à gérer
+- Pas de duplication de contexte
+- Mise à jour centralisée
+
+### ✅ **Flexibilité**
+- Ajout/suppression facile selon le contexte
+- Adaptation par équipe/projet
+- Évolutif selon les besoins
+
+## 📊 **Comparaison des Approches**
+
+| Approche | Fichiers | Performance | Détail | Maintenance |
+|----------|----------|-------------|---------|-------------|
+| **Minimale** | 2 | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Avancée** | 6 | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
+| **Complète** | 17 | ⭐⭐ | ⭐⭐⭐⭐⭐ | ⭐⭐ |
+
+## 🚀 **Recommandation Finale**
+
+**Commencez par la configuration minimale** (`.cursor/rules.md` + `.cursor/user-rules.md`) et ajoutez des fichiers spécifiques seulement si vous ressentez le besoin de plus de détails dans un domaine particulier.
+
+Cette approche garantit les meilleures performances tout en conservant l'accès à toute la documentation ! 🎯 

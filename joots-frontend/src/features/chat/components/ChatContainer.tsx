@@ -1,108 +1,109 @@
-import { useState, useEffect, useRef } from 'react';
-import { Conversation } from '@/features/conversations/conversation.types';
-import { ChatHeader } from './ChatHeader';
-import { ChatMessages } from './ChatMessages';
-import { ChatInput } from './ChatInput';
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversationUtils';
-import { useUserStore } from '@/features/user/stores/userStore';
-import { useChatStore } from '../stores/chatStore';
-import IcebreakerPopup from '@/features/icebreakers/components/IcebreakerPopup';
-  import { IcebreakerService } from '@/features/icebreakers/services/icebreakerService';
+import { useState, useEffect, useRef } from 'react'
+import { Conversation } from '@/features/conversations/conversation.types'
+import { ChatHeader } from './ChatHeader'
+import { ChatMessages } from './ChatMessages'
+import { ChatInput } from './ChatInput'
+import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
+import { useUserStore } from '@/features/user/stores/user-store'
+import { useChatStore } from '../stores/chat-store'
+import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
+import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
+import { logger } from '@/utils/logger'
+import { ProgressionResult } from '../chat.types'
+
+
 
 interface ChatContainerProps {
-  conversation: Conversation;
+  conversation: Conversation
+  xpAndLevel?: ProgressionResult | null
 }
 
-export const ChatContainer = ({ conversation }: ChatContainerProps) => {
-  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } = useChatStore();
-  const user = useUserStore((state) => state.user);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  if (!activeConversationId || !user?.id) return null;
-  const isCurrentUserReady = getParticipant(activeConversationId, user.id)?.isIcebreakerReady;
-  const isOtherParticipantReady = getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady;  
-
+export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
+  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } =
+    useChatStore()
+  const currentQuestionGroup = activeConversationId
+    ? getCurrentQuestionGroup(activeConversationId)
+    : null
+  const user = useUserStore(state => state.user)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showQuestion, setShowQuestion] = useState(false)
-  const [lastAnswer, setLastAnswer] = useState<{ questionGroupId: string, optionId: string } | null>(null)
-  
-  const currentQuestionGroup = getCurrentQuestionGroup(activeConversationId)
-  console.log('currentQuestionGroup', currentQuestionGroup)
+  const isCurrentUserReady =
+    activeConversationId && user?.id
+      ? getParticipant(activeConversationId, user.id)?.isIcebreakerReady
+      : false
+  const isOtherParticipantReady =
+    activeConversationId && user?.id
+      ? getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady
+      : false
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   const handleAnswerQuestion = (questionGroupId: string, optionId: string) => {
-    // Enregistrer la dernière réponse
-    setLastAnswer({ questionGroupId, optionId })
-    IcebreakerService.submitIcebreakerResponse(user.id, questionGroupId, optionId, activeConversationId)
-    // Simuler l'envoi à un endpoint (à implémenter dans le futur)
-    console.log(`Réponse validée: Question ${questionGroupId}, Option ${optionId}`)
-    
-
-    // Dans un cas réel, vous pourriez faire quelque chose comme:
-    // 
-
-    // Fermer la question
+    if (!user?.id || !activeConversationId) return
+    IcebreakerService.submitIcebreakerResponse(
+      user.id,
+      questionGroupId,
+      optionId,
+      activeConversationId
+    )
     setShowQuestion(false)
   }
 
   const handleCloseQuestion = () => {
     setShowQuestion(false)
   }
-  
+
+  // Scroll to bottom of the chat
   useEffect(() => {
-    scrollToBottom();
-
-    const input = document.getElementById("chat-input");
-    input?.addEventListener("focus", scrollToBottom);
-
+    scrollToBottom()
+    const input = document.getElementById('chat-input')
+    input?.addEventListener('focus', scrollToBottom)
     return () => {
-      input?.removeEventListener("focus", scrollToBottom);
-    };
-  }, [conversation?.messages.length]);
+      input?.removeEventListener('focus', scrollToBottom)
+    }
+  }, [conversation?.messages.length])
 
-  // Ouvrir la modale si les deux participants sont prêts
+  // Show the question if the current user and the other participant are ready
   useEffect(() => {
     if (currentQuestionGroup && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true)
     }
-  }, [isCurrentUserReady, isOtherParticipantReady, currentQuestionGroup]);
+  }, [isCurrentUserReady, isOtherParticipantReady, currentQuestionGroup])
 
-
-
-  if (!activeConversationId) {
-    return <div className="flex items-center justify-center h-full">Conversation non trouvée</div>;
-  }
-
-  if (!user?.id) {
-    return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
-  }
-  
-  const otherUser = getOtherParticipantInConversation(conversation, user.id);
+  if (!activeConversationId || !user?.id) return null
+  const otherUser = getOtherParticipantInConversation(conversation, user.id)
 
   if (!otherUser) {
-    return <div className="flex items-center justify-center h-full">Utilisateur non trouvé</div>;
+    return <div className='flex items-center justify-center h-full'>Utilisateur non trouvé</div>
   }
-  
+
   return (
     <>
-    <IcebreakerPopup
-        question={currentQuestionGroup || ''}
-        isVisible={showQuestion}
-        onAnswer={handleAnswerQuestion}
-        onClose={handleCloseQuestion}
-      />
-    <div className="relative flex flex-col h-full bg-gray-50">
-      <ChatHeader 
-        otherUser={otherUser} 
-        isOnline={otherUser.isOnline} 
-        conversationId={activeConversationId}
-      />
-      <div className="flex-1 overflow-y-auto">
-        <ChatMessages messages={conversation?.messages || []} conversationId={activeConversationId} />
+      {currentQuestionGroup && (
+        <IcebreakerPopup
+          question={JSON.parse(currentQuestionGroup)}
+          isVisible={showQuestion}
+          onAnswer={handleAnswerQuestion}
+          onClose={handleCloseQuestion}
+        />
+      )}
+      <div className='relative flex flex-col h-full bg-gray-50'>
+        <ChatHeader
+          otherUser={otherUser}
+          isOnline={otherUser.isOnline}
+          conversationId={activeConversationId}
+          xpAndLevel={xpAndLevel || conversation.xpAndLevel}
+        />
+        <div className='flex-1 overflow-y-auto'>
+          <ChatMessages
+            messages={conversation?.messages || []}
+            conversationId={activeConversationId}
+          />
+        </div>
+        <ChatInput conversationId={activeConversationId} />
       </div>
-      <ChatInput conversationId={activeConversationId} />
-    </div>
     </>
-  );
-}; 
+  )
+}

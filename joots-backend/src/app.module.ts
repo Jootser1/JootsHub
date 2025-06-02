@@ -11,6 +11,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { MessagesModule } from './messages/messages.module';
 import { QuestionModule } from './questions/question.module';
 import { IcebreakerModule } from './icebreakers/icebreaker.module';
+import { ProfileModule } from './profile/profile.module';
 
 @Module({
   imports: [
@@ -25,18 +26,18 @@ import { IcebreakerModule } from './icebreakers/icebreaker.module';
     ConversationsModule,
     MessagesModule,
     QuestionModule,
-    IcebreakerModule
+    IcebreakerModule,
+    ProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],
 })
 export class AppModule {}
 
-
 /* export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(LoggingMiddleware)
-      .forRoutes('*');
+      .forRoutes('*')
   }
 } */
