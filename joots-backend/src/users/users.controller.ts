@@ -33,22 +33,16 @@ export class UsersController {
   async getOnlineUsers() {
     return await this.usersService.getOnlineUsers();
   }
+  
 
-  @Get(':id')
+  @Get('profile/:id/:conversationId')
   @UseGuards(JwtAuthGuard)
-  async getUser(@Param('id') id: string) {
-    const user = await this.usersService.findById(id);
-    if (!user.auth) {
-      throw new NotFoundException("Données d'authentification non trouvées");
-    }
-    return {
-      id: user.id,
-      email: user.auth.email,
-      username: user.username,
-      avatar: user.avatar || null,
-      isAvailableForChat: user.isAvailableForChat || false,
-      isOnline: user.isOnline || false,
-    };
+  async getUserProfileForConversation(
+    @Param('id') userId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() currentUser: any
+  ) {
+    return this.usersService.getUserProfileForConversation(userId, conversationId, currentUser.id);
   }
 
   @Patch(':id/chat-preference')
@@ -73,5 +67,22 @@ export class UsersController {
     @Body('isOnline') isOnline: boolean
   ) {
     return this.usersService.updateUserStatusinBDD(id, isOnline);
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  async getUser(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user.auth) {
+      throw new NotFoundException("Données d'authentification non trouvées");
+    }
+    return {
+      id: user.id,
+      email: user.auth.email,
+      username: user.username,
+      avatar: user.avatar || null,
+      isAvailableForChat: user.isAvailableForChat || false,
+      isOnline: user.isOnline || false,
+    };
   }
 }

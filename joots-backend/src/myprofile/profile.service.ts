@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AttributeKey } from '@prisma/client';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import { UpdateMyProfileDto } from './dto/update-myprofile.dto';
 import levelConfig from '../config/leveling_config_seed.json';
 
 @Injectable()
-export class ProfileService {
+export class MyProfileService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -47,7 +47,7 @@ export class ProfileService {
     return result;
   }
 
-  async getUserProfile(userId: string) {
+  async getMyProfile(userId: string) {
     const attributes = await this.prisma.userAttribute.findMany({
       where: { userId },
     });
@@ -67,13 +67,13 @@ export class ProfileService {
     return profile;
   }
 
-  async updateUserProfile(
+  async updateMyProfile(
     userId: string, 
-    dto: UpdateProfileDto & { avatar?: string }, 
+    dto: UpdateMyProfileDto & { avatar?: string }, 
     difficulty: string = 'INTERMEDIATE'
   ) {
     const { avatar, ...attributes } = dto;
-    console.log('Mise à jour du profil utilisateur', { userId, difficulty });
+    console.log('Mise à jour de mon profil', { userId, difficulty });
 
     // Update attributs dynamiques avec le bon levelRevealed
     const entries = Object.entries(attributes) as [AttributeKey, any][];
@@ -98,6 +98,6 @@ export class ProfileService {
       });
     }
 
-    return this.getUserProfile(userId);
+    return this.getMyProfile(userId);
   }
 }

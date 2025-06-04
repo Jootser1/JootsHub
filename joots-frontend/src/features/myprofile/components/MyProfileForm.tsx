@@ -42,7 +42,7 @@ export function useUserProfile() {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    axiosInstance.get('/profile')
+    axiosInstance.get('/myprofile')
       .then(res => {
         console.log('Données du profil reçues:', res.data);
         const profileData = { ...initialState, ...res.data };
@@ -67,14 +67,14 @@ export function useUserProfile() {
       ...newProfile,
       PASSIONS: newProfile.PASSIONS.filter(p => p),
     };
-    await axiosInstance.put('/profile', payload);
+    await axiosInstance.put('/myprofile', payload);
     setProfile(payload);
   };
 
   return { profile, updateProfile, loading, error };
 }
 
-export default function UserProfileForm() {
+export default function MyProfileForm() {
   const { profile, updateProfile, loading } = useUserProfile();
   const [form, setForm] = useState<UserProfileState>(initialState);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
@@ -252,4 +252,4 @@ export default function UserProfileForm() {
       </form>
     </div>
   );
-}
+} 
