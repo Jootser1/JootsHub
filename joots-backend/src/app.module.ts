@@ -11,7 +11,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { MessagesModule } from './messages/messages.module';
 import { QuestionModule } from './questions/question.module';
 import { IcebreakerModule } from './icebreakers/icebreaker.module';
-import { ProfileModule } from './profile/profile.module';
+import { MyProfileModule } from './myprofile/profile.module';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { ProfileModule } from './profile/profile.module';
     MessagesModule,
     QuestionModule,
     IcebreakerModule,
-    ProfileModule,
+    MyProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

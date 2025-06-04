@@ -1,7 +1,7 @@
 import { AttributeKey } from '@prisma/client';
 import { IsOptional, IsString, IsArray, IsEnum } from 'class-validator';
 
-export class UpdateProfileDto {
+export class UpdateMyProfileDto {
   @IsOptional()
   @IsString()
   [AttributeKey.CITY]?: string;
@@ -47,4 +47,4 @@ export class UpdateProfileDto {
   @IsOptional()
   @IsString()
   avatar?: string;
-}
+} 

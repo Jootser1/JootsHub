@@ -5,6 +5,7 @@ import { RedisService } from '../redis/redis.service';
 import { Logger } from '@nestjs/common';
 import { Socket } from 'socket.io';
 import { AttributeKey } from '@prisma/client';
+import levelConfig from '../config/leveling_config_seed.json';
 
 // Définir notre propre type User avec Auth sans dépendre des types Prisma
 type UserWithAuth = {
@@ -158,5 +159,109 @@ export class UsersService {
     }
 
     return { id: user.id, isOnline: user.isOnline };
+  }
+
+  async getUserProfileForConversation(userId: string, conversationId: string, requesterId: string) {
+    console.log(`[getUserProfileForConversation] userId: ${userId}, conversationId: ${conversationId}, requesterId: ${requesterId}`);
+    
+    // Vérifier que l'utilisateur qui fait la demande fait partie de la conversation
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        participants: {
+          some: { userId: requesterId }
+        }
+      },
+      select: {
+        id: true,
+        xpPoint: true,
+        difficulty: true,
+        participants: {
+          where: { userId },
+          include: {
+            user: {
+              select: {
+                id: true,
+                username: true,
+                avatar: true,
+                isOnline: true,
+                createdAt: true
+              }
+            }
+          }
+        }
+      }
+    });
+
+    console.log(`[getUserProfileForConversation] Conversation found:`, conversation);
+
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
+    }
+
+    const targetParticipant = conversation.participants[0];
+    if (!targetParticipant) {
+      throw new NotFoundException('Utilisateur non trouvé dans cette conversation');
+    }
+
+    console.log(`[getUserProfileForConversation] Target participant:`, targetParticipant);
+
+    // Calculer le niveau actuel de la conversation
+    const currentLevel = this.getConversationLevel(conversation.xpPoint, conversation.difficulty.toString());
+
+    console.log(`[getUserProfileForConversation] Current level: ${currentLevel}`);
+
+    // Récupérer tous les attributs de l'utilisateur
+    const userAttributes = await this.prisma.userAttribute.findMany({
+      where: { userId }
+    });
+
+    console.log(`[getUserProfileForConversation] User attributes:`, userAttributes);
+
+    // Filtrer les attributs selon le niveau atteint
+    const revealedAttributes: Record<string, any> = {};
+    
+    for (const attribute of userAttributes) {
+      if (attribute.levelRevealed <= currentLevel) {
+        revealedAttributes[attribute.key] = attribute.value.includes('||') 
+          ? attribute.value.split('||') 
+          : attribute.value;
+      }
+    }
+
+    console.log(`[getUserProfileForConversation] Revealed attributes:`, revealedAttributes);
+
+    // Calculer le pourcentage de révélation de la photo
+    const levelData = levelConfig.find(
+      config => config.difficulty === conversation.difficulty.toString() && config.level === currentLevel
+    );
+    const photoRevealPercent = levelData?.photoRevealPercent || 0;
+
+    const result = {
+      user: {
+        id: targetParticipant.user.id,
+        username: targetParticipant.user.username,
+        avatar: targetParticipant.user.avatar,
+        isOnline: targetParticipant.user.isOnline,
+        createdAt: targetParticipant.user.createdAt
+      },
+      revealedAttributes,
+      conversationLevel: currentLevel,
+      photoRevealPercent,
+      totalAttributes: Object.values(AttributeKey).length,
+      revealedCount: Object.keys(revealedAttributes).length
+    };
+
+    console.log(`[getUserProfileForConversation] Final result:`, result);
+    return result;
+  }
+
+  private getConversationLevel(xpPoint: number, difficulty: string): number {
+    const levels = levelConfig.filter(config => config.difficulty === difficulty);
+    const currentLevel = levels.reduce((prev, curr) => {
+      return (xpPoint >= curr.xpRequired) ? curr : prev;
+    }, levels[0]);
+    
+    return currentLevel ? currentLevel.level : 1;
   }
 }

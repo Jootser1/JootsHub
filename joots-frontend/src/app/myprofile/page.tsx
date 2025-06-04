@@ -1,14 +1,14 @@
 import { AppLayout } from '@/components/AppLayout';
-import UserProfileForm from '@/features/profile/components/UserProfileForm';
+import MyProfileForm from '@/features/myprofile/components/MyProfileForm';
 
-export default function ProfilePage() {
+export default function MyProfilePage() {
   return (
     <AppLayout>
       <div className="flex-1 overflow-y-auto bg-gray-50">
         <div className="py-8 px-4">
-          <UserProfileForm />
+          <MyProfileForm />
         </div>
       </div>
     </AppLayout>
   );
-}
+} 
