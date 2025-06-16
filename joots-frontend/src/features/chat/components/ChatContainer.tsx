@@ -20,6 +20,12 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
+  console.log('ChatContainer rendered:', { 
+    conversationId: conversation.conversation_id,
+    activeConversationId: useChatStore.getState().activeConversationId,
+    userId: useUserStore.getState().user?.user_id
+  })
+
   const { activeConversationId, getParticipant, getOtherParticipant, getCurrentPoll } =
     useChatStore()
   const currentPoll = activeConversationId
@@ -77,7 +83,17 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
     }
   }, [isCurrentUserReady, isOtherParticipantReady, currentPoll])
 
-  if (!activeConversationId || !user?.user_id) return null
+  if (!activeConversationId || !user?.user_id) {
+    console.log('ChatContainer early return:', { activeConversationId, userId: user?.user_id })
+    return null
+  }
+
+  const conversationInStore = useChatStore.getState().getConversation(activeConversationId)
+  if (!conversationInStore) {
+    console.log('ChatContainer: Conversation not found in store:', activeConversationId)
+    return null
+  }
+
   const otherUser = getOtherParticipantInConversation(conversation, user.user_id)
 
   if (!otherUser) {

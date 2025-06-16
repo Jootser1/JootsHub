@@ -1,7 +1,7 @@
 import { Logger, Module, forwardRef } from '@nestjs/common';
 import { UserGateway } from './user.gateway';
 import { ChatGateway } from './chat.gateway';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { RedisModule } from '../redis/redis.module';
 import { RedisService } from '../redis/redis.service';
 import { HeartbeatService } from './services/heartbeat.service';

@@ -27,10 +27,8 @@ export class ConversationsController {
   @Get()
   findAll(@Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
-      console.log('dommage')
       throw new UnauthorizedException('User not authenticated');
     }
-    console.log('trop grosse conversation')
     return this.conversationsService.findAllConversationsForAUserId(
       req.user.sub
     );

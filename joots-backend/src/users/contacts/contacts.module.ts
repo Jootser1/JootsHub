@@ -1,5 +1,5 @@
 import { Logger, Module } from '@nestjs/common';
-import { PrismaModule } from '../../../prisma/prisma.module';
+import { PrismaModule } from 'src/prisma/prisma.module';
 import { UserContactsController } from './contacts.controller';
 import { UserContactsService } from './contacts.service';
 import { RedisModule } from '../../redis/redis.module';

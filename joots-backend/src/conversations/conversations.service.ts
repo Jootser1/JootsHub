@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { XP_CONFIG } from 'src/config/points_per_difficulty';
@@ -17,7 +17,7 @@ export class ConversationsService {
     user_id: true,
     username: true,
     avatar: true,
-    is_online: true,
+    last_seen: true,
   };
 
 
@@ -298,6 +298,7 @@ export class ConversationsService {
       requiredXpForCurrentLevel: currentLevel.xpRequired,
       maxXpForNextLevel: nextLevel ? nextLevel.xpRequired : 0,
       nextLevel: nextLevel ? nextLevel.level : 0,
+      requiredXpForNextLevel: nextLevel ? nextLevel.xpRequired - currentXp : 0,
       reward: currentLevel.reward,
       photoRevealPercent: currentLevel.photoRevealPercent
     }

@@ -5,6 +5,7 @@ import { fr } from 'date-fns/locale'
 import { ensureDate } from '@/utils/date-utils'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+
 interface ChatMessagesProps {
   messages: Message[]
   conversationId?: string

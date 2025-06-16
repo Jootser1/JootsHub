@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { AttributeKey } from '@prisma/client';
 import { UpdateMyProfileDto } from './dto/update-myprofile.dto';
 import levelConfig from '../config/leveling_config_seed.json';

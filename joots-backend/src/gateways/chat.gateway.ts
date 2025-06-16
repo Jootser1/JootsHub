@@ -5,7 +5,7 @@ import {
   MessageBody,
 } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';

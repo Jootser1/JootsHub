@@ -52,7 +52,7 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
         const conversations = response.data.map((conv: { 
           id: string, 
           participants: string[], 
-          last_message: { 
+          last_message?: { 
             id: string, 
             content: string, 
             created_at: string, 
@@ -62,13 +62,13 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
         }) => ({
           id: conv.id,
           participants: conv.participants,
-          lastMessage: {
+          lastMessage: conv.last_message ? {
             id: conv.last_message.id,
             content: conv.last_message.content,
             createdAt: conv.last_message.created_at,
             senderId: conv.last_message.sender_id,
             isRead: conv.last_message.is_read
-          }
+          } : null
         }))
         const chatStore = useChatStore.getState()
         const conversationIds = conversations.map((conv: { id: string }) => conv.id)

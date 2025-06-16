@@ -1,6 +1,6 @@
 // src/services/user-contacts.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import { Logger } from '@nestjs/common';
 import { RedisService } from '../../redis/redis.service';
 

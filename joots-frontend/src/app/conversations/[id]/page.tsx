@@ -43,18 +43,24 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       fetchAttemptedRef.current = true
 
       try {
+        console.log('Fetching conversation:', resolvedParams.id)
         const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
         const conversationData = response.data
         const xpAndLevel = response.data.xpAndLevel
+        console.log('Conversation data received:', conversationData)
         setConversation(conversationData)
         setXpAndLevel(xpAndLevel)
         // Ajout de la conversation entière au chatStore, une seule fois
         if (conversationData && !conversationInitializedRef.current) {
+          console.log('Initializing conversation in chatStore')
           conversationInitializedRef.current = true
+          // Définir d'abord l'ID de conversation actif
+          useChatStore.getState().setActiveConversation(conversationData.conversation_id)
+          // Puis initialiser la conversation
           useChatStore.getState().initializeConversation(conversationData)
-          useChatStore.getState().setActiveConversation(conversationData.id)
         }
       } catch (error: unknown) {
+        console.error('Error fetching conversation:', error)
         if (error instanceof AxiosError) {
           toast.error(
             error.response?.data?.message || 'Erreur lors du chargement de la conversation'
@@ -68,7 +74,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
 
     if (user && resolvedParams.id && !fetchAttemptedRef.current) {
+      console.log('User and conversation ID available:', { userId: user.user_id, conversationId: resolvedParams.id })
       fetchConversation()
+    } else {
+      console.log('Missing data:', { user: !!user, conversationId: resolvedParams.id, fetchAttempted: fetchAttemptedRef.current })
     }
   }, [user, resolvedParams.id])
 

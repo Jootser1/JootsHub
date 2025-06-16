@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { PollWithRelations } from '../types/question';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { postedResponse } from '@shared/icebreaker.types';

@@ -1,5 +1,5 @@
 import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
 import { PollWithRelations } from '../types/question';
 import { ChatGateway } from '../gateways/chat.gateway';
@@ -167,6 +167,7 @@ export class IcebreakerService {
       requiredXpForCurrentLevel: levelData.requiredXpForCurrentLevel,
       maxXpForNextLevel: levelData.maxXpForNextLevel,
       nextLevel: levelData.nextLevel,
+      requiredXpForNextLevel: levelData.requiredXpForNextLevel,
       reward: levelData.reward,
       photoRevealPercent: levelData.photoRevealPercent
     };

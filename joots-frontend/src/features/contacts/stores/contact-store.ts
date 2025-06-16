@@ -10,7 +10,7 @@ interface ContactResponse {
     user_id: string
     username: string
     avatar: string | null
-    is_online: boolean
+    last_seen: string
   }
 }
 
