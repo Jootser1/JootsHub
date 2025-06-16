@@ -24,21 +24,40 @@ const authOptions = {
           throw new Error('Email et mot de passe requis')
         }
 
+        const apiUrl = process.env.API_INTERNAL_URL
+        if (!apiUrl) {
+          logger.error('API_INTERNAL_URL non défini')
+          throw new Error('Configuration serveur invalide')
+        }
+
         try {
-          const res = await axios.post(`${process.env.API_INTERNAL_URL}/auth/login`, {
+          logger.info('Tentative de connexion à', { apiUrl })
+          const res = await axios.post(`${apiUrl}/auth/login`, {
             email: credentials.email,
             password: credentials.password,
           })
 
-          if (res.data?.user?.id && res.data?.access_token) {
-            logger.info('Authentification réussie', { userId: res.data.user.id })
+          if (!res.data) {
+            logger.error('Réponse vide du serveur')
+            throw new Error('Réponse serveur invalide')
+          }
+
+          if (res.data?.user?.user_id && res.data?.access_token) {
+            logger.info('Authentification réussie', { 
+              userId: res.data.user.user_id,
+              email: res.data.user.email 
+            })
             return {
-              id: res.data.user.id,
+              id: res.data.user.user_id,
               email: res.data.user.email,
               token: res.data.access_token,
             }
           }
-          logger.error('Réponse invalide du serveur au login', { response: res.data })
+
+          logger.error('Réponse invalide du serveur au login', { 
+            response: res.data,
+            status: res.status 
+          })
           throw new Error('Réponse invalide du serveur')
         } catch (error: unknown) {
           if (error instanceof AxiosError) {
@@ -46,9 +65,16 @@ const authOptions = {
               message: error.message,
               response: error.response?.data,
               status: error.response?.status,
+              url: error.config?.url,
             })
+            
+            if (error.response?.status === 401) {
+              throw new Error('Email ou mot de passe incorrect')
+            }
+            
             throw new Error(error.response?.data?.message || "Erreur d'authentification")
           }
+          logger.error("Erreur inconnue", { error })
           throw new Error("Erreur d'authentification inconnue")
         }
       },
@@ -77,6 +103,7 @@ const authOptions = {
   pages: {
     signIn: '/login',
   },
+  debug: process.env.NODE_ENV === 'development',
 }
 
 const handler = NextAuth(authOptions)

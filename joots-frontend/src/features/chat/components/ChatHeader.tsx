@@ -1,4 +1,4 @@
-import { User } from '@/features/user/user.types'
+import { User } from '@shared/user.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { AnimatedLevelProgress } from '@/features/icebreakers/components/AnimatedProgressionBar'
@@ -21,12 +21,12 @@ export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeader
   // Écoute réactive du statut 'isTyping' depuis le store
   const isTyping = useChatStore(state => {
     const conversation = state.conversations[conversationId]
-    const participant = conversation?.participants.find(p => p.userId === otherUser.id)
+    const participant = conversation?.participants.find(p => p.userId === otherUser.user_id)
     return participant?.isTyping || false
   })
 
   // Écoute réactive du statut 'isOnline' depuis un selector du contactStore
-  const isOnline = useContactStore(state => state.isUserOnline(otherUser.id))
+  const isOnline = useContactStore(state => state.isUserOnline(otherUser.user_id))
 
   const handleAvatarClick = () => {
     setIsProfileModalOpen(true)
@@ -74,7 +74,7 @@ export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeader
       <ConversationProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
-        userId={otherUser.id}
+        userId={otherUser.user_id}
         conversationId={conversationId}
       />
     </>

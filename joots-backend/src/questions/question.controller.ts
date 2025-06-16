@@ -19,16 +19,17 @@ export class QuestionController {
   ) {}
 
   @Get('by-id/:id')
-  async getQuestionGroup(@Param('id') id: string) {
-    return this.questionService.getQuestionGroup(id);
+  async getPoll(@Param('id') id: string) {
+    return this.questionService.getPoll(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('random')
-  async getNextRandomQuestionGroup(
+  async getNextRandomPoll(
+    @Query('conversationId') conversationId: string,
     @Query('userId1') userId1: string,
     @Query('userId2') userId2: string
   ) {
-    return this.questionService.getNextRandomQuestionGroup(userId1, userId2);
+    return this.questionService.getNextRandomPoll(conversationId, userId1, userId2);
   }
 }

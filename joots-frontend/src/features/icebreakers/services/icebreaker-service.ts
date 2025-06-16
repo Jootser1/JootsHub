@@ -1,14 +1,16 @@
 import axiosInstance from '@/app/api/axios-instance'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { postedResponse } from '@shared/types/icebreaker.types'
 
 export class IcebreakerService {
-  static async fetchRandomQuestionGroup(activeConversationId: string) {
+  static async fetchRandomPoll(activeConversationId: string) {
     const currentUserId = useUserStore.getState().user?.id
     try {
       if (!activeConversationId || !currentUserId) return
       const response = await axiosInstance.get('/questions/random', {
         params: {
+          conversationId: activeConversationId,
           userId1: currentUserId,
           userId2: useChatStore.getState().getOtherParticipant(activeConversationId, currentUserId),
         },
@@ -19,19 +21,9 @@ export class IcebreakerService {
     }
   }
 
-  static async submitIcebreakerResponse(
-    userId: string,
-    questionGroupId: string,
-    optionId: string,
-    conversationId: string
-  ) {
+  static async submitIcebreakerResponse(response: postedResponse) {
     try {
-      await axiosInstance.post('/icebreakers/response', {
-        userId,
-        questionGroupId,
-        optionId,
-        conversationId,
-      })
+      await axiosInstance.post('/icebreakers/response', response)
     } catch (error) {
       console.error('Error submitting icebreaker response:', error)
     }

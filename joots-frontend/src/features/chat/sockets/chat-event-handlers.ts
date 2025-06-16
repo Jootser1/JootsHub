@@ -8,7 +8,7 @@ import {
   TypingEvent,
   MessageReadEvent,
   IcebreakerStatusEvent,
-  IcebreakerQuestionGroupEvent,
+  IcebreakerPollEvent,
   IcebreakerResponsesEvent,
 } from '@/features/chat/chat.types'
 import { logger } from '@/utils/logger'
@@ -105,11 +105,11 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
   }
 }
 
-// Handler pour 'icebreakerQuestionGroup' event
-export function handleIcebreakerQuestionGroupEvent(data: IcebreakerQuestionGroupEvent) {
+// Handler pour 'icebreakerPoll' event
+export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
   try {
-    const { conversationId, questionGroup } = data
-    chatStore.setCurrentQuestionGroup(conversationId, JSON.stringify(questionGroup))
+    const { conversationId, poll } = data
+    chatStore.setCurrentPoll(conversationId, JSON.stringify(poll))
   } catch (error) {
     logger.error(
       "Erreur lors du traitement de la question de l'icebreaker:",
@@ -122,7 +122,7 @@ export function handleIcebreakerQuestionGroupEvent(data: IcebreakerQuestionGroup
 export function handleIcebreakerResponsesEvent(data: any) {
   try {
     // Vérifier si c'est le format de synchronisation (sans questionLabel)
-    if (!data.questionLabel && data.questionGroupId) {
+    if (!data.questionLabel && data.pollId) {
       // Ne pas créer de message pour les événements de synchronisation
       // Juste mettre à jour les statuts des participants
       chatStore.resetIcebreakerStatus(data.conversationId)

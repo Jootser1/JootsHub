@@ -1,28 +1,12 @@
-import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types'
+import { Conversation, ConversationParticipant } from '@shared/types/conversation.types'
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types'
 import { Question } from '@/features/questions/question.types'
-
-export type MessageStatus = 'sent' | 'delivered' | 'read'
-export type MessageType = 'TEXT' | 'ANSWER'
-
-export interface Message {
-  id: string
-  content: string
-  senderId: string
-  receiverId: string
-  createdAt: Date
-  status: MessageStatus
-  messageType: MessageType
-  userAId?: string
-  userAAnswer?: string
-  userBId?: string
-  userBAnswer?: string
-}
+import { Message } from '@shared/types/message.types'
 
 export interface ChatState {
   conversations: Record<string, Conversation>
   activeConversationId: string | null
-  currentQuestionGroup: string | null
+  currentPoll: string | null
   error: string | null
   userId?: string
   token?: string
@@ -61,9 +45,9 @@ export interface IcebreakerStatusEvent {
   timestamp?: string
 }
 
-export interface IcebreakerQuestionGroupEvent {
+export interface IcebreakerPollEvent {
   conversationId: string
-  questionGroup: string
+  poll: string
 }
 
 export interface IcebreakerResponsesEvent {
@@ -127,8 +111,8 @@ export type ChatActions = {
   // Helpers
   getMessagesFromConversation: (conversationId: string) => Message[]
   getConversation: (conversationId: string) => Conversation | undefined
-  getCurrentQuestionGroup: (conversationId: string) => string | null
-  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) => void
+  getCurrentPoll: (conversationId: string) => string | null
+  setCurrentPoll: (conversationId: string, poll: string) => void
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined
   getOtherParticipant: (
     conversationId: string,

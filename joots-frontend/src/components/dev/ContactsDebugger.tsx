@@ -104,7 +104,7 @@ export function ContactsDebugger({
                 {contactsData.contactList.length > 0 ? (
                   contactsData.contactList.map(contactId => (
                     <div key={contactId} className="truncate">
-                      {contactId.substring(0, 8)}...
+                      {contactId ? `${contactId.substring(0, 8)}...` : 'ID invalide'}
                     </div>
                   ))
                 ) : (

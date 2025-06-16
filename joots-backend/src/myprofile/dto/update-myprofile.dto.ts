@@ -1,50 +1,51 @@
-import { AttributeKey } from '@prisma/client';
+
+
 import { IsOptional, IsString, IsArray, IsEnum } from 'class-validator';
 
 export class UpdateMyProfileDto {
   @IsOptional()
   @IsString()
-  [AttributeKey.CITY]?: string;
+  CITY?: string;
 
   @IsOptional()
   @IsString()
-  [AttributeKey.AGE]?: string;
+  AGE?: string;
 
   @IsOptional()
   @IsString()
-  [AttributeKey.GENDER]?: string;
+  GENDER?: string;
 
   @IsOptional()
   @IsString()
-  [AttributeKey.JOB]?: string;
+  JOB?: string;
 
   @IsOptional()
   @IsString()
-  [AttributeKey.ORIGIN]?: string;
+  ORIGIN?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  [AttributeKey.PASSIONS]?: string[];
+  PASSIONS?: string[];
 
   @IsOptional()
   @IsString()
-  [AttributeKey.QUALITY]?: string;
+  QUALITY?: string;
 
   @IsOptional()
   @IsString()
-  [AttributeKey.FLAW]?: string;
+  FLAW?: string;
 
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  [AttributeKey.ORIENTATION]?: string[];
+  ORIENTATION?: string[];
 
   @IsOptional()
   @IsString()
-  [AttributeKey.BIO]?: string;
+  BIO?: string;
 
   @IsOptional()
   @IsString()
   avatar?: string;
-} 
+}

@@ -61,7 +61,6 @@ export class UserGateway extends BaseGateway {
 
     try {
       // 1. Mettre à jour le statut dans la BDD et Redis
-      await this.usersService.updateUserStatusinBDD(userId, true);
       await this.usersService.addUserInRedisOnlineUsers(client, userId);
       
       this.logger.debug(
@@ -148,7 +147,6 @@ export class UserGateway extends BaseGateway {
 
     try {
       // Mettre à jour le statut dans la BDD
-      await this.usersService.updateUserStatusinBDD(userId, false);
       await this.usersService.removeUserInRedisOnlineUsers(client, userId);
 
       // Notifier les contacts via les rooms
@@ -168,7 +166,7 @@ export class UserGateway extends BaseGateway {
     try {
       // Récupérer les informations de l'utilisateur
       const user = await this.prisma.user.findUnique({
-        where: { id: userId },
+        where: { user_id: userId },
         select: { username: true },
       });
 
@@ -236,8 +234,6 @@ export class UserGateway extends BaseGateway {
     const { isOnline } = payload;
 
     try {
-      // Mettre à jour le statut dans la BDD
-      await this.usersService.updateUserStatusinBDD(userId, isOnline);
 
       // Mettre à jour Redis
       if (isOnline) {

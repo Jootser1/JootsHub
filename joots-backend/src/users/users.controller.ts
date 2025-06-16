@@ -27,13 +27,7 @@ export class UsersController {
     const count = await this.usersService.getUsersCount();
     return { totalUsers: count };
   }
-
-  @Get('online')
-  @UseGuards(JwtAuthGuard)
-  async getOnlineUsers() {
-    return await this.usersService.getOnlineUsers();
-  }
-  
+ 
 
   @Get('profile/:id/:conversationId')
   @UseGuards(JwtAuthGuard)
@@ -42,7 +36,7 @@ export class UsersController {
     @Param('conversationId') conversationId: string,
     @CurrentUser() currentUser: any
   ) {
-    return this.usersService.getUserProfileForConversation(userId, conversationId, currentUser.id);
+    return this.usersService.getUserProfileForConversation(userId, conversationId, currentUser.userid);
   }
 
   @Patch(':id/chat-preference')
@@ -57,17 +51,10 @@ export class UsersController {
   @Get('random/available')
   @UseGuards(JwtAuthGuard)
   async getRandomAvailableUser(@CurrentUser() user: any) {
-    return this.usersService.getRandomAvailableUser(user.id);
+
+    return this.usersService.getRandomAvailableUser(user.user_id);
   }
 
-  @Patch(':id/status')
-  @UseGuards(JwtAuthGuard)
-  async updateUserStatus(
-    @Param('id') id: string,
-    @Body('isOnline') isOnline: boolean
-  ) {
-    return this.usersService.updateUserStatusinBDD(id, isOnline);
-  }
 
   @Get(':id')
   @UseGuards(JwtAuthGuard)
@@ -77,12 +64,11 @@ export class UsersController {
       throw new NotFoundException("Données d'authentification non trouvées");
     }
     return {
-      id: user.id,
+      id: user.user_id,
       email: user.auth.email,
       username: user.username,
       avatar: user.avatar || null,
-      isAvailableForChat: user.isAvailableForChat || false,
-      isOnline: user.isOnline || false,
+      last_seen: user.last_seen,
     };
   }
 }

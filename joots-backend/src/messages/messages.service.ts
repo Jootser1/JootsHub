@@ -9,8 +9,8 @@ import { PrismaService } from '../../prisma/prisma.service';
 
 // Définir l'interface UserAnswer à l'extérieur de la classe
 interface IcebreakerUserAnswer {
-  userId: string;
-  questionOption: string;
+  user_id: string;
+  poll_option_id: string;
 }
 
 @Injectable()
@@ -21,9 +21,9 @@ export class MessagesService {
     // Vérifier que l'utilisateur a accès à la conversation
     const conversation = await this.prisma.conversation.findFirst({
       where: {
-        id: conversationId,
+        conversation_id: conversationId,
         participants: {
-          some: { userId },
+          some: { user_id: userId },
         },
       },
     });
@@ -37,36 +37,17 @@ export class MessagesService {
     // Marquer tous les messages reçus comme lus
     await this.prisma.message.updateMany({
       where: {
-        conversationId,
-        senderId: { not: userId }, // Messages envoyés par d'autres utilisateurs
-        isRead: false,
+        conversation_id: conversationId,
+        sender: { NOT: { user_id: userId } }, // Messages envoyés par d'autres utilisateurs
+        is_read: false,
       },
       data: {
-        isRead: true,
+        is_read: true,
       },
     });
 
     return { success: true };
   }
 
-  async addIcebreakerMessage(
-    conversationId: string,
-    questionLabel: string,
-    userAnswerA: IcebreakerUserAnswer,
-    userAnswerB: IcebreakerUserAnswer
-  ) {
-
-
-    await this.prisma.message.create({
-      data: {
-        conversationId,
-        messageType: 'ANSWER',
-        content: questionLabel,
-        userAId: userAnswerA.userId,
-        userAAnswer: userAnswerA.questionOption,
-        userBId: userAnswerB.userId,
-        userBAnswer: userAnswerB.questionOption,
-      },
-    });
-  }
+  
 }

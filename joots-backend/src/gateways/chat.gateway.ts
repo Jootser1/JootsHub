@@ -10,12 +10,12 @@ import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
-import { ProgressionResult } from 'src/types/chat';
+import { ProgressionResult } from '@shared/conversation.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
 
 interface ParticipantIceStatus {
-  userId: string;
-  isIcebreakerReady: boolean;
+  user_id: string;
+  is_icebreaker_ready: boolean;
 }
 
 @WebSocketGateway({
@@ -168,7 +168,7 @@ export class ChatGateway extends BaseGateway {
     try {
       // Vérifier si la conversation existe
       const conversation = await this.prisma.conversation.findUnique({
-        where: { id: conversationId },
+        where: { conversation_id: conversationId },
       });
 
       if (!conversation) {
@@ -178,13 +178,13 @@ export class ChatGateway extends BaseGateway {
       const message = await this.prisma.message.create({
         data: {
           content,
-          sender: { connect: { id: userId } },
-          conversation: { connect: { id: conversationId } },
+          sender: { connect: { user_id: userId } },
+          conversation: { connect: { conversation_id: conversationId } },
         },
         include: {
           sender: {
             select: {
-              id: true,
+              user_id: true,
               username: true,
               avatar: true,
             },
@@ -196,7 +196,7 @@ export class ChatGateway extends BaseGateway {
       const messageToEmit = {
         ...message,
         conversationId,
-        createdAt: message.createdAt || new Date().toISOString(),
+        created_at: message.created_at || new Date().toISOString(),
       };
 
       // Émettre l'événement à tous les clients dans la conversation
@@ -309,8 +309,8 @@ export class ChatGateway extends BaseGateway {
     client: Socket
   ) {
     const participants = await this.prisma.conversationParticipant.findMany({
-      where: { conversationId },
-      select: { userId: true },
+      where: { conversation_id: conversationId },
+      select: { user_id: true },
     });
 
     if (participants.length < 2) {
@@ -321,26 +321,27 @@ export class ChatGateway extends BaseGateway {
     }
 
     const [a, b] = participants;
-    const questionGroup = await this.questionService.getNextRandomQuestionGroup(
-      a.userId,
-      b.userId
+    const poll = await this.questionService.getNextRandomPoll(
+      conversationId,
+      a.user_id,
+      b.user_id
     );
 
-    if (!questionGroup) return;
-    await this.icebreakerService.storeCurrentQuestionGroupForAGivenConversation(
+    if (!poll) return;
+    await this.icebreakerService.storeCurrentPollForAGivenConversation(
       conversationId,
-      questionGroup
+      poll
     );
 
     client.join(conversationId);
-    this.server.to(conversationId).emit('icebreakerQuestionGroup', {
-      questionGroup,
+    this.server.to(conversationId).emit('icebreakerPoll', {
+      poll,
       conversationId,
       timestamp: new Date().toISOString(),
     });
 
     this.logger.log(
-      `Question envoyée à ${conversationId} : ${questionGroup.questions[0].question}`
+      `Question envoyée à ${conversationId} : ${poll.poll_translations[0].translation}`
     );
   }
 
@@ -379,13 +380,13 @@ export class ChatGateway extends BaseGateway {
       );
 
       for (const conversation of conversations) {
-        const conversationId = conversation.id;
+        const conversationId = conversation.conversation_id;
         client.join(conversationId);
 
         // Synchroniser l'état de la conversation
         const participants = conversation.participants.map((p) => ({
-          userId: p.user.id,
-          isIcebreakerReady: p.isIcebreakerReady,
+          user_id: p.user.user_id,
+          is_icebreaker_ready: p.is_icebreaker_ready,
         }));
         await this.synchronizeConversationState(
           client,
@@ -438,12 +439,12 @@ export class ChatGateway extends BaseGateway {
     client: Socket,
     conversationId: string
   ) {
-    const questionGroupKey = `conversation:${conversationId}:icebreaker:questionGroup`;
-    const questionGroup = await this.redis.get(questionGroupKey);
+    const pollKey = `conversation:${conversationId}:icebreaker:poll`;
+    const poll = await this.redis.get(pollKey);
 
-    if (questionGroup) {
-      this.server.to(conversationId).emit('icebreakerQuestionGroup', {
-        questionGroup: JSON.parse(questionGroup),
+    if (poll) {
+      this.server.to(conversationId).emit('icebreakerPoll', {
+        poll: JSON.parse(poll),
         conversationId,
         timestamp: new Date().toISOString(),
       });
@@ -458,8 +459,8 @@ export class ChatGateway extends BaseGateway {
     for (const participant of participants) {
       this.emitIcebreakerStatusUpdate(
         conversationId,
-        participant.userId,
-        participant.isIcebreakerReady
+        participant.user_id,
+        participant.is_icebreaker_ready
       );
     }
   }
@@ -471,7 +472,7 @@ export class ChatGateway extends BaseGateway {
   ) {
     if (participants.length !== 2) return;
 
-    const [user1, user2] = participants.map((p) => p.userId);
+    const [user1, user2] = participants.map((p) => p.user_id);
     const response1Key = `icebreaker:${conversationId}:responses:${user1}`;
     const response2Key = `icebreaker:${conversationId}:responses:${user2}`;
 
@@ -486,7 +487,7 @@ export class ChatGateway extends BaseGateway {
 
       this.server.to(conversationId).emit('icebreakerResponses', {
         conversationId,
-        questionGroupId: parsedResponse1.questionGroupId,
+        pollId: parsedResponse1.pollId,
         userId1: user1,
         optionId1: parsedResponse1.optionId,
         userId2: user2,
@@ -502,16 +503,16 @@ export class ChatGateway extends BaseGateway {
     userId: string,
     participants: any[]
   ) {
-    const otherParticipant = participants.find((p) => p.userId !== userId);
+    const otherParticipant = participants.find((p) => p.user_id !== userId);
     if (!otherParticipant) return;
 
-    const typingKey = `conversation:${conversationId}:typing:${otherParticipant.userId}`;
+    const typingKey = `conversation:${conversationId}:typing:${otherParticipant.user_id}`;
     const isTyping = await this.redis.get(typingKey);
 
     if (isTyping) {
       client.emit('typing', {
         conversationId,
-        userId: otherParticipant.userId,
+        userId: otherParticipant.user_id,
         isTyping: true,
         timestamp: new Date().toISOString(),
       });

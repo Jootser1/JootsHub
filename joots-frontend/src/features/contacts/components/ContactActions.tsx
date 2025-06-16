@@ -1,7 +1,7 @@
 // src/components/contacts/ContactActions.tsx
 import { useState } from 'react'
 import { Button } from '@/components/ui/Button'
-import { User } from '@/features/user/user.types'
+import { User } from '@shared/user.types'
 import { UserPlus, UserMinus } from 'lucide-react'
 import { useContactStore } from '../stores/contact-store'
 
@@ -11,7 +11,7 @@ interface ContactActionsProps {
 
 export function ContactActions({ user }: ContactActionsProps) {
   const [isProcessing, setIsProcessing] = useState(false)
-  const isContact = useContactStore(state => state.isContact(user.id))
+  const isContact = useContactStore(state => state.isContact(user.user_id))
   const addContact = useContactStore(state => state.addContact)
   const removeContact = useContactStore(state => state.removeContact)
 
@@ -20,9 +20,9 @@ export function ContactActions({ user }: ContactActionsProps) {
 
     try {
       if (isContact) {
-        await removeContact(user.id)
+        removeContact(user.user_id)
       } else {
-        await addContact(user.id)
+        addContact(user.user_id)
       }
     } finally {
       setIsProcessing(false)

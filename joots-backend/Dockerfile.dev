@@ -1,12 +1,23 @@
-# Dockerfile.dev
+#Pour rappel, le contexte dans dockerfile.dev demarre là ou se trouve docker-compose.override.yml, soit Jootshub.
 FROM node:20
+
+# Étape 1 — Copier et compiler les types partagés
+WORKDIR /packages/types
+COPY ./packages/types .
+RUN npm install --verbose && npm run build && ls -la dist/
 
 WORKDIR /joots-backend
 
-COPY package*.json ./
-RUN npm install
+# Étape 2 — Installer les dépendances du backend
+COPY ./joots-backend/package*.json ./
+RUN npm cache clean --force && npm install --verbose
 
-COPY . .
+# Étape 3 : copier le schéma et générer le client Prisma
+COPY ./joots-backend/prisma ./prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Étape 4 : copier le reste
+COPY ./joots-backend .
 
 # Exposer le port Nest.js
 EXPOSE 4000

@@ -8,6 +8,7 @@ export function handleUserStatusChange(data: UserStatusChange, currentUserId?: s
     logger.warn('handleUserStatusChange: currentUserId manquant')
     return
   }
+  console.log('Data received from socket', data)
 
   logger.debug(`handleUserStatusChange: Reçu pour ${data.userId}, statut: ${data.isOnline}`)
 

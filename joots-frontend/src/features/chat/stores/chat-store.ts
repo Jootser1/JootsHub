@@ -1,7 +1,9 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { Message, ChatState, ChatStore, MessageStatus, ProgressionResult } from '@/features/chat/chat.types'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { ChatState, ChatStore, ProgressionResult } from '@/features/chat/chat.types'
+import { Conversation, ConversationParticipant } from '@shared/conversation.types'
+import { Message } from '@shared/message.types'
+import { MessageStatus } from '@shared/message.types'
 import { getUnreadCount } from '../../conversations/utils/conversation-utils'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
@@ -10,7 +12,7 @@ const initialState: ChatState = {
   conversations: {},
   activeConversationId: null,
   error: null,
-  currentQuestionGroup: null,
+  currentPoll: null,
   conversationsIds: [],
   icebreakerQuestions: {},
 }
@@ -36,11 +38,12 @@ export const useChatStore = create<ChatStore>()(
           try {
             logger.info('Début du chargement des conversations')
             const response = await axiosInstance.get('/conversations')
+            logger.info('Réponse du chargement des conversations', { response: response.data })
             set(state => {
               const newConversations = { ...state.conversations }
 
               response.data.forEach((conversation: Conversation) => {
-                newConversations[conversation.id] = {
+                newConversations[conversation.conversation_id] = {
                   ...conversation,
                   messages: conversation.messages || [],
                 };
@@ -80,7 +83,7 @@ export const useChatStore = create<ChatStore>()(
           set(state => ({
             conversations: {
               ...state.conversations,
-              [conversation.id]: {
+              [conversation.conversation_id]: {
                 ...conversation,
                 messages: conversation.messages || [],
               },
@@ -115,7 +118,7 @@ export const useChatStore = create<ChatStore>()(
                   ...conversation,
                   messages: [...existingMessages, message], // Ajouter le message ici
                   lastMessage: message,
-                  unreadCount: getUnreadCount(conversation, message.senderId),
+                  unreadCount: getUnreadCount(conversation, message.sender_id),
                 },
               },
             };
@@ -126,8 +129,8 @@ export const useChatStore = create<ChatStore>()(
             const conversation = state.conversations[conversationId];
             if (!conversation || !conversation.messages) return state;
 
-            const updatedMessages = conversation.messages.map(msg =>
-              msg.id === messageId ? { ...msg, status } : msg
+            const updatedMessages = conversation.messages.map((msg: Message) =>
+              msg.message_id === messageId ? { ...msg, status } : msg
             );
             return {
               conversations: {
@@ -145,7 +148,7 @@ export const useChatStore = create<ChatStore>()(
             const conversation = state.conversations[conversationId];
             if (!conversation || !conversation.messages) return state;
 
-            const updatedMessages = conversation.messages.map(msg => ({
+            const updatedMessages = conversation.messages.map((msg: Message) => ({
               ...msg,
               status: msg.status === 'sent' ? ('read' as MessageStatus) : msg.status,
             }));
@@ -166,10 +169,10 @@ export const useChatStore = create<ChatStore>()(
 
         getConversation: (conversationId: string) => get().conversations[conversationId],
 
-        getCurrentQuestionGroup: (conversationId: string) =>
-          get().conversations[conversationId]?.currentQuestionGroup || null,
+        getCurrentPoll: (conversationId: string) =>
+          get().conversations[conversationId]?.currentPoll || null,
 
-        setCurrentQuestionGroup: (conversationId: string, questionGroup: string) =>
+        setCurrentPoll: (conversationId: string, poll: string) =>
           set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
@@ -178,7 +181,7 @@ export const useChatStore = create<ChatStore>()(
                 ...state.conversations,
                 [conversationId]: {
                   ...conversation,
-                  currentQuestionGroup: questionGroup,
+                  currentPoll: poll,
                 },
               },
             }
@@ -196,8 +199,8 @@ export const useChatStore = create<ChatStore>()(
             if (!conversation) return state
 
             const updatedParticipants =
-              conversation.participants?.map(p =>
-                p.userId === participantId ? { ...p, [field]: value } : p
+              conversation.participants?.map((p: ConversationParticipant) =>
+                p.user_id === participantId ? { ...p, [field]: value } : p
               ) ?? []
 
             return {
@@ -215,7 +218,7 @@ export const useChatStore = create<ChatStore>()(
           conversationId: string,
           participantId: string,
           response: {
-            questionGroupId: string
+            pollId: string
             optionId: string
             answeredAt: string
           } | null
@@ -225,8 +228,8 @@ export const useChatStore = create<ChatStore>()(
             if (!conversation) return state
 
             const updatedParticipants =
-              conversation.participants?.map(p =>
-                p.userId === participantId ? { ...p, response, hasGivenAnswer: !!response } : p
+              conversation.participants?.map((p: ConversationParticipant) =>
+                p.user_id === participantId ? { ...p, response, hasGivenAnswer: !!response } : p
               ) ?? []
 
             return {
@@ -248,7 +251,7 @@ export const useChatStore = create<ChatStore>()(
             const participants = conversation.participants
             if (!participants || participants.length < 2) return state
 
-            const updatedParticipants = participants.map(p => ({
+            const updatedParticipants = participants.map((p: ConversationParticipant) => ({
               ...p,
               isIcebreakerReady: false,
               hasGivenAnswer: false,
@@ -261,7 +264,7 @@ export const useChatStore = create<ChatStore>()(
                 [conversationId]: {
                   ...conversation,
                   participants: updatedParticipants,
-                  currentQuestionGroup: undefined,
+                  currentPoll: undefined,
                 },
               },
             }
@@ -269,29 +272,29 @@ export const useChatStore = create<ChatStore>()(
 
         getParticipant: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId === userId)
+          return conversation?.participants.find((p: ConversationParticipant) => p.user_id === userId)
         },
 
         getOtherParticipant: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId !== userId)
+          return conversation?.participants.find((p: ConversationParticipant) => p.user_id !== userId)
         },
 
         getOtherParticipantId: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId !== userId)?.userId
+          return conversation?.participants.find((p: ConversationParticipant) => p.user_id !== userId)?.user_id
         },
 
         getOtherParticipantIcebreakerStatus: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
           if (!conversation) return undefined
-          const other = conversation.participants.find(p => p.userId !== userId)
+          const other = conversation.participants.find((p: ConversationParticipant) => p.user_id !== userId)
           return other?.isIcebreakerReady
         },
 
         getParticipantResponse: (conversationId: string, participantId: string) => {
           const conversation = get().conversations[conversationId]
-          const participant = conversation?.participants.find(p => p.userId === participantId)
+          const participant = conversation?.participants.find((p: ConversationParticipant) => p.user_id === participantId)
           return participant?.response || null
         },
 

@@ -10,11 +10,11 @@ export class MyProfileController {
 
   @Get()
   getMyProfile(@Req() req) {
-    return this.myProfileService.getMyProfile(req.user.id);
+    return this.myProfileService.getMyProfile(req.user.user_id);
   }
 
   @Put()
   updateMyProfile(@Req() req, @Body() dto: UpdateMyProfileDto) {
-    return this.myProfileService.updateMyProfile(req.user.id, dto);
+    return this.myProfileService.updateMyProfile(req.user.user_id, dto);
   }
 }

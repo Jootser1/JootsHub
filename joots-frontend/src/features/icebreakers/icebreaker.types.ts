@@ -1,5 +1,5 @@
 export interface IcebreakerResponse {
-  questionGroupId: string
+  pollId: string
   optionId: string
   answeredAt: string
 }

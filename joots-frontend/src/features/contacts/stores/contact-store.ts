@@ -7,10 +7,10 @@ import { ContactStore } from '@/features/contacts/contacts.types'
 
 interface ContactResponse {
   contact: {
-    id: string
+    user_id: string
     username: string
     avatar: string | null
-    isOnline: boolean
+    is_online: boolean
   }
 }
 
@@ -60,10 +60,12 @@ export const useContactStore = create<ContactStore>()(
         loadContacts: async () => {
           try {
             const response = await axiosInstance.get('/users/me/contacts')
-            set(state => {
-              const newContactList = new Set(state.contactList)
+            set(() => {
+              const newContactList = new Set<string>()
               response.data.forEach((contact: ContactResponse) => {
-                newContactList.add(contact.contact.id)
+                if (contact.contact.user_id) {
+                  newContactList.add(contact.contact.user_id)
+                }
               })
               return {
                 contactList: newContactList,
@@ -105,13 +107,13 @@ export const useContactStore = create<ContactStore>()(
 
         // Fonctions de cache - uniquement pour les contacts
         cacheUser: user => {
-          const isContact = get().isContact(user.id)
+          const isContact = get().isContact(user.user_id) // Correction de 'user.user_id' à 'user.id'
           if (!isContact) return // Ne pas ajouter automatiquement aux contacts
 
           set(state => ({
             userCache: {
               ...state.userCache,
-              [user.id]: { ...user, lastSeen: Date.now() },
+              [user.user_id]: { ...user, lastSeen: Date.now() },
             },
           }))
         },

@@ -2,7 +2,6 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../../prisma/prisma.service';
 import { UserGateway } from '../gateways/user.gateway';
 import { UserContactsService } from '../users/contacts/contacts.service';
-import { ProgressionResult } from '../types/chat';
 import { XP_CONFIG } from 'src/config/points_per_difficulty';
 import levelConfig from '../config/leveling_config_seed.json';
 
@@ -15,10 +14,10 @@ export class ConversationsService {
   ) {}
 
   private readonly userSelect = {
-    id: true,
+    user_id: true,
     username: true,
     avatar: true,
-    isOnline: true,
+    is_online: true,
   };
 
 
@@ -28,32 +27,32 @@ export class ConversationsService {
       return await this.prisma.conversation.findMany({
         where: {
           participants: {
-            some: { userId },
+            some: { user_id: userId },
           },
         },
         select: {
-          id: true,
-          updatedAt: true,
+          conversation_id: true,
+          updated_at: true,
           participants: {
             select: {
               user: {
                 select: this.userSelect,
               },
-              isIcebreakerReady: true,
+              is_icebreaker_ready: true,
             },
           },
           messages: {
-            orderBy: { createdAt: 'desc' },
+            orderBy: { created_at: 'desc' },
             take: 1,
             select: {
-              id: true,
+              message_id: true,
               content: true,
-              createdAt: true,
-              senderId: true,
+              created_at: true,
+              sender_id: true,
             },
           },
         },
-        orderBy: { updatedAt: 'desc' },
+        orderBy: { updated_at: 'desc' },
       });
     } catch (error) {
       console.error(
@@ -67,24 +66,24 @@ export class ConversationsService {
   async findAllConversationsIdsForAUserId(userId: string): Promise<string[]> {
     const conversations = await this.prisma.conversation.findMany({
       where: {
-        participants: { some: { userId } },
+        participants: { some: { user_id: userId } },
       },
-      select: { id: true },
+      select: { conversation_id: true },
     });
-    return conversations.map((conversation) => conversation.id);
+    return conversations.map((conversation) => conversation.conversation_id);
   }
 
   async fetchConversationById(id: string, userId?: string) {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
-        id,
+        conversation_id: id,
         participants: {
-          some: { userId: userId ?? undefined },
+          some: { user_id: userId ?? undefined },
         },
       },
       select: {
-        id: true,
-        xpPoint: true,
+        conversation_id: true,
+        xp_point: true,
         difficulty: true,
         locale: true,
         participants: {
@@ -93,7 +92,7 @@ export class ConversationsService {
           },
         },
         messages: {
-          orderBy: { createdAt: 'asc' },
+          orderBy: { created_at: 'asc' },
         },
       },
     });
@@ -102,7 +101,7 @@ export class ConversationsService {
       throw new NotFoundException('Conversation non trouvée');
     }
 
-    const xpAndLevel = await this.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    const xpAndLevel = await this.getConversationLevel(conversation.xp_point, conversation.difficulty);
     
     return {
       ...conversation,
@@ -114,13 +113,13 @@ export class ConversationsService {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         AND: [
-          { participants: { some: { userId } } },
-          { participants: { some: { userId: receiverId } } },
+          { participants: { some: { user_id: userId } } },
+          { participants: { some: { user_id: receiverId } } },
         ],
       },
       select: {
-        id: true,
-        xpPoint: true,
+        conversation_id: true,
+        xp_point: true,
         difficulty: true,
         locale: true,
         participants: {
@@ -129,12 +128,12 @@ export class ConversationsService {
           },
         },
         messages: {
-          orderBy: { createdAt: 'desc' },
+          orderBy: { created_at: 'desc' },
           take: 50,
           include: {
             sender: {
               select: {
-                id: true,
+                user_id: true,
                 username: true,
                 avatar: true,
               },
@@ -151,23 +150,32 @@ export class ConversationsService {
     return conversation;
   }
 
+  async getConversationLocale(conversationId: string) {
+    const conversation = await this.prisma.conversation.findUnique({
+      where: { conversation_id: conversationId },
+      select: { locale: true },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée');
+    }
+    return conversation.locale;
+  }
+
   async create(userId: string, receiverId: string) {
     const [user1, user2] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: userId } }),
-      this.prisma.user.findUnique({ where: { id: receiverId } }),
+      this.prisma.user.findUnique({ where: { user_id: userId } }),
+      this.prisma.user.findUnique({ where: { user_id: receiverId } }),
     ]);
-
     if (!user1 || !user2) {
       throw new NotFoundException(
         'Un ou les deux utilisateurs sont introuvables'
       );
     }
-
     const existingConversation = await this.prisma.conversation.findFirst({
       where: {
         AND: [
-          { participants: { some: { userId } } },
-          { participants: { some: { userId: receiverId } } },
+          { participants: { some: { user_id: userId } } },
+          { participants: { some: { user_id: receiverId } } },
         ],
       },
       include: {
@@ -185,47 +193,26 @@ export class ConversationsService {
 
     try {
       // Créer les contacts réciproques de manière séquentielle pour éviter les erreurs en cascade
-      await this.userContactsService.addUserContactinBDD(user1.id, user2.id);
-      await this.userContactsService.addUserContactinBDD(user2.id, user1.id);
+      await this.userContactsService.addUserContactinBDD(user1.user_id, user2.user_id);
+      await this.userContactsService.addUserContactinBDD(user2.user_id, user1.user_id);
     } catch (error) {
       console.error('Erreur lors de la création des contacts:', error);
     }
 
     // Gestion des sockets de manière optionnelle
     try {
-      const socketId1 = this.userGateway.findSocketIdByUserId(user1.id);
-      const socketId2 = this.userGateway.findSocketIdByUserId(user2.id);
+      const socketId1 = this.userGateway.findSocketIdByUserId(user1.user_id);
+      const socketId2 = this.userGateway.findSocketIdByUserId(user2.user_id);
 
       if (socketId1 && socketId2) {
         // Utiliser les rooms Socket.IO avec la nouvelle API
-        const room1 = `user-status-${user1.id}`;
-        const room2 = `user-status-${user2.id}`;
+        const room1 = `user-status-${user1.user_id}`;
+        const room2 = `user-status-${user2.user_id}`;
 
         // Ajouter les sockets aux rooms respectives
         this.userGateway.server.in(socketId1).socketsJoin(room2);
         this.userGateway.server.in(socketId2).socketsJoin(room1);
 
-        // Émettre les événements de changement de statut avec un timeout
-        const statusData1 = {
-          userId: user1.id,
-          isOnline: user1.isOnline,
-          timestamp: new Date().toISOString(),
-        };
-
-        const statusData2 = {
-          userId: user2.id,
-          isOnline: user2.isOnline,
-          timestamp: new Date().toISOString(),
-        };
-        // Émettre avec un timeout pour éviter les problèmes de connexion
-        setTimeout(() => {
-          this.userGateway.server
-            .to(room1)
-            .emit('userStatusChange', statusData1);
-          this.userGateway.server
-            .to(room2)
-            .emit('userStatusChange', statusData2);
-        }, 100);
       }
     } catch (socketError) {
       console.warn('Erreur lors de la gestion des sockets:', socketError);
@@ -236,7 +223,7 @@ export class ConversationsService {
     return this.prisma.conversation.create({
       data: {
         participants: {
-          create: [{ userId }, { userId: receiverId }],
+          create: [{ user_id: userId }, { user_id: receiverId }],
         },
       },
       include: {
@@ -253,9 +240,9 @@ export class ConversationsService {
     // Vérifier que l'utilisateur a accès à la conversation
     const conversation = await this.prisma.conversation.findFirst({
       where: {
-        id: conversationId,
+        conversation_id: conversationId,
         participants: {
-          some: { userId },
+          some: { user_id: userId },
         },
       },
     });
@@ -269,25 +256,25 @@ export class ConversationsService {
     // Récupérer les messages avec les informations de l'expéditeur
     const messages = await this.prisma.message.findMany({
       where: {
-        conversationId,
+        conversation_id: conversationId,
       },
       include: {
         sender: {
           select: {
-            id: true,
+            user_id: true,
             username: true,
             avatar: true,
           },
         },
       },
       orderBy: {
-        createdAt: 'asc',
+        created_at: 'asc',
       },
     });
 
     return messages.sort(
       (a, b) =>
-        new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
   }
 
@@ -323,11 +310,11 @@ export class ConversationsService {
 
     // Étape 2 — Ajouter l'XP
     const updatedXp = await this.prisma.conversation.update({
-      where: { id: conversationId },
+      where: { conversation_id: conversationId },
       data: {
-        xpPoint: { increment: xpPerQuestion },
+        xp_point: { increment: xpPerQuestion },
       },
     });
-    return updatedXp.xpPoint
+    return updatedXp.xp_point
   }
 }

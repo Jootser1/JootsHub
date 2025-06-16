@@ -47,16 +47,47 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
         })
         clearTimeout(timeoutId)
 
-        conversationIds = response.data.map((conv: { id: string }) => conv.id)
+        logger.debug('ChatSocketProvider: Réponse API conversations reçue', { response: response.data })
+
+        const conversations = response.data.map((conv: { 
+          id: string, 
+          participants: string[], 
+          last_message: { 
+            id: string, 
+            content: string, 
+            created_at: string, 
+            sender_id: string, 
+            is_read: boolean 
+          } 
+        }) => ({
+          id: conv.id,
+          participants: conv.participants,
+          lastMessage: {
+            id: conv.last_message.id,
+            content: conv.last_message.content,
+            createdAt: conv.last_message.created_at,
+            senderId: conv.last_message.sender_id,
+            isRead: conv.last_message.is_read
+          }
+        }))
         const chatStore = useChatStore.getState()
+        const conversationIds = conversations.map((conv: { id: string }) => conv.id)
         chatStore.setConversationsIds(conversationIds)
         
         // Mettre en cache
         conversationsCache.current = conversationIds
         
+        logger.info('ChatSocketProvider: Conversations chargées avec succès', { count: conversationIds.length })
         return conversationIds
       } catch (error) {
         clearTimeout(timeoutId)
+        logger.error('ChatSocketProvider: Erreur détaillée lors du chargement des conversations:', {
+          error: error instanceof Error ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          } : error
+        })
         throw error
       }
     } catch (error) {

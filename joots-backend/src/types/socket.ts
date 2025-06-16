@@ -1,25 +1,25 @@
-import { Message } from './chat';
+import { Message } from '@shared/message.types';
 
 // Events envoyés au serveur
 export interface ClientToServerEvents {
   joinConversation: (conversationId: string) => void;
   leaveConversation: (conversationId: string) => void;
   sendMessage: (data: {
-    conversationId: string;
+    conversation_id: string;
     content: string;
-    userId: string;
+    user_id: string;
   }) => void;
   messageReceived: (data: {
-    messageId: string;
-    conversationId: string;
+    message_id: string;
+    conversation_id: string;
   }) => void;
-  messageRead: (data: { messageId: string; conversationId: string }) => void;
+  messageRead: (data: { message_id: string; conversation_id: string }) => void;
   typing: (data: {
-    conversationId: string;
-    userId: string;
-    isTyping: boolean;
+    conversation_id: string;
+    user_id: string;
+    is_typing: boolean;
   }) => void;
-  icebreakerReady: (conversationId: string) => void;
+  icebreakerReady: (conversation_id: string) => void;
 }
 
 // Events reçus du serveur
@@ -29,25 +29,25 @@ export interface ServerToClientEvents {
   error: (error: { message: string }) => void;
   newMessage: (message: Message) => void;
   messageStatus: (data: {
-    messageId: string;
+    message_id: string;
     status: 'delivered' | 'read';
   }) => void;
   participantOnline: (data: {
-    participantId: string;
-    isOnline: boolean;
+    participant_id: string;
+    is_online: boolean;
   }) => void;
   typing: (data: {
-    conversationId: string;
-    userId: string;
-    isTyping: boolean;
+    conversation_id: string;
+    user_id: string;
+    is_typing: boolean;
   }) => void;
   icebreakerQuestion: (data: {
-    conversationId: string;
+    conversation_id: string;
     question: string;
   }) => void;
   icebreakerParticipantReady: (data: {
-    conversationId: string;
-    participantId: string;
+    conversation_id: string;
+    participant_id: string;
   }) => void;
 }
 
@@ -68,8 +68,8 @@ export interface SocketConfig {
 }
 
 export interface UserStatusChange {
-  userId: string;
-  isOnline: boolean;
+  user_id: string;
+  is_online: boolean;
   timestamp?: string;
   username?: string;
   avatar?: string;
@@ -81,14 +81,14 @@ export interface UserStatusChange {
 export interface SocketMessage {
   id: string;
   content: string;
-  senderId: string;
-  receiverId: string;
-  createdAt: string;
-  isRead: boolean;
+  sender_id: string;
+  receiver_id: string;
+  created_at: string;
+  is_read: boolean;
 }
 
 export interface TypingStatus {
-  conversationId: string;
-  userId: string;
-  isTyping: boolean;
+  conversation_id: string;
+  user_id: string;
+  is_typing: boolean;
 }

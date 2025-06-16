@@ -1,17 +1,21 @@
-import { Conversation } from '@/features/conversations/conversation.types'
-import { User } from '@/features/user/user.types'
+import { Conversation } from '@shared/conversation.types'
+import { User } from '@shared/user.types'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
+import { logger } from '@/utils/logger'
 
 export const getOtherParticipantInConversation = (
   conversation: Conversation,
   currentUserId: string
 ): User | undefined => {
-  const otherParticipant = conversation.participants.find(p => p.userId !== currentUserId)
+  if (!conversation?.participants || !currentUserId) {
+    return undefined
+  }
+  logger.debug('getOtherParticipantInConversation', { conversation, currentUserId })
+  const otherParticipant = conversation.participants.find((p: { user_id: string }) => p.user_id !== currentUserId)
   if (!otherParticipant) return undefined
+  logger.debug('getOtherParticipantInConversation - Other participant', { otherParticipant })
 
-  const contactStore = useContactStore.getState()
-  const isUserOnline = contactStore.isUserOnline(otherParticipant.user.id)
-  return { ...otherParticipant.user, isOnline: isUserOnline }
+  return otherParticipant.user
 }
 
 export const isCurrentUserSender = (
@@ -22,7 +26,8 @@ export const isCurrentUserSender = (
 }
 
 export const getUnreadCount = (conversation: Conversation, currentUserId: string): number => {
+  if (!conversation.messages) return 0
   return conversation.messages.filter(
-    msg => !isCurrentUserSender(msg, currentUserId) && msg.status !== 'read'
+    message => message.status !== 'read' && message.sender_id !== currentUserId
   ).length
 }

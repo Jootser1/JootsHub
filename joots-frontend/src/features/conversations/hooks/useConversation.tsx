@@ -2,10 +2,10 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { Conversation } from '@shared/conversation.types'
 
 export function useConversation() {
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
@@ -14,9 +14,12 @@ export function useConversation() {
 
   const fetchConversations = async () => {
     try {
+      console.log('Fetching conversations...')
       const response = await axiosInstance.get('/conversations')
+      console.log('Conversations response:', response.data)
       setConversations(response.data)
     } catch (error) {
+      console.error('Error fetching conversations:', error)
       logger.error(
         'Error fetching conversations:',
         error instanceof Error ? error : new Error(String(error))
@@ -87,11 +90,14 @@ export function useConversation() {
   }, [])
 
   useEffect(() => {
+    console.log('Session status:', status)
+    console.log('Session data:', session)
     if (session?.user?.id) {
+      console.log('User ID:', session.user.id)
       fetchConversations()
     }
     setLoading(false)
-  }, [session?.user?.id])
+  }, [session?.user?.id, status])
 
   return {
     conversations,

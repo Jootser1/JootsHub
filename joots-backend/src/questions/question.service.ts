@@ -1,36 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { RedisService } from '../redis/redis.service';
-import { QuestionGroupWithRelations } from '../types/question';
+import { PollWithRelations } from '../types/question';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
+import { postedResponse } from '@shared/icebreaker.types';
+import { ConversationsService } from 'src/conversations/conversations.service';
+import { LocaleCode } from '@shared/locale.types';
+
 @Injectable()
 export class QuestionService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly icebreakerService: IcebreakerService
+    private readonly icebreakerService: IcebreakerService,
+    private readonly conversationsService: ConversationsService
   ) {}
 
   async getUserLastResponseToQuestion(
     currentUserId: string,
-    questionGroupId: string
+    pollId: string
   ) {
-    return this.prisma.userAnswer.findFirst({
+    return this.prisma.pollAnswer.findFirst({
       where: {
-        userId: currentUserId,
-        questionGroupId,
+        user_id: currentUserId,
+        poll_id: pollId,
       },
       orderBy: {
-        answeredAt: 'desc',
+        answered_at: 'desc',
       },
       include: {
-        questionOption: true,
+        option: true,
       },
     });
   }
 
-  async getQuestionGroup(questionGroupId: string) {
-    return this.prisma.questionGroup.findUnique({
-      where: { id: questionGroupId },
+  async getPoll(pollId: string) {
+    return this.prisma.poll.findUnique({
+      where: { poll_id: pollId },
     });
   }
 
@@ -40,129 +44,105 @@ export class QuestionService {
   // Selecting questions unanswered by both users
   // if no question, favor the one answered by only one,
   // if none, the oldest one
-  async getNextRandomQuestionGroup(
+  async getNextRandomPoll(
+    conversationId: string,
     userId1: string,
     userId2: string
-  ): Promise<QuestionGroupWithRelations | null> {
-    const answeredQuestionsUser1 = await this.prisma.userAnswer.findMany({
-      where: { userId: userId1 },
-      select: { questionGroupId: true },
+  ): Promise<PollWithRelations | null> {
+    const answeredQuestionsUser1 = await this.prisma.pollAnswer.findMany({
+      where: { user_id: userId1 },
+      select: { poll_id: true },
     });
 
-    const answeredQuestionsUser2 = await this.prisma.userAnswer.findMany({
-      where: { userId: userId2 },
-      select: { questionGroupId: true },
+    const answeredQuestionsUser2 = await this.prisma.pollAnswer.findMany({
+      where: { user_id: userId2 },
+      select: { poll_id: true },
     });
 
-    const answeredQuestionGroupIdsUser1 = answeredQuestionsUser1.map(
-      (answer) => answer.questionGroupId
+    const answeredPollIdsUser1 = answeredQuestionsUser1.map(
+      (answer) => answer.poll_id
     );
-    const answeredQuestionGroupIdsUser2 = answeredQuestionsUser2.map(
-      (answer) => answer.questionGroupId
+    const answeredPollIdsUser2 = answeredQuestionsUser2.map(
+      (answer) => answer.poll_id
     );
 
-    const unansweredQuestionGroups = await this.prisma.questionGroup.findMany({
+    const locale = await this.conversationsService.getConversationLocale(conversationId);
+
+    const unansweredPolls = await this.prisma.poll.findMany({
       where: {
-        id: {
+        poll_id: {
           notIn: [
-            ...answeredQuestionGroupIdsUser1,
-            ...answeredQuestionGroupIdsUser2,
+            ...answeredPollIdsUser1,
+            ...answeredPollIdsUser2,
           ],
         },
+        is_enabled: true,
       },
       orderBy: {
-        createdAt: 'asc',
+        created_at: 'asc',
       },
       include: {
-        questions: {
+        poll_translations: {
           where: {
-            locale: 'fr_FR',
+            locale: locale,
           },
         },
-        categories: {
+        options: {
           include: {
-            category: {
-              include: {
-                translations: {
-                  where: {
-                    locale: 'fr_FR',
-                  },
-                },
+            translations: {
+              where: {
+                locale: locale,
               },
             },
           },
         },
-        options: {
-          where: {
-            locale: 'fr_FR',
+        categories: {
+          include: {
+            category: true,
           },
         },
       },
     });
 
     // Vérifiez s'il y a des questions non répondues
-    if (unansweredQuestionGroups.length === 0) {
+    if (unansweredPolls.length === 0) {
       return null; // ou gérez le cas où il n'y a pas de questions disponibles
     }
 
     // Sélectionner un élément aléatoire
     const randomIndex = Math.floor(
-      Math.random() * unansweredQuestionGroups.length
+      Math.random() * unansweredPolls.length
     );
-    const randomUnansweredQuestionGroup = unansweredQuestionGroups[randomIndex];
-    return randomUnansweredQuestionGroup;
+    const randomUnansweredPoll = unansweredPolls[randomIndex];
+    return randomUnansweredPoll;
   }
 
-  async saveResponse(
-    userId: string,
-    questionGroupId: string,
-    optionId: string,
-    conversationId: string
-  ) {
-
-    // Vérification des paramètres requis
-    if (!userId || !questionGroupId || !optionId) {
-      throw new Error(
-        'Les paramètres userId, questionGroupId et optionId sont requis'
-      );
-    }
-
-    // 1. Sauvegarder la réponse à la question en BDD
-    const savedResponse = await this.saveUserAnswerInDB(
-      userId,
-      questionGroupId,
-      optionId,
-      conversationId
-    );
-
-    // 2. Mettre à jour les statuts dans Redis et émettre l'événement via le socket si dans le contexte d'une conversation
-    if (conversationId) {
-      await this.icebreakerService.processIcebreakersPostResponses(
-        userId,
-        questionGroupId,
-        optionId,
-        conversationId
-      );
-    }
-
-    return savedResponse;
-  }
 
   // Méthode spécifique pour enregistrer la réponse en BDD
-  async saveUserAnswerInDB(
-    userId: string,
-    questionGroupId: string,
-    optionId: string,
-    conversationId: string
-  ) {
-    return this.prisma.userAnswer.create({
-      data: {
-        userId: userId,
-        questionGroupId: questionGroupId,
-        questionOptionId: optionId,
-        answeredAt: new Date(),
-        ...(conversationId ? { conversationId } : {}),
-      },
+  async saveUserAnswerInDB(response: postedResponse) {
+    return this.prisma.$transaction(async (prisma) => {
+      // Créer la réponse dans PollAnswer
+      const pollAnswer = await prisma.pollAnswer.create({
+        data: {
+          user_id: response.userId,
+          poll_id: response.pollId,
+          poll_option_id: response.optionId,
+          answered_at: new Date(),
+          ...(response.conversationId ? { conversation_id: response.conversationId } : {}),
+        },
+      });
+
+      // Créer l'entrée dans PollAnswerSource
+      await prisma.pollAnswerSource.create({
+        data: {
+          source_type: 'CONVERSATION',
+          locale: response.locale as LocaleCode,
+          conversation_id: response.conversationId,
+          answer: { connect: { poll_answer_id: pollAnswer.poll_answer_id } },
+        },
+      });
+
+      return pollAnswer;
     });
   }
 }

@@ -1,0 +1,10 @@
+﻿ID;type;locale;fr_FR;category;min_value;max_value;step_value;Option1;Option2;Option3;Option4;Option5;Option6;Option7;Option8;Option9;Option10
+1;STEP_LABELED;en_US;How often do you have trouble making decisions?;5;;;;Never;Almost never;Sometimes;Often;Very often;Always;;;;
+1;STEP_LABELED;es_ES;¿Con qué frecuencia te cuesta tomar decisiones?;5;;;;Nunca;Casi nunca;A veces;A menudo;Muy a menudo;Siempre;;;;
+1;STEP_LABELED;fr_FR;À quelle fréquence avez-vous du mal à prendre des décisions?;5;;;;Jamais;Presque Jamais;Parfois;Souvent;Très souvent;Toujours;;;;
+2;YES_NO_IDK;en_US;Have you ever caused damage with your car without leaving your contact details?;8;;;;;;;;;;;;;
+2;YES_NO_IDK;es_ES;¿Alguna vez has causado daños con el coche sin dejar tus datos?;8;;;;;;;;;;;;;
+2;YES_NO_IDK;fr_FR;Avez-vous déjà causé des dégâts en voiture sans laisser vos coordonnées ?;8;;;;;;;;;;;;;
+3;YES_NO_IDK;en_US;Have you ever been truly ashamed of a family member?;7;;;;;;;;;;;;;
+3;YES_NO_IDK;es_ES;¿Alguna vez te has avergonzado de algún miembro de tu familia?;7;;;;;;;;;;;;;
+3;YES_NO_IDK;fr_FR;Avez-vous déjà vraiment eu honte d'un membre de la famille ?;7;;;;;;;;;;;;;

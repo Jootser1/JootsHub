@@ -1,0 +1,161 @@
+[{"id": "b24781f7-d736-4abf-8faa-7d33b59e8a10",
+    "type": "YES_NO_IDK",
+    "author": "jootser1",
+    "isModerated": true,
+    "moderatedAt": "28/10/2020",
+    "pinned": false,
+    "enabled": true,
+    "categories": [
+      8,
+      9,
+      10
+    ],
+    "translations": [
+      {
+        "locale":"en_US",
+        "question": "Do you have a habit of biting your nails?"
+      },
+      {
+        "locale":"fr_FR",
+        "question": "Avez-vous l'habitude de vous ronger les ongles?"
+      },
+      {
+        "locale":"es_ES",
+        "question": "¿Tienes el hábito de mordisquear tus uñas?"
+      }
+    ]
+  },
+  {
+    "id": "r24782f7-d736-4abf-8faa-7d33b59e8a11",
+    "type": "CONTINUOUS" ,
+    "author": "jootser1",
+    "isModerated": true,
+    "moderatedAt": "28/10/2020",
+    "pinned": false,
+    "enabled": true,
+    "categories": [
+      5
+    ],
+    "translations": [
+      {
+        "locale":"en_US",
+        "question": "How many real friends do you think you have?"
+      },
+      {
+        "locale":"fr_FR",
+        "question": "Combien de véritables amis estimez-vous avoir ?"
+      },
+      {
+        "locale":"es_ES",
+        "question": "¿Cuántos amigos reales crees que tienes?"
+      }
+    ],
+    "scale_constraint": {
+      "min_value": 0,
+      "max_value": 30,
+      "step": 1
+    }   
+  },
+  {
+    "id": "d24783f7-d736-4abg-8faa-7d33b59e8a12",
+    "type": "STEP_LABELED" ,
+    "author": "jootser1",
+    "isModerated": true,
+    "moderatedAt": "28/10/2020",
+    "pinned": false,
+    "enabled": true,
+    "categories": [
+      5
+    ],
+    "translations": [
+      {
+        "locale":"en_US",
+        "question": "Do you sing in the shower?"
+      },
+      {
+        "locale":"fr_FR",
+        "question": "Chantez-vous sous la douche?"
+      },
+      {
+        "locale":"es_ES",
+        "question": "¿Cantas en la ducha?"
+      }
+    ],
+    "options": [
+      {
+        "locale":"en_US",
+        "values": [
+          {
+            "order": 1,
+            "label": "Never"
+          },
+          {
+            "order": 2,
+            "label": "Sometimes"
+          },
+          {
+            "order": 3,
+            "label": "Regularly"
+          },
+          {
+            "order": 4,
+            "label": "Often"
+          },
+          {
+            "order": 5,
+            "label": "All the time"
+          }
+        ]
+      },
+      {
+        "locale":"fr_FR",
+        "values": [
+          {
+            "order": 1,
+            "label": "Jamais"
+          },
+          {
+            "order": 2,
+            "label": "Parfois"
+          },
+          {
+            "order": 3,
+            "label": "Régulièrement"
+          },
+          {
+            "order": 4,
+            "label": "Souvent"
+          },{
+            "order": 5,
+            "label": "Tout le temps"
+          }
+        ]
+      },
+      {
+        "locale":"es_ES",
+        "values": [
+          {
+            "order": 1,
+            "label": "Nunca"
+          },
+          {
+            "order": 2,
+            "label": "A veces"
+          },
+          {
+            "order": 3,
+            "label": "Regularmente"
+          },
+          {
+            "order": 4,
+            "label": "Frecuentemente"
+          },
+          {
+            "order": 5,
+            "label": "Siempre"
+          }
+        ]
+      }
+    ]
+  }
+]

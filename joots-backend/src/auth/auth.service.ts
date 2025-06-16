@@ -36,23 +36,23 @@ export class AuthService {
 
       // 2. Récupération des catégories existantes
       const categories = await prisma.category.findMany({
-        select: { id: true },
+        select: { category_id: true },
       });
 
       // 3. Insertion des préférences utilisateur pour chaque catégorie
-      await prisma.userQuestionPreference.createMany({
+      await prisma.userCategoryPreference.createMany({
         data: categories.map((category) => ({
-          userId: user.id,
-          categoryId: category.id,
+          user_id: user.user_id,
+          category_id: category.category_id,
           enabled: true,
         })),
         skipDuplicates: true,
       });
 
       //4. Mettre à jour le username avec le numéro d'utilisateur
-      const username = `Jootser${user.userNumber}`;
+      const username = `Jootser${user.user_number}`;
       return prisma.user.update({
-        where: { id: user.id },
+        where: { user_id: user.user_id },
         data: { username },
       });
     });
@@ -79,12 +79,12 @@ export class AuthService {
 
     console.log('[AuthService] Mise à jour du statut en ligne');
     await this.prisma.user.update({
-      where: { id: auth.userId },
-      data: { isOnline: true },
+      where: { user_id: auth.user_id },
+      data: { last_seen: new Date() },
     });
 
     const payload = {
-      sub: auth.userId,
+      sub: auth.user_id,
       email: auth.email,
       username: auth.user.username,
     };
@@ -103,8 +103,8 @@ export class AuthService {
 
   async logout(userId: string) {
     await this.prisma.user.update({
-      where: { id: userId },
-      data: { isOnline: false },
+      where: { user_id: userId },
+      data: { last_seen: new Date() },
     });
     return { message: 'Logged out successfully' };
   }

@@ -5,7 +5,7 @@ import { AxiosError } from 'axios'
 export interface RandomChatResponse {
   conversationId: string
   randomUser: {
-    id: string
+    user_id: string
     username: string
   }
 }
@@ -16,19 +16,20 @@ export const conversationService = {
       // 1. Trouver un utilisateur aléatoire
       const response = await axiosInstance.get('/users/random/available')
       const randomUser = response.data
+      console.log('randomUser', randomUser)
 
       // 2. Créer une conversation avec cet utilisateur
       const conversationResponse = await axiosInstance.post('/conversations', {
-        receiverId: randomUser.id,
+        receiverId: randomUser.user_id,
       })
       const conversation = conversationResponse.data
 
       logger.info(`[ChatService] Nouvelle conversation créée avec ${randomUser.username}`)
 
       return {
-        conversationId: conversation.id,
+        conversationId: conversation.conversation_id,
         randomUser: {
-          id: randomUser.id,
+          user_id: randomUser.user_id,
           username: randomUser.username,
         },
       }

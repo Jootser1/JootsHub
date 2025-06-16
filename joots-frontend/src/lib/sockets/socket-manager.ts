@@ -1,5 +1,4 @@
 import { logger } from '@/utils/logger'
-import { performanceMonitor } from '@/utils/performance-monitor'
 import { UserSocketService } from '@/features/user/sockets/user-socket-service'
 import { ChatSocketService } from '@/features/chat/sockets/chat-socket-service'
 import { waitForConnection } from '@/utils/socket-utils'
@@ -81,263 +80,197 @@ class SocketManager {
 
   // ✅ Optimisation : Connexion utilisateur avec monitoring et notification
   public async connectUserSocket(): Promise<UserSocketService> {
-    return performanceMonitor.measureAsync(
-      'SocketManager.connectUserSocket',
-      async () => {
-        if (typeof window === 'undefined') {
-          throw new Error('Cannot connect socket on server side')
-        }
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot connect socket on server side')
+    }
 
-        if (!this.userId || !this.token) {
-          throw new Error('No credentials set for socket connection')
-        }
+    if (!this.userId || !this.token) {
+      throw new Error('No credentials set for socket connection')
+    }
 
-        // Éviter les connexions multiples simultanées
-        if (this.isUserConnecting) {
-          logger.debug('Connexion utilisateur déjà en cours, attente...')
-          while (this.isUserConnecting) {
-            await new Promise(resolve => setTimeout(resolve, 100))
-          }
-          return this.userSocket!
-        }
+    // Éviter les connexions multiples simultanées
+    if (this.isUserConnecting) {
+      logger.debug('Connexion utilisateur déjà en cours, attente...')
+      while (this.isUserConnecting) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      return this.userSocket!
+    }
 
-        if (this.userSocket?.isConnected()) {
-          logger.debug('Socket utilisateur déjà connecté')
-          return this.userSocket
-        }
+    if (this.userSocket?.isConnected()) {
+      logger.debug('Socket utilisateur déjà connecté')
+      return this.userSocket
+    }
 
-        this.isUserConnecting = true
+    this.isUserConnecting = true
 
-        try {
-          // Initialisation - utiliser le singleton
-          this.userSocket = UserSocketService.getInstance()
-          this.userSocket.connect(this.userId, this.token)
-          
-          // ✅ Monitoring : Attente de connexion avec timeout
-          await performanceMonitor.measureAsync(
-            'UserSocket.waitForConnection',
-            () => waitForConnection(this.userSocket!),
-            'socket',
-            3000 // 3s max pour la connexion
-          )
-          
-          this.userSocket.registerEvents()
+    try {
+      // Initialisation - utiliser le singleton
+      this.userSocket = UserSocketService.getInstance()
+      this.userSocket.connect(this.userId, this.token)
+      
+      await waitForConnection(this.userSocket!)
+      
+      this.userSocket.registerEvents()
 
-          if (!this.userSocket?.isConnected()) {
-            logger.warn("SocketManager: Impossible d'établir une connexion socket utilisateur")
-            return this.userSocket
-          }
+      if (!this.userSocket?.isConnected()) {
+        logger.warn("SocketManager: Impossible d'établir une connexion socket utilisateur")
+        return this.userSocket
+      }
 
-          // ✅ Configuration des rooms de contacts après connexion
-          await this.setupUserRooms()
+      await this.setupUserRooms()
 
-          logger.info('SocketManager: Socket utilisateur configuré avec succès')
-          
-          // ✅ Notifier le changement d'état
-          this.notifyStateChange()
-          
-          return this.userSocket
-        } finally {
-          this.isUserConnecting = false
-        }
-      },
-      'socket',
-      2000 // Seuil de 2s pour la connexion complète
-    )
+      logger.info('SocketManager: Socket utilisateur configuré avec succès')
+      
+      this.notifyStateChange()
+      
+      return this.userSocket
+    } finally {
+      this.isUserConnecting = false
+    }
   }
 
   //✅ Optimisation : Connexion chat avec monitoring et notification
   public async connectChatSocket(conversationIds?: string[]): Promise<ChatSocketService> {
-    return performanceMonitor.measureAsync(
-      'SocketManager.connectChatSocket',
-      async () => {
-        if (typeof window === 'undefined') {
-          throw new Error('Cannot connect socket on server side')
+    if (typeof window === 'undefined') {
+      throw new Error('Cannot connect socket on server side')
+    }
+
+    if (!this.userId || !this.token) {
+      throw new Error('No credentials set for socket connection')
+    }
+
+    // Éviter les connexions multiples simultanées
+    if (this.isChatConnecting) {
+      logger.debug('Connexion chat déjà en cours, attente...')
+      while (this.isChatConnecting) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+      }
+      return this.chatSocket!
+    }
+
+    // Si déjà connecté, gérer les nouvelles conversations sans recréer
+    if (this.chatSocket?.isConnected()) {
+      logger.debug('Socket chat déjà connecté, gestion des conversations')
+
+      if (conversationIds && conversationIds.length > 0) {
+        const existingConversations = this.chatSocket.getActiveConversations()
+        const newConversations = conversationIds.filter(id => !existingConversations.includes(id))
+
+        if (newConversations.length > 0) {
+          this.chatSocket!.joinAllConversations(newConversations)
+          logger.info(`${newConversations.length} nouvelles conversations rejointes`)
         }
+      }
 
-        if (!this.userId || !this.token) {
-          throw new Error('No credentials set for socket connection')
-        }
+      return this.chatSocket
+    }
 
-        // Éviter les connexions multiples simultanées
-        if (this.isChatConnecting) {
-          logger.debug('Connexion chat déjà en cours, attente...')
-          while (this.isChatConnecting) {
-            await new Promise(resolve => setTimeout(resolve, 100))
-          }
-          return this.chatSocket!
-        }
+    this.isChatConnecting = true
 
-        // Si déjà connecté, gérer les nouvelles conversations sans recréer
-        if (this.chatSocket?.isConnected()) {
-          logger.debug('Socket chat déjà connecté, gestion des conversations')
+    try {
+      // Initialisation - utiliser le singleton
+      this.chatSocket = ChatSocketService.getInstance()
+      this.chatSocket.connect(this.userId, this.token)
+      
+      await waitForConnection(this.chatSocket!)
+      
+      this.chatSocket.registerEvents()
 
-          if (conversationIds && conversationIds.length > 0) {
-            const existingConversations = this.chatSocket.getActiveConversations()
-            const newConversations = conversationIds.filter(id => !existingConversations.includes(id))
+      if (!this.chatSocket?.isConnected()) {
+        logger.warn("SocketManager: Impossible d'établir une connexion socket chat")
+        return this.chatSocket
+      }
 
-            if (newConversations.length > 0) {
-              // ✅ Monitoring : Rejoindre conversations
-              performanceMonitor.measureSync(
-                'ChatSocket.joinNewConversations',
-                () => this.chatSocket!.joinAllConversations(newConversations),
-                'socket',
-                500 // 500ms max pour rejoindre les conversations
-              )
-              logger.info(`${newConversations.length} nouvelles conversations rejointes`)
-            }
-          }
+      if (conversationIds && conversationIds.length > 0) {
+        const existingConversations = this.chatSocket.getActiveConversations()
+        logger.debug(`SocketManager: Conversations existantes: ${existingConversations.length}, nouvelles: ${conversationIds.length}`)
+        
+        this.chatSocket!.joinAllConversations(conversationIds)
+      }
 
-          return this.chatSocket
-        }
-
-        this.isChatConnecting = true
-
-        try {
-          // Initialisation - utiliser le singleton
-          this.chatSocket = ChatSocketService.getInstance()
-          this.chatSocket.connect(this.userId, this.token)
-          
-          // ✅ Monitoring : Attente de connexion
-          await performanceMonitor.measureAsync(
-            'ChatSocket.waitForConnection',
-            () => waitForConnection(this.chatSocket!),
-            'socket',
-            3000
-          )
-          
-          this.chatSocket.registerEvents()
-
-          if (!this.chatSocket?.isConnected()) {
-            logger.warn("SocketManager: Impossible d'établir une connexion socket chat")
-            return this.chatSocket
-          }
-
-          if (conversationIds && conversationIds.length > 0) {
-            const existingConversations = this.chatSocket.getActiveConversations()
-            logger.debug(`SocketManager: Conversations existantes: ${existingConversations.length}, nouvelles: ${conversationIds.length}`)
-            
-            // ✅ Monitoring : Rejoindre toutes les conversations
-            performanceMonitor.measureSync(
-              'ChatSocket.joinAllConversations',
-              () => this.chatSocket!.joinAllConversations(conversationIds),
-              'socket',
-              1000 // 1s max pour rejoindre toutes les conversations
-            )
-          }
-
-          logger.info('SocketManager: Socket chat configuré avec succès')
-          
-          // ✅ Notifier le changement d'état
-          this.notifyStateChange()
-          
-          return this.chatSocket
-        } finally {
-          this.isChatConnecting = false
-        }
-      },
-      'socket',
-      3000 // Seuil de 3s pour la connexion complète
-    )
+      logger.info('SocketManager: Socket chat configuré avec succès')
+      
+      this.notifyStateChange()
+      
+      return this.chatSocket
+    } finally {
+      this.isChatConnecting = false
+    }
   }
 
   // ✅ Optimisation : Déconnexion avec nettoyage et notification
   public disconnectUserSocket(): void {
-    performanceMonitor.measureSync(
-      'SocketManager.disconnectUserSocket',
-      () => {
-        if (this.userSocket) {
-          try {
-            // 1. Tenter de récupérer l'ID utilisateur depuis différentes sources
-            let userId = this.userSocket.getUserId()
-            // Si userId est null, essayer de le récupérer depuis le store utilisateur
-            if (!userId) {
-              const userFromStore = useUserStore.getState().user?.id
-              // Convertir undefined en null si nécessaire
-              userId = userFromStore || null
+    if (this.userSocket) {
+      try {
+        // 1. Tenter de récupérer l'ID utilisateur depuis différentes sources
+        let userId = this.userSocket.getUserId()
+        // Si userId est null, essayer de le récupérer depuis le store utilisateur
+        if (!userId) {
+          const userFromStore = useUserStore.getState().user?.user_id
+          // Convertir undefined en null si nécessaire
+          userId = userFromStore || null
 
-              if (userId) {
-                logger.info('Fallback: userId récupéré depuis le store utilisateur')
-              }
-            }
-
-            // 2. Mise à jour du statut utilisateur (hors ligne)
-            if (userId) {
-              useUserStore.getState().setUserStatus(false)
-              this.userSocket.updateUserStatus(userId, false)
-            }
-
-            // 3. Quitter les rooms de contacts
-            const contactIds = useContactStore.getState().contactList
-            if (contactIds && contactIds.size > 0) {
-              this.userSocket.leaveContactsRooms([...contactIds])
-            }
-
-            // 4. Désenregistrer les événements et déconnecter
-            this.userSocket.unregisterEvents()
-            this.userSocket.disconnect()
-          } catch (error) {
-            logger.error(
-              'Erreur lors de la déconnexion du socket utilisateur:',
-              error instanceof Error ? error : new Error(String(error))
-            )
+          if (userId) {
+            logger.info('Fallback: userId récupéré depuis le store utilisateur')
           }
-
-          this.userSocket = null
-          
-          // ✅ Notifier le changement d'état
-          this.notifyStateChange()
         }
-      },
-      'socket',
-      100
-    )
+
+        // 2. Mise à jour du statut utilisateur (hors ligne)
+        if (userId) {
+          useUserStore.getState().setUserStatus(false)
+          this.userSocket.updateUserStatus(userId, false)
+        }
+
+        // 3. Quitter les rooms de contacts
+        const contactIds = useContactStore.getState().contactList
+        if (contactIds && contactIds.size > 0) {
+          this.userSocket.leaveContactsRooms([...contactIds])
+        }
+
+        // 4. Désenregistrer les événements et déconnecter
+        this.userSocket.unregisterEvents()
+        this.userSocket.disconnect()
+      } catch (error) {
+        logger.error(
+          'Erreur lors de la déconnexion du socket utilisateur:',
+          error instanceof Error ? error : new Error(String(error))
+        )
+      }
+
+      this.userSocket = null
+      
+      this.notifyStateChange()
+    }
   }
 
   public disconnectChatSocket(): void {
-    performanceMonitor.measureSync(
-      'SocketManager.disconnectChatSocket',
-      () => {
-        if (this.chatSocket) {
-          try {
-            const chatSocketService = this.chatSocket as ChatSocketService
+    if (this.chatSocket) {
+      try {
+        const chatSocketService = this.chatSocket as ChatSocketService
 
-            chatSocketService.unregisterEvents()
-            this.chatSocket.disconnect()
-            ChatSocketService.resetInstance()
-          } catch (error) {
-            logger.error(
-              'Erreur lors de la déconnexion du socket chat:',
-              error instanceof Error ? error : new Error(String(error))
-            )
-          }
+        chatSocketService.unregisterEvents()
+        this.chatSocket.disconnect()
+        ChatSocketService.resetInstance()
+      } catch (error) {
+        logger.error(
+          'Erreur lors de la déconnexion du socket chat:',
+          error instanceof Error ? error : new Error(String(error))
+        )
+      }
 
-          this.chatSocket = null
-          
-          // ✅ Notifier le changement d'état
-          this.notifyStateChange()
-        }
-      },
-      'socket',
-      100
-    )
+      this.chatSocket = null
+      
+      this.notifyStateChange()
+    }
   }
 
   public disconnectAll(): void {
-    performanceMonitor.measureSync(
-      'SocketManager.disconnectAll',
-      () => {
-        this.disconnectUserSocket()
-        this.disconnectChatSocket()
-        this.userId = null
-        this.token = null
-        logger.info('SocketManager: Tous les sockets déconnectés')
-        
-        // ✅ Notifier le changement d'état (sera appelé par les méthodes individuelles)
-      },
-      'socket',
-      200
-    )
+    this.disconnectUserSocket()
+    this.disconnectChatSocket()
+    this.userId = null
+    this.token = null
+    logger.info('SocketManager: Tous les sockets déconnectés')
   }
 
   //✅ Configure les rooms de contacts et récupère les statuts en ligne

@@ -27,8 +27,10 @@ export class ConversationsController {
   @Get()
   findAll(@Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
+      console.log('dommage')
       throw new UnauthorizedException('User not authenticated');
     }
+    console.log('trop grosse conversation')
     return this.conversationsService.findAllConversationsForAUserId(
       req.user.sub
     );
@@ -50,6 +52,7 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
+    console.log('body', body)
     return this.conversationsService.create(req.user.sub, body.receiverId);
   }
 
@@ -70,6 +73,6 @@ export class ConversationsController {
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée');
     }
-    return this.conversationsService.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    return this.conversationsService.getConversationLevel(conversation.xp_point, conversation.difficulty);
   }
 }

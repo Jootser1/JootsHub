@@ -7,7 +7,7 @@ import { AppLayout } from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from 'sonner'
 import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { Conversation } from '@shared/conversation.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ExperienceLogo } from '@/components/ExperienceLogo'
@@ -32,6 +32,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
   const fetchAttemptedRef = useRef(false)
   const conversationInitializedRef = useRef(false)
   const [xpAndLevel, setXpAndLevel] = useState<ProgressionResult | null>(null)
+  
+  // Appel inconditionnel du Hook
+  const otherUser = getOtherParticipantInConversation(conversation as Conversation, user?.user_id || '')
+
   useEffect(() => {
     const fetchConversation = async () => {
       // Éviter les appels multiples
@@ -91,8 +95,6 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       </div>
     )
   }
-
-  const otherUser = getOtherParticipantInConversation(conversation, user.id)
 
   if (!otherUser) {
     return (

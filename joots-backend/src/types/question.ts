@@ -1,4 +1,3 @@
-import { Prisma } from '@prisma/client';
 
 export type Question = {
   id: string;
@@ -13,7 +12,7 @@ export type QuestionOption = {
   questionId: string;
 };
 
-export type QuestionGroup = {
+export type Poll = {
   id: string;
   type: number;
   isModerated: boolean;
@@ -32,36 +31,35 @@ export type Category = {
 };
 
 // Définir nos propres types pour les relations sans dépendre des types Prisma directement
-export type QuestionGroupWithRelations = {
-  id: string;
-  type: number;
-  authorId: string;
-  createdAt: Date;
-  isModerated: boolean;
-  moderatedAt: Date | null;
-  pinned: boolean;
-  enabled: boolean;
+export type PollWithRelations = {
+  poll_id: string;
+  type: string;
+  author_id: string;
+  created_at: Date;
+  is_moderated: boolean;
+  is_pinned: boolean;
+  is_enabled: boolean;
   // Relations
-  questions: Array<{
-    id: string;
-    groupId: string;
+  poll_translations: Array<{
+    poll_translation_id: string;
+    poll_id: string;
     locale: string;
-    question: string;
+    translation: string;
   }>;
   categories: Array<{
     category: {
-      translations: Array<{
-        categoryId: number;
-        locale: string;
-        label: string;
-      }>;
-    };
+      category_id: number;
+      name: string;
+    }
   }>;
-  options: Array<{
-    id: string;
-    groupId: string;
-    locale: string;
-    label: string;
+    options: Array<{
+    poll_option_id: string;
+    poll_id: string;
     order: number;
+    translations: Array<{
+      option_id: string;
+      locale: string;
+      translated_option_text: string;
+    }>;
   }>;
 };

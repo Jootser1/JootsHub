@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { Message } from '@/features/chat/chat.types'
+import { Message } from '@shared/message.types'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ensureDate } from '@/utils/date-utils'
@@ -27,7 +27,7 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
     scrollToBottom()
   }, [displayMessages])
 
-  if (!user?.id) {
+  if (!user?.user_id) {
     return <div className='flex items-center justify-center h-full text-gray-500'>Déconnecté</div>
   }
 
@@ -35,8 +35,8 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
     <div className='p-4 space-y-4'>
       {displayMessages.map((message: Message, index: number) => {
         const messageType = message.messageType
-        const isCurrentUser = message.senderId === user.id
-        const timeAgo = formatDistanceToNow(ensureDate(message.createdAt), {
+        const isCurrentUser = message.sender_id === user.user_id
+        const timeAgo = formatDistanceToNow(ensureDate(message.created_at), {
           addSuffix: true,
           locale: fr,
         })
@@ -44,13 +44,13 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
 
         if (messageType === 'ANSWER') {
           currentUserAnswer =
-            message.userAId === user.id ? message.userAAnswer : message.userBAnswer
-          otherUserAnswer = message.userAId === user.id ? message.userBAnswer : message.userAAnswer
+            message.userAId === user.user_id ? message.userAAnswer : message.userBAnswer
+          otherUserAnswer = message.userAId === user.user_id ? message.userBAnswer : message.userAAnswer
         }
 
         return (
           <div
-            key={`${message.id}-${index}`}
+            key={`${message.message_id}-${index}`}
             className={`flex ${messageType === 'ANSWER' ? 'justify-center' : isCurrentUser ? 'justify-start' : 'justify-end'}`}
           >
             <div

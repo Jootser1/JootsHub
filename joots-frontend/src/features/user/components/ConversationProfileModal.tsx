@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { X, Lock, Eye } from 'lucide-react'
-import { FilteredUserProfile } from '../user.types'
+import { FilteredUserProfile } from '@shared/user.types'
 import axiosInstance from '@/app/api/axios-instance'
 import { toast } from 'sonner'
 import Image from 'next/image'

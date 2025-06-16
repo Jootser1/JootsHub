@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { User } from '@/features/user/user.types'
+import { User } from '@shared/user.types'
 import { logger } from '@/utils/logger'
 import axiosInstance from '@/app/api/axios-instance'
 import { devtools } from 'zustand/middleware'
@@ -55,29 +55,37 @@ export const useUserStore = create<UserStore>()(
 
         syncUserData: async () => {
           try {
+            logger.info('syncUserData: Début de la synchronisation')
             const session = await getSession()
-            if (!session?.user?.id) return
+            logger.debug('syncUserData: Session récupérée', { session })
+            
+            if (!session?.user?.id) {
+              logger.warn('syncUserData: Pas d\'ID utilisateur dans la session')
+              return
+            }
 
+            logger.info('syncUserData: Appel API pour récupérer les données utilisateur', { userId: session.user.id })
             const response = await axiosInstance.get(`/users/${session.user.id}`)
+            logger.debug('syncUserData: Réponse API reçue', { response: response.data })
 
             if (!response.data) {
-              logger.error('Données utilisateur invalides reçues du serveur')
+              logger.error('syncUserData: Données utilisateur invalides reçues du serveur')
               return
             }
 
             const userData = {
-              id: response.data.id,
+              user_id: session.user.id,
               username: response.data.username,
               avatar: response.data.avatar,
-              bio: response.data.bio || '',
-              isOnline: true,
-              isAvailableForChat: response.data.isAvailableForChat,
+              last_seen: response.data.last_seen,
             }
 
+            logger.info('syncUserData: Mise à jour du store avec les données utilisateur', { userData })
             set({ user: userData })
+            logger.info('syncUserData: Store mis à jour avec succès')
           } catch (error) {
             logger.error(
-              'Erreur lors de la synchronisation des données utilisateur:',
+              'syncUserData: Erreur lors de la synchronisation des données utilisateur:',
               error instanceof Error ? error : new Error(String(error))
             )
           }

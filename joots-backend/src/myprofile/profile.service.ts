@@ -49,11 +49,11 @@ export class MyProfileService {
 
   async getMyProfile(userId: string) {
     const attributes = await this.prisma.userAttribute.findMany({
-      where: { userId },
+      where: { user_id: userId },
     });
 
     const user = await this.prisma.user.findUnique({
-      where: { id: userId },
+      where: { user_id: userId },
       select: { avatar: true },
     });
 
@@ -83,9 +83,9 @@ export class MyProfileService {
         const levelRevealed = this.getLevelRevealedForAttribute(key, difficulty);
                 
         return this.prisma.userAttribute.upsert({
-          where: { userId_key: { userId, key } },
-          update: { value, levelRevealed },
-          create: { userId, key, value, levelRevealed },
+          where: { user_id_key: { user_id: userId, key } },
+          update: { value, level_revealed: levelRevealed },
+          create: { user_id: userId, key, value, level_revealed: levelRevealed },
         });
       })
     );
@@ -93,7 +93,7 @@ export class MyProfileService {
     // Update avatar si présent
     if (avatar) {
       await this.prisma.user.update({
-        where: { id: userId },
+        where: { user_id: userId },
         data: { avatar },
       });
     }

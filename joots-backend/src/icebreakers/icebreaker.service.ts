@@ -1,11 +1,12 @@
 import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { QuestionGroupWithRelations } from '../types/question';
+import { PollWithRelations } from '../types/question';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
-import { ProgressionResult } from '../types/chat';
+import { ProgressionResult } from '@shared/conversation.types';
+import { postedResponse } from '@shared/icebreaker.types';
 
 @Injectable()
 export class IcebreakerService {
@@ -25,8 +26,8 @@ export class IcebreakerService {
     isIcebreakerReady: boolean
   ) {
     await this.prisma.conversationParticipant.updateMany({
-      where: { conversationId, userId },
-      data: { isIcebreakerReady: isIcebreakerReady },
+      where: { conversation_id: conversationId, user_id: userId },
+      data: { is_icebreaker_ready: isIcebreakerReady },
     });
 
     await this.redis.hset(
@@ -41,9 +42,9 @@ export class IcebreakerService {
 
   async areAllParticipantsReady(conversationId: string): Promise<boolean> {
     const participants = await this.prisma.conversationParticipant.findMany({
-      where: { conversationId },
+      where: { conversation_id: conversationId },
     });
-    return participants.every((p) => p.isIcebreakerReady);
+    return participants.every((p) => p.is_icebreaker_ready);
   }
 
   async areAllParticipantsHaveGivenAnswer(conversationId: string): Promise<{
@@ -52,28 +53,28 @@ export class IcebreakerService {
     userBId: string;
   }> {
     const participants = await this.prisma.conversationParticipant.findMany({
-      where: { conversationId },
+      where: { conversation_id: conversationId },
     });
     return {
       allParticipantsHaveGivenAnswer: participants.every(
-        (p) => p.hasGivenAnswer
+        (p) => p.has_given_answer
       ),
-      userAId: participants[0].userId,
-      userBId: participants[1].userId,
+      userAId: participants[0].user_id,
+      userBId: participants[1].user_id,
     };
   }
 
-  async storeCurrentQuestionGroupForAGivenConversation(
+  async storeCurrentPollForAGivenConversation(
     conversationId: string,
-    questionGroup: QuestionGroupWithRelations
+    poll: PollWithRelations
   ) {
     try {
-      if (!questionGroup) return;
+      if (!poll) return;
       await this.redis.set(
-        `conversation:${conversationId}:icebreaker:questionGroup`,
+        `conversation:${conversationId}:icebreaker:poll`,
         JSON.stringify({
-          id: questionGroup.id,
-          text: questionGroup.questions[0].question,
+          id: poll.poll_id,
+          text: poll.poll_translations[0].translation,
           timestamp: new Date().toISOString(),
         })
       );
@@ -85,45 +86,39 @@ export class IcebreakerService {
   }
 
   async processIcebreakersPostResponses(
-    userId: string,
-    questionGroupId: string,
-    optionId: string,
-    conversationId: string
+    postedResponse: postedResponse
   ) {
     // Save User Responses in redis
     await this.saveCurrentUserResponseInRedis(
-      userId,
-      questionGroupId,
-      optionId,
-      conversationId
+      postedResponse.userId,
+      postedResponse.pollId,
+      postedResponse.optionId,
+      postedResponse.conversationId,
     );
 
     // Update participant status has given answer in DB
-    await this.updateParticipantsHasGivenAnswerStatus(conversationId, userId);
+    await this.updateParticipantsHasGivenAnswerStatus(postedResponse.conversationId, postedResponse.userId);
 
-    const { allParticipantsHaveGivenAnswer } = await this.areAllParticipantsHaveGivenAnswer(conversationId);
+    const { allParticipantsHaveGivenAnswer } = await this.areAllParticipantsHaveGivenAnswer(postedResponse.conversationId);
       
 
     if (allParticipantsHaveGivenAnswer) {
-      const conversation = await this.conversationsService.fetchConversationById(conversationId);
-      const newXp = await this.conversationsService.updateXpToConversationId(conversationId, conversation.difficulty);
-      const xpAndLevel = await this.conversationsService.getConversationLevel(newXp, conversation.difficulty);
-      await this.processCompletedIcebreaker(conversationId, questionGroupId);
+      await this.processCompletedIcebreaker(postedResponse.conversationId, postedResponse.pollId);
     }
   }
 
   private async saveCurrentUserResponseInRedis(
     userId: string,
-    questionGroupId: string,
+    pollId: string,
     optionId: string,
-    conversationId: string
+    conversationId: string,
   ) {
     const redisKey = `icebreaker:${conversationId}:responses:${userId}`;
     await this.redis.set(
       redisKey,
       JSON.stringify({
         userId,
-        questionGroupId,
+        pollId,
         optionId,
         answeredAt: new Date().toISOString(),
       }),
@@ -137,45 +132,31 @@ export class IcebreakerService {
   ) {
     await this.prisma.conversationParticipant.updateMany({
       where: {
-        conversationId,
-        userId,
+        conversation_id: conversationId,
+        user_id: userId,
       },
       data: {
-        hasGivenAnswer: true,
+        has_given_answer: true,
       },
     });
   }
 
   private async processCompletedIcebreaker(
     conversationId: string,
-    questionGroupId: string
+    pollId: string
   ) {
-    const { conversation, userAnswers, questionGroupLocalized } = await this.getUserAnswers(conversationId, questionGroupId);
+    const { conversation, pollAnswers} = await this.getUserAnswers(conversationId, pollId);
 
-    if (userAnswers.length !== 2) {
+    if (pollAnswers.length !== 2) {
       this.logger.warn(
-        `La conversation ${conversationId} n'a pas exactement 2 réponses pour le groupe de questions ${questionGroupId}.`
+        `La conversation ${conversationId} n'a pas exactement 2 réponses pour le poll ${pollId}.`
       );
       return;
     }
 
-    const { userAnswerA, userAnswerB, questionLabel } =
-      this.formatUserAnswersForAddIcebreakerMessage(
-        conversationId,
-        questionGroupId,
-        userAnswers,
-        questionGroupLocalized
-      );
-
-    await this.addIcebreakerMessage(
-      conversationId,
-      questionLabel,
-      userAnswerA,
-      userAnswerB
-    );
 
     await this.resetIcebreakerStatus(conversationId);
-    const levelData = await this.conversationsService.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    const levelData = await this.conversationsService.getConversationLevel(conversation.xp_point, conversation.difficulty);
     
     // Mapper les propriétés vers ProgressionResult
     const xpAndLevel: ProgressionResult = {
@@ -190,6 +171,7 @@ export class IcebreakerService {
       photoRevealPercent: levelData.photoRevealPercent
     };
     
+    /*
     await this.emitResponsesToAllParticipants(
       conversationId,
       questionLabel,
@@ -197,91 +179,48 @@ export class IcebreakerService {
       userAnswerB,
       xpAndLevel
     );
+    */
   }
 
   private async getUserAnswers(
     conversationId: string,
-    questionGroupId: string
+    pollId: string
   ) {
 
     const conversation = await this.conversationsService.fetchConversationById(conversationId);
 
-
-    const questionGroupLocalized = await this.prisma.questionGroup.findUnique({
-      where: { id: questionGroupId },
-      select: { questions: { where: { locale: conversation.locale } } },
-    });
-
-    const userAnswers = await this.prisma.userAnswer.findMany({
+    const pollAnswers = await this.prisma.pollAnswer.findMany({
       where: {
-        conversationId,
-        questionGroupId,
+        source: {
+          conversation_id: conversationId,
+        },
+        poll_id: pollId,
       },
-      select: {
-        userId: true,
-        questionOption: {
-          select: {
-            label: true,
-            locale: true,
-          },
-        },
-        questionGroup: {
-          include: {
-            questions: {
-              where: {
-                locale: conversation.locale,
-              },
-              take: 1,
-            },
-          },
-        },
+      include: {
+        source: true,
+        poll: true,
+        option: true,
+        user: true,
       },
     });
+    console.log(pollAnswers);
 
-    return { conversation, userAnswers, questionGroupLocalized };
+
+    
+
+    return { conversation, pollAnswers};
   }
 
-  private formatUserAnswersForAddIcebreakerMessage(
-    conversationId: string,
-    questionGroupId: string,
-    userAnswers: any[],
-    questionGroupLocalized: any
-  ) {
-    const userAnswerA = {
-      userId: userAnswers[0].userId,
-      questionOption: userAnswers[0].questionOption.label,
-    };
-    const userAnswerB = {
-      userId: userAnswers[1].userId,
-      questionOption: userAnswers[1].questionOption.label,
-    };
-
-    const questionLabel = questionGroupLocalized.questions[0].question;
-    return { userAnswerA, userAnswerB, questionLabel };
-  }
-
-  private async addIcebreakerMessage(
-    conversationId: string,
-    questionLabel: string,
-    userAnswerA: { userId: string; questionOption: string },
-    userAnswerB: { userId: string; questionOption: string }
-  ) {
-    await this.messagesService.addIcebreakerMessage(
-      conversationId,
-      questionLabel,
-      userAnswerA,
-      userAnswerB
-    );
-  }
+  
 
   // Reset icebreaker status in prisma and redis
   private async resetIcebreakerStatus(conversationId: string) {
     // Mettre à jour la base de données
     await this.prisma.conversationParticipant.updateMany({
-      where: { conversationId },
+      where: { conversation_id: conversationId },
       data: {
-        isIcebreakerReady: false,
-        hasGivenAnswer: false,
+        is_icebreaker_ready: false,
+        has_given_answer: false,
       },
     });
 
@@ -290,8 +229,8 @@ export class IcebreakerService {
     await this.redis.set(
       redisIcebreakerKey,
       JSON.stringify({
-        isIcebreakerReady: false,
-        hasGivenAnswer: false,
+        is_icebreaker_ready: false,
+        has_given_answer: false,
       }),
       86400
     ); // Expire après 24 heures
@@ -300,16 +239,16 @@ export class IcebreakerService {
   async emitResponsesToAllParticipants(
     conversationId: string,
     questionLabel: string,
-    userAnswerA: { userId: string; questionOption: string },
-    userAnswerB: { userId: string; questionOption: string },
+    userAnswerA: { user_id: string; option_id: string },
+    userAnswerB: { user_id: string; option_id: string },
     xpAndLevel: ProgressionResult
   ) {
     // Récupérer les réponses des deux participants depuis Redis
-    const user1 = userAnswerA.userId;
-    const user2 = userAnswerB.userId;
+    const user1 = userAnswerA.user_id;
+    const user2 = userAnswerB.user_id;
 
-    const response1 = userAnswerA.questionOption;
-    const response2 = userAnswerB.questionOption;
+    const response1 = userAnswerA.option_id;
+    const response2 = userAnswerB.option_id;
 
     // Appeler la méthode du ChatGateway
     await this.chatGateway.emitIcebreakerResponsesToAllParticipants(

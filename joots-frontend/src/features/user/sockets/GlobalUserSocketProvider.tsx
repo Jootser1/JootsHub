@@ -14,6 +14,7 @@ import { useUserStore } from '@/features/user/stores/user-store'
 import { logger } from '@/utils/logger'
 import { socketManager } from '@/lib/sockets/socket-manager'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
+import axiosInstance from '@/app/api/axios-instance'
 
 interface GlobalUserSocketContextType {
   isLoading: boolean
@@ -116,7 +117,22 @@ export function GlobalUserSocketProvider({ children }: { children: ReactNode }) 
       try {
         // Récupération des données utilisateur depuis bdd et sync userStore
         if (!user) {
-          await syncUserData()
+          logger.info('GlobalUserSocketProvider: Synchronisation des données utilisateur...')
+          try {
+            await syncUserData()
+            // Vérifier que les données ont bien été synchronisées
+            const updatedUser = useUserStore.getState().user
+            if (!updatedUser) {
+              logger.error('GlobalUserSocketProvider: Échec de la synchronisation des données utilisateur')
+              return
+            }
+            logger.info('GlobalUserSocketProvider: Données utilisateur synchronisées avec succès', { user: updatedUser })
+          } catch (error) {
+            logger.error('GlobalUserSocketProvider: Erreur lors de la synchronisation', { error })
+            return
+          }
+        } else {
+          logger.debug('GlobalUserSocketProvider: Données utilisateur déjà présentes', { user })
         }
 
         //Récupération des données Contacts depuis bdd et Mise à jour des contacts dans ContactStore
@@ -130,6 +146,7 @@ export function GlobalUserSocketProvider({ children }: { children: ReactNode }) 
         }
 
         // Connexion du socket utilisateur seulement si pas déjà connecté
+        logger.info('GlobalUserSocketProvider: Session', { session })
         const success = await connectUserSocket(session.user.id, session.accessToken)
         
         setupDoneRef.current = true
