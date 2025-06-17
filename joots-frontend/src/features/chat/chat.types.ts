@@ -1,7 +1,7 @@
-import { Conversation, ConversationParticipant } from '@shared/types/conversation.types'
+import { Conversation, ConversationParticipant } from '@shared/conversation.types'
 import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types'
-import { Question } from '@/features/questions/question.types'
-import { Message } from '@shared/types/message.types'
+import { Question } from '@shared/question.types'
+import { Message, MessageStatus } from '@shared/message.types'
 
 export interface ChatState {
   conversations: Record<string, Conversation>

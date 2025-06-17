@@ -1,14 +1,15 @@
 // src/services/user-contacts.service.ts
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Logger } from '@nestjs/common';
+import { AppLogger } from '../../logger/logger.service';
 import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class UserContactsService {
+  private readonly logger = new AppLogger();
+
   constructor(
     private prisma: PrismaService,
-    private logger: Logger,
     private redis: RedisService
   ) {}
 

@@ -12,6 +12,7 @@ import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { ProgressionResult } from '@shared/conversation.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
+import { CurrentPollWithRelations } from '@shared/question.types';
 
 interface ParticipantIceStatus {
   user_id: string;
@@ -333,9 +334,25 @@ export class ChatGateway extends BaseGateway {
       poll
     );
 
+    this.emitNextPolltoParticipants(client, conversationId, poll);
+  }
+
+  private emitNextPolltoParticipants(client: Socket, conversationId: string, poll: CurrentPollWithRelations) {
     client.join(conversationId);
     this.server.to(conversationId).emit('icebreakerPoll', {
-      poll,
+      poll: {
+        poll_id: poll.poll_id,
+        type: poll.type,
+        poll_translations: poll.poll_translations.map(t => ({ translation: t.translation })),
+        options: poll.options.map(o => ({
+          id: o.poll_option_id,
+          label: o.translations[0]?.translated_option_text || ''
+        })),
+        categories: poll.categories.map(c => ({
+          category_id: c.category_id,
+          name: c.name
+        }))
+      },
       conversationId,
       timestamp: new Date().toISOString(),
     });

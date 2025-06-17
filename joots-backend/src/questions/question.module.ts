@@ -10,6 +10,7 @@ import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { Logger } from '@nestjs/common';
+import { AppLogger } from 'src/logger/logger.service';
 
 @Module({
   imports: [PrismaModule, RedisModule, forwardRef(() => GatewaysModule)],
@@ -22,6 +23,7 @@ import { Logger } from '@nestjs/common';
     ConversationsService,
     UserContactsService,
     Logger,
+    AppLogger,
   ],
   exports: [QuestionService],
 })

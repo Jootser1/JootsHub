@@ -2,8 +2,11 @@
 FROM node:20
 
 # Étape 1 — Copier et compiler les types partagés
+WORKDIR /packages
+COPY ./packages .
+
+# Etape Build the types
 WORKDIR /packages/types
-COPY ./packages/types .
 RUN npm install --verbose && npm run build && ls -la dist/
 
 WORKDIR /joots-backend

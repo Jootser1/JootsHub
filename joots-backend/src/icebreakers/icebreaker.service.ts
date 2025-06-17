@@ -1,7 +1,7 @@
 import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { PollWithRelations } from '../types/question';
+import { CurrentPollWithRelations } from '@shared/question.types';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
@@ -66,16 +66,24 @@ export class IcebreakerService {
 
   async storeCurrentPollForAGivenConversation(
     conversationId: string,
-    poll: PollWithRelations
+    poll: CurrentPollWithRelations
   ) {
     try {
       if (!poll) return;
       await this.redis.set(
         `conversation:${conversationId}:icebreaker:poll`,
         JSON.stringify({
-          id: poll.poll_id,
-          text: poll.poll_translations[0].translation,
-          timestamp: new Date().toISOString(),
+          poll_id: poll.poll_id,
+          type: poll.type,
+          poll_translations: poll.poll_translations.map(t => ({ translation: t.translation })),
+          options: poll.options.map(o => ({
+            poll_option_id: o.poll_option_id,
+            label: o.translations[0]?.translated_option_text || ''
+          })),
+          categories: poll.categories?.map(c => ({
+            category_id: c.category_id,
+            name: c.name
+          })) || []
         })
       );
 

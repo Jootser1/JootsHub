@@ -11,6 +11,7 @@ import { MessagesService } from '../messages/messages.service';
 import { UsersService } from '../users/users.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { IcebreakerService } from 'src/icebreakers/icebreaker.service';
+import { AppLogger } from 'src/logger/logger.service';
 @Module({
   imports: [RedisModule],
   providers: [
@@ -20,6 +21,7 @@ import { IcebreakerService } from 'src/icebreakers/icebreaker.service';
     PrismaService,
     RedisService,
     HeartbeatService,
+    AppLogger,
     UserContactsService,
     UsersService,
     QuestionService,

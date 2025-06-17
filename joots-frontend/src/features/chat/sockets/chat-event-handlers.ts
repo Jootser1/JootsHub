@@ -2,15 +2,13 @@
 
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import {
-  Message,
-  MessageType,
   NewMessageEvent,
   TypingEvent,
   MessageReadEvent,
   IcebreakerStatusEvent,
   IcebreakerPollEvent,
-  IcebreakerResponsesEvent,
 } from '@/features/chat/chat.types'
+import { Message } from '@shared/message.types'
 import { logger } from '@/utils/logger'
 
 // On utilise Zustand ou un autre store pour manipuler les messages
@@ -33,12 +31,11 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
     }
     
     const newMessage: Message = {
-      id: message.id,
+      message_id: message.id,
       content: message.content,
-      senderId: message.sender?.id || message.senderId || '',
-      receiverId: message.recipientId || '',
-      messageType: 'TEXT' as MessageType,
-      createdAt: new Date(message.createdAt || message.timestamp || new Date()),
+      sender_id: message.sender?.id || message.senderId || '',
+      receiver_id: message.recipientId || '',
+      created_at: new Date(message.createdAt || message.timestamp || new Date()),
       status: 'delivered',
     }
     
@@ -109,6 +106,7 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
 export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
   try {
     const { conversationId, poll } = data
+    logger.info('Received icebreaker poll:', { conversationId, poll })
     chatStore.setCurrentPoll(conversationId, JSON.stringify(poll))
   } catch (error) {
     logger.error(
@@ -136,17 +134,12 @@ export function handleIcebreakerResponsesEvent(data: any) {
     }  
     
     const message: Message = {
-      id: data.id || Date.now().toString(),
+      message_id: data.id || Date.now().toString(),
       content: data.questionLabel,
-      senderId: 'JOOTS',
-      receiverId: 'JOOTS',
+      sender_id: 'JOOTS',
+      receiver_id: 'JOOTS',
       status: 'delivered',
-      messageType: 'ANSWER' as MessageType,
-      userAAnswer: data.response1,
-      userAId: data.user1,
-      userBAnswer: data.response2,
-      userBId: data.user2,
-      createdAt: new Date(),
+      created_at: new Date(),
     }
     
     chatStore.addMessage(data.conversationId, message)

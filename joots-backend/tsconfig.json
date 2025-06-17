@@ -19,7 +19,8 @@
     "noFallthroughCasesInSwitch": false,
     "paths": {
       "@shared": ["../packages/types/dist/index.d.ts"],
-      "@shared/*": ["../packages/types/dist/*"]
+      "@shared/*": ["../packages/types/dist/*"],
+      "@config/*": ["../packages/config/*"]
     },    
     "resolveJsonModule": true,
     "esModuleInterop": true

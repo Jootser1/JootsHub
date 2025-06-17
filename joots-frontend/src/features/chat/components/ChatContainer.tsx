@@ -11,6 +11,7 @@ import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPop
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
 import { ProgressionResult } from '../chat.types'
+import { CurrentPollWithRelations } from '@shared/question.types'
 
 
 
@@ -31,6 +32,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
   const currentPoll = activeConversationId
     ? getCurrentPoll(activeConversationId)
     : null
+  const parsedPoll = currentPoll ? JSON.parse(currentPoll) : null
   const user = useUserStore(state => state.user)
   const isUserOnline = useContactStore(state => state.isUserOnline)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -78,6 +80,13 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
 
   // Show the question if the current user and the other participant are ready
   useEffect(() => {
+    console.log('Icebreaker status:', {
+      currentPoll,
+      parsedPoll,
+      isCurrentUserReady,
+      isOtherParticipantReady,
+      showQuestion
+    })
     if (currentPoll && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true)
     }
@@ -104,7 +113,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
     <>
       {currentPoll && (
         <IcebreakerPopup
-          question={JSON.parse(currentPoll)}
+          poll={parsedPoll as CurrentPollWithRelations}
           isVisible={showQuestion}
           onAnswer={handleAnswerQuestion}
           onClose={handleCloseQuestion}

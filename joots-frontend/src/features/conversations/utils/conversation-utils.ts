@@ -10,10 +10,8 @@ export const getOtherParticipantInConversation = (
   if (!conversation?.participants || !currentUserId) {
     return undefined
   }
-  logger.debug('getOtherParticipantInConversation', { conversation, currentUserId })
   const otherParticipant = conversation.participants.find((p: { user_id: string }) => p.user_id !== currentUserId)
   if (!otherParticipant) return undefined
-  logger.debug('getOtherParticipantInConversation - Other participant', { otherParticipant })
 
   return otherParticipant.user
 }

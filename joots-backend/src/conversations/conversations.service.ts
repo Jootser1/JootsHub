@@ -4,9 +4,12 @@ import { UserGateway } from '../gateways/user.gateway';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { XP_CONFIG } from 'src/config/points_per_difficulty';
 import levelConfig from '../config/leveling_config_seed.json';
+import { AppLogger } from '../logger/logger.service';
 
 @Injectable()
 export class ConversationsService {
+  private readonly logger = new AppLogger();
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly userGateway: UserGateway,
@@ -236,7 +239,9 @@ export class ConversationsService {
     });
   }
 
-  async findMessages(conversationId: string, userId: string) {
+  async findConversationContent(conversationId: string, userId: string) {
+    this.logger.log(`Début de findConversationContent - Conversation: ${conversationId} - User: ${userId}`);
+
     // Vérifier que l'utilisateur a accès à la conversation
     const conversation = await this.prisma.conversation.findFirst({
       where: {
@@ -248,15 +253,19 @@ export class ConversationsService {
     });
 
     if (!conversation) {
+      this.logger.error(`Conversation non trouvée - Conversation: ${conversationId} - User: ${userId}`);
       throw new NotFoundException(
         'Conversation non trouvée ou accès non autorisé'
       );
     }
 
+    this.logger.log(`Conversation trouvée - Conversation: ${conversationId}`);
+
     // Récupérer les messages avec les informations de l'expéditeur
     const messages = await this.prisma.message.findMany({
       where: {
         conversation_id: conversationId,
+        is_deleted: false,
       },
       include: {
         sender: {
@@ -272,10 +281,65 @@ export class ConversationsService {
       },
     });
 
-    return messages.sort(
-      (a, b) =>
-        new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+    this.logger.log(`Messages trouvés: ${messages.length} - Conversation: ${conversationId}`);
+    if (messages.length > 0) {
+      this.logger.log(`Premier message: ${JSON.stringify(messages[0])}`);
+      this.logger.log(`Dernier message: ${JSON.stringify(messages[messages.length - 1])}`);
+    }
+
+    // Récupérer les questions-réponses
+    const pollAnswerSources = await this.prisma.pollAnswerSource.findMany({
+      where: {
+        conversation_id: conversationId,
+      },
+      include: {
+        answer: {
+          include: {
+            poll: {
+              include: {
+                poll_translations: true,
+                options: {
+                  include: {
+                    translations: true,
+                  },
+                },
+              },
+            },
+            option: {
+              include: {
+                translations: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    this.logger.log(`Sources de réponses trouvées: ${pollAnswerSources.length} - Conversation: ${conversationId}`);
+
+    // Transformer les questions-réponses en format similaire aux messages
+    const pollAnswers = pollAnswerSources.map(source => ({
+      type: 'poll_answer',
+      created_at: source.answer?.answered_at || new Date(),
+      poll: source.answer?.poll,
+      answer: source.answer,
+      source_type: source.source_type,
+    }));
+
+    this.logger.log(`Réponses transformées: ${pollAnswers.length} - Conversation: ${conversationId}`);
+
+    // Fusionner et trier tous les éléments par date
+    const allContent = [...messages, ...pollAnswers].sort(
+      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
     );
+
+    this.logger.log(`Contenu total après fusion: ${allContent.length} - Conversation: ${conversationId}`);
+    if (allContent.length > 0) {
+      this.logger.log(`Premier élément: ${JSON.stringify(allContent[0])}`);
+      this.logger.log(`Dernier élément: ${JSON.stringify(allContent[allContent.length - 1])}`);
+    }
+
+    return allContent;
   }
 
   async getConversationLevel(xpPoint: number, difficulty: string) {

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { PollWithRelations } from '../types/question';
+import { CurrentPollWithRelations } from '@shared/question.types';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { postedResponse } from '@shared/icebreaker.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
@@ -48,7 +48,7 @@ export class QuestionService {
     conversationId: string,
     userId1: string,
     userId2: string
-  ): Promise<PollWithRelations | null> {
+  ): Promise<CurrentPollWithRelations | null> {
     const answeredQuestionsUser1 = await this.prisma.pollAnswer.findMany({
       where: { user_id: userId1 },
       select: { poll_id: true },
@@ -65,6 +65,10 @@ export class QuestionService {
     const answeredPollIdsUser2 = answeredQuestionsUser2.map(
       (answer) => answer.poll_id
     );
+
+    if (!conversationId) {
+      throw new Error('conversationId est requis pour récupérer la locale');
+    }
 
     const locale = await this.conversationsService.getConversationLocale(conversationId);
 
@@ -114,7 +118,13 @@ export class QuestionService {
       Math.random() * unansweredPolls.length
     );
     const randomUnansweredPoll = unansweredPolls[randomIndex];
-    return randomUnansweredPoll;
+    return {
+      ...randomUnansweredPoll,
+      categories: randomUnansweredPoll.categories.map(c => ({
+        category_id: c.category.category_id,
+        name: c.category.name
+      }))
+    };
   }
 
 

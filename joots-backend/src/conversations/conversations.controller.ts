@@ -39,7 +39,7 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.findMessages(id, req.user.sub);
+    return this.conversationsService.findConversationContent(id, req.user.sub);
   }
 
   @Post()

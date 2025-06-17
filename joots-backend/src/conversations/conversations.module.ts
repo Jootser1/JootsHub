@@ -4,13 +4,13 @@ import { ConversationsService } from './conversations.service';
 import { PrismaModule } from 'src/prisma/prisma.module';
 import { GatewaysModule } from '../gateways/gateways.module';
 import { UserContactsService } from '../users/contacts/contacts.service';
-import { Logger } from '@nestjs/common';
 import { RedisModule } from '../redis/redis.module';
+import { LoggerModule } from '../logger/logger.module';
 
 @Module({
-  imports: [PrismaModule, GatewaysModule, RedisModule],
+  imports: [PrismaModule, GatewaysModule, RedisModule, LoggerModule],
   controllers: [ConversationsController],
-  providers: [ConversationsService, UserContactsService, Logger],
+  providers: [ConversationsService, UserContactsService],
   exports: [ConversationsService],
 })
 export class ConversationsModule {}

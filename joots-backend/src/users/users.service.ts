@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { Logger } from '@nestjs/common';
+import { AppLogger } from '../logger/logger.service';
 import { Socket } from 'socket.io';
 import { AttributeKey } from '@prisma/client';
 import levelConfig from '../config/leveling_config_seed.json';
@@ -12,10 +12,11 @@ import { UserWithAuth } from '@shared/user.types';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new AppLogger();
+
   constructor(
     private readonly prisma: PrismaService,
-    private readonly redis: RedisService,
-    private readonly logger: Logger
+    private readonly redis: RedisService
   ) {}
 
   async getAllUsers() {
