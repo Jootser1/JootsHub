@@ -345,8 +345,8 @@ export class ChatGateway extends BaseGateway {
         type: poll.type,
         poll_translations: poll.poll_translations.map(t => ({ translation: t.translation })),
         options: poll.options.map(o => ({
-          id: o.poll_option_id,
-          label: o.translations[0]?.translated_option_text || ''
+          poll_option_id: o.poll_option_id,
+          translations: o.translations
         })),
         categories: poll.categories.map(c => ({
           category_id: c.category_id,

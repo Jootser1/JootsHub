@@ -185,16 +185,6 @@ export function GlobalUserSocketProvider({ children }: { children: ReactNode }) 
     window.addEventListener('beforeunload', handleBeforeUnload)
     window.addEventListener('visibilitychange', handleVisibilityChange)
 
-    // Mettre à jour les états réels des sockets
-    const socketInfo = {
-      userId: session?.user?.id,
-      status,
-      socketManager: {
-        isUserConnected: socketManager.isUserSocketConnected(),
-        isChatConnected: socketManager.isChatSocketConnected(),
-      },
-    }
-
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload)
       window.removeEventListener('visibilitychange', handleVisibilityChange)

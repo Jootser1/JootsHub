@@ -22,11 +22,15 @@ import { Label } from '@/components/ui/Label'
 import axiosInstance from '@/app/api/axios-instance'
 import { useSocketManager } from '@/hooks/useSocketManager'
 import { logger } from '@/utils/logger'
+import { useSocketStore } from '@/features/socket/stores/socket-store'
 
 export function MobileMenu() {
   const router = useRouter()
   const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useUserStore()
   const socketManager = useSocketManager()
+  const { isUserConnected } = useSocketStore()
+
+  
 
   const handleLogout = async () => {
     try {
@@ -45,13 +49,13 @@ export function MobileMenu() {
   }
 
   const copyClientId = () => {
-    navigator.clipboard.writeText(user?.id || '')
+    navigator.clipboard.writeText(user?.user_id || '')
     // Vous pourriez ajouter une notification de succès ici
   }
 
   const handleChatPreferenceChange = async (checked: boolean) => {
     try {
-      await axiosInstance.patch(`/users/${user?.id}/chat-preference`, {
+      await axiosInstance.patch(`/users/${user?.user_id}/chat-preference`, {
         isAvailableForChat: checked,
       })
 
@@ -85,7 +89,7 @@ export function MobileMenu() {
           <div className='mb-6'>
             <div className='text-gray-500 text-sm mb-2'>ID de clientèle</div>
             <div className='flex items-center bg-gray-100 rounded-full py-2 px-4'>
-              <span className='text-gray-700 flex-1'>{user?.id || 'Non connecté'}</span>
+              <span className='text-gray-700 flex-1'>{user?.user_id || 'Non connecté'}</span>
               <button
                 onClick={copyClientId}
                 className='text-gray-400 hover:text-gray-600'
@@ -115,7 +119,7 @@ export function MobileMenu() {
               {user?.username || 'Non connecté'}
             </span>
             <span className='text-gray-800 font-medium flex-1'>
-              {user?.isOnline ? 'En ligne' : 'Hors ligne'}
+              {isUserConnected ? 'En ligne' : 'Hors ligne'}
             </span>
             <ChevronRight className='h-5 w-5 text-gray-400' />
           </Link>

@@ -3,6 +3,8 @@ export interface User {
   username: string;
   avatar: string | null;
   last_seen: Date;
+  isOnline?: boolean;
+  isAvailableForChat?: boolean;
 }
 
 export interface UserContact {

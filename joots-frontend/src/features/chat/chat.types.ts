@@ -12,6 +12,7 @@ export interface ChatState {
   token?: string
   conversationsIds: string[]
   icebreakerQuestions: Record<string, Question>
+  isChatSocketConnected: boolean
 }
 
 // Types exportés pour être utilisés dans chatEventHandlers.ts

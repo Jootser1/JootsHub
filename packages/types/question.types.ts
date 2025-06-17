@@ -1,3 +1,14 @@
+/**
+ * Représente les différents types de sondages disponibles dans l'application.
+ * @enum {string}
+ */
+export enum PollType {
+  MULTIPLE_CHOICE = 'MULTIPLE_CHOICE',
+  STEP_LABELED = 'STEP_LABELED',
+  YES_NO_IDK = 'YES_NO_IDK',
+  OPEN = 'OPEN',
+  CONTINUOUS = 'CONTINUOUS'
+}
 
 export type Question = {
     id: string;
@@ -14,7 +25,7 @@ export type Question = {
   
   export type Poll = {
     poll_id: string;
-    type: string;
+    type: PollType;
     is_moderated: boolean;
     moderated_at: Date | null;
     is_pinned: boolean;
@@ -33,7 +44,7 @@ export type Question = {
   // Définir nos propres types pour les relations sans dépendre des types Prisma directement
   export type CurrentPollWithRelations = {
     poll_id: string;
-    type: string;
+    type: PollType;
     author_id: string;
     created_at: Date;
     is_moderated: boolean;
@@ -51,7 +62,7 @@ export type Question = {
         name: string;
       }
     >;
-      options: Array<{
+    options: Array<{
       poll_option_id: string;
       order: number;
       translations: Array<{
@@ -59,5 +70,10 @@ export type Question = {
         translated_option_text: string;
       }>;
     }>;
+    poll_scale_constraints: {
+      constraint_id: string;
+      min_value: number;
+      max_value: number;
+      step: number;
+    } | null;
   };
-  

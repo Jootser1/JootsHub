@@ -15,6 +15,7 @@ const initialState: ChatState = {
   currentPoll: null,
   conversationsIds: [],
   icebreakerQuestions: {},
+  isChatSocketConnected: false,
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -298,7 +299,6 @@ export const useChatStore = create<ChatStore>()(
           return participant?.response || null
         },
 
-
         updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => {
           set(state => {
             const conversation = state.conversations[conversationId]
@@ -317,6 +317,7 @@ export const useChatStore = create<ChatStore>()(
             }
           })
         },
+
       }),
       {
         name: 'chat-storage',

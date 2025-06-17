@@ -11,7 +11,7 @@ import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPop
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
 import { ProgressionResult } from '../chat.types'
-import { CurrentPollWithRelations } from '@shared/question.types'
+import { CurrentPollWithRelations, PollType } from '@shared/question.types'
 
 
 
@@ -21,11 +21,6 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
-  console.log('ChatContainer rendered:', { 
-    conversationId: conversation.conversation_id,
-    activeConversationId: useChatStore.getState().activeConversationId,
-    userId: useUserStore.getState().user?.user_id
-  })
 
   const { activeConversationId, getParticipant, getOtherParticipant, getCurrentPoll } =
     useChatStore()
@@ -50,15 +45,18 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const handleAnswerQuestion = (pollId: string, optionId: string) => {
+  const handleAnswerQuestion = (pollId: string, optionId: string | undefined, opentext: string | undefined, numeric: number | undefined) => {
     if (!user?.user_id || !activeConversationId) return
     IcebreakerService.submitIcebreakerResponse(
       {
-        userId: user.user_id,
-        pollId,
-        optionId,
-        conversationId: activeConversationId,
+        user_id: user.user_id,
+        poll_id: pollId,
+        option_id: optionId ?? undefined,
+        conversation_id: activeConversationId,
         locale: conversation.locale,
+        poll_type: parsedPoll?.type as PollType,
+        opentext: opentext ?? undefined,
+        numeric: numeric ?? undefined,
       }
     )
     setShowQuestion(false)
@@ -115,7 +113,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
         <IcebreakerPopup
           poll={parsedPoll as CurrentPollWithRelations}
           isVisible={showQuestion}
-          onAnswer={handleAnswerQuestion}
+          onAnswer={(pollId, response) => handleAnswerQuestion(pollId, response.option_id, response.opentext, response.numeric)}
           onClose={handleCloseQuestion}
         />
       )}

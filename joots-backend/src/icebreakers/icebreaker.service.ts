@@ -78,7 +78,8 @@ export class IcebreakerService {
           poll_translations: poll.poll_translations.map(t => ({ translation: t.translation })),
           options: poll.options.map(o => ({
             poll_option_id: o.poll_option_id,
-            label: o.translations[0]?.translated_option_text || ''
+            order: o.order,
+            translations: o.translations
           })),
           categories: poll.categories?.map(c => ({
             category_id: c.category_id,
@@ -98,36 +99,32 @@ export class IcebreakerService {
   ) {
     // Save User Responses in redis
     await this.saveCurrentUserResponseInRedis(
-      postedResponse.userId,
-      postedResponse.pollId,
-      postedResponse.optionId,
-      postedResponse.conversationId,
+      postedResponse
     );
 
     // Update participant status has given answer in DB
-    await this.updateParticipantsHasGivenAnswerStatus(postedResponse.conversationId, postedResponse.userId);
+    await this.updateParticipantsHasGivenAnswerStatus(postedResponse.conversation_id, postedResponse.user_id);
 
-    const { allParticipantsHaveGivenAnswer } = await this.areAllParticipantsHaveGivenAnswer(postedResponse.conversationId);
+    const { allParticipantsHaveGivenAnswer } = await this.areAllParticipantsHaveGivenAnswer(postedResponse.conversation_id);
       
 
     if (allParticipantsHaveGivenAnswer) {
-      await this.processCompletedIcebreaker(postedResponse.conversationId, postedResponse.pollId);
+      await this.processCompletedIcebreaker(postedResponse.conversation_id, postedResponse.poll_id);
     }
   }
 
-  private async saveCurrentUserResponseInRedis(
-    userId: string,
-    pollId: string,
-    optionId: string,
-    conversationId: string,
-  ) {
-    const redisKey = `icebreaker:${conversationId}:responses:${userId}`;
+  private async saveCurrentUserResponseInRedis(postedResponse: postedResponse) {
+    const redisKey = `icebreaker:${postedResponse.conversation_id}:responses:${postedResponse.user_id}`;
     await this.redis.set(
       redisKey,
       JSON.stringify({
-        userId,
-        pollId,
-        optionId,
+        user_id: postedResponse.user_id,
+        poll_id: postedResponse.poll_id,
+        option_id: postedResponse.option_id ?? null,
+        opentext: postedResponse.opentext ?? null,
+        numeric: postedResponse.numeric ?? null,
+        conversation_id: postedResponse.conversation_id,
+        locale: postedResponse.locale,
         answeredAt: new Date().toISOString(),
       }),
       86400
@@ -212,7 +209,6 @@ export class IcebreakerService {
         user: true,
       },
     });
-    console.log(pollAnswers);
 
 
     

@@ -4,11 +4,8 @@ import { ChatSocketService } from '@/features/chat/sockets/chat-socket-service'
 import { waitForConnection } from '@/utils/socket-utils'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
-
-// ✅ Interface pour les callbacks de changement d'état
-interface StateChangeCallback {
-  (isUserConnected: boolean, isChatConnected: boolean): void
-}
+import { useChatStore } from '@/features/chat/stores/chat-store'
+import { useSocketStore } from '@/features/socket/stores/socket-store'
 
 /**
  * Gestionnaire global de sockets pour toute l'application
@@ -22,9 +19,6 @@ class SocketManager {
   private token: string | null = null
   private isUserConnecting = false
   private isChatConnecting = false
-  
-  // ✅ Callbacks pour notifier les changements d'état
-  private stateChangeCallbacks = new Set<StateChangeCallback>()
 
   private constructor() {}
 
@@ -35,47 +29,21 @@ class SocketManager {
     return SocketManager.instance
   }
 
-  // ✅ Méthode pour s'abonner aux changements d'état
-  public onStateChange(callback: StateChangeCallback): () => void {
-    this.stateChangeCallbacks.add(callback)
-    
-    // Envoyer l'état actuel immédiatement
-    callback(this.isUserSocketConnected(), this.isChatSocketConnected())
-    
-    return () => {
-      this.stateChangeCallbacks.delete(callback)
-    }
-  }
-
-  // ✅ Notifier les changements d'état
-  private notifyStateChange(): void {
-    const isUserConnected = this.isUserSocketConnected()
-    const isChatConnected = this.isChatSocketConnected()
-    
-    this.stateChangeCallbacks.forEach(callback => {
-      try {
-        callback(isUserConnected, isChatConnected)
-      } catch (error) {
-        logger.error('Erreur dans le callback de changement d\'état:', error as Error)
-      }
-    })
-  }
-
-  public setCredentials(userId: string, token: string): void {
-    this.userId = userId
-    this.token = token
-  }
-
-  public getUserId(): string | null {
-    return this.userId
-  }
-
   public isUserSocketConnected(): boolean {
     return this.userSocket?.isConnected() ?? false
   }
 
   public isChatSocketConnected(): boolean {
     return this.chatSocket?.isConnected() ?? false
+  }
+
+  public getUserId(): string | null {
+    return this.userId
+  }
+
+  public setCredentials(userId: string, token: string): void {
+    this.userId = userId
+    this.token = token
   }
 
   // ✅ Optimisation : Connexion utilisateur avec monitoring et notification
@@ -121,8 +89,12 @@ class SocketManager {
       await this.setupUserRooms()
 
       logger.info('SocketManager: Socket utilisateur configuré avec succès')
-      
-      this.notifyStateChange()
+
+      // Mise à jour du statut utilisateur
+      if (this.userId) {
+        this.userSocket.updateUserStatus(this.userId, true)
+        useSocketStore.getState().setUserConnected(true)
+      }
       
       return this.userSocket
     } finally {
@@ -130,7 +102,6 @@ class SocketManager {
     }
   }
 
-  //✅ Optimisation : Connexion chat avec monitoring et notification
   public async connectChatSocket(conversationIds?: string[]): Promise<ChatSocketService> {
     if (typeof window === 'undefined') {
       throw new Error('Cannot connect socket on server side')
@@ -149,20 +120,8 @@ class SocketManager {
       return this.chatSocket!
     }
 
-    // Si déjà connecté, gérer les nouvelles conversations sans recréer
     if (this.chatSocket?.isConnected()) {
-      logger.debug('Socket chat déjà connecté, gestion des conversations')
-
-      if (conversationIds && conversationIds.length > 0) {
-        const existingConversations = this.chatSocket.getActiveConversations()
-        const newConversations = conversationIds.filter(id => !existingConversations.includes(id))
-
-        if (newConversations.length > 0) {
-          this.chatSocket!.joinAllConversations(newConversations)
-          logger.info(`${newConversations.length} nouvelles conversations rejointes`)
-        }
-      }
-
+      logger.debug('Socket chat déjà connecté')
       return this.chatSocket
     }
 
@@ -191,7 +150,7 @@ class SocketManager {
 
       logger.info('SocketManager: Socket chat configuré avec succès')
       
-      this.notifyStateChange()
+      useSocketStore.getState().setChatConnected(true)
       
       return this.chatSocket
     } finally {
@@ -199,7 +158,6 @@ class SocketManager {
     }
   }
 
-  // ✅ Optimisation : Déconnexion avec nettoyage et notification
   public disconnectUserSocket(): void {
     if (this.userSocket) {
       try {
@@ -239,8 +197,7 @@ class SocketManager {
       }
 
       this.userSocket = null
-      
-      this.notifyStateChange()
+      useSocketStore.getState().setUserConnected(false)
     }
   }
 
@@ -260,8 +217,7 @@ class SocketManager {
       }
 
       this.chatSocket = null
-      
-      this.notifyStateChange()
+      useSocketStore.getState().setChatConnected(false)
     }
   }
 
@@ -270,6 +226,7 @@ class SocketManager {
     this.disconnectChatSocket()
     this.userId = null
     this.token = null
+    useSocketStore.getState().reset()
     logger.info('SocketManager: Tous les sockets déconnectés')
   }
 

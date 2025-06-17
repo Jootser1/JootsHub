@@ -5,6 +5,8 @@ import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { postedResponse } from '@shared/icebreaker.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
 import { LocaleCode } from '@shared/locale.types';
+import { PollType } from '@shared/question.types';
+import { PollAnswer } from '@prisma/client';
 
 @Injectable()
 export class QuestionService {
@@ -105,6 +107,7 @@ export class QuestionService {
             category: true,
           },
         },
+        scale_constraint: true,
       },
     });
 
@@ -122,32 +125,63 @@ export class QuestionService {
       ...randomUnansweredPoll,
       categories: randomUnansweredPoll.categories.map(c => ({
         category_id: c.category.category_id,
-        name: c.category.name
-      }))
+        name: c.category.name,
+      })),
+      type: randomUnansweredPoll.type as PollType,
+      poll_scale_constraints: randomUnansweredPoll.scale_constraint ? {
+        constraint_id: randomUnansweredPoll.scale_constraint.poll_id,
+        min_value: randomUnansweredPoll.scale_constraint.min_value,
+        max_value: randomUnansweredPoll.scale_constraint.max_value,
+        step: randomUnansweredPoll.scale_constraint.step_value ?? 1
+      } : null
     };
   }
 
 
   // Méthode spécifique pour enregistrer la réponse en BDD
   async saveUserAnswerInDB(response: postedResponse) {
+    console.log('saveUserAnswerInDB', response)
+
     return this.prisma.$transaction(async (prisma) => {
-      // Créer la réponse dans PollAnswer
-      const pollAnswer = await prisma.pollAnswer.create({
-        data: {
-          user_id: response.userId,
-          poll_id: response.pollId,
-          poll_option_id: response.optionId,
-          answered_at: new Date(),
-          ...(response.conversationId ? { conversation_id: response.conversationId } : {}),
-        },
-      });
+      let pollAnswer: PollAnswer;
+
+      if (response.poll_type === PollType.OPEN) {
+        pollAnswer = await prisma.pollAnswer.create({
+          data: {
+            user_id: response.user_id,
+            poll_id: response.poll_id,
+            opentext: response.opentext,
+            answered_at: new Date(),
+          },
+        });
+      } else if (response.poll_type === PollType.CONTINUOUS) {
+        pollAnswer = await prisma.pollAnswer.create({
+          data: {
+            user_id: response.user_id,
+            poll_id: response.poll_id,
+            numeric: response.numeric,
+            answered_at: new Date(),
+          },
+        });
+      } else if (response.poll_type === PollType.MULTIPLE_CHOICE || response.poll_type === PollType.STEP_LABELED || response.poll_type === PollType.YES_NO_IDK) {  
+        pollAnswer = await prisma.pollAnswer.create({
+          data: {
+            user_id: response.user_id,
+            poll_id: response.poll_id,
+            poll_option_id: response.option_id,
+            answered_at: new Date(),
+          },
+        });
+      } else {
+        throw new Error(`Type de sondage non supporté: ${response.poll_type}`);
+      }
 
       // Créer l'entrée dans PollAnswerSource
       await prisma.pollAnswerSource.create({
         data: {
           source_type: 'CONVERSATION',
           locale: response.locale as LocaleCode,
-          conversation_id: response.conversationId,
+          conversation_id: response.conversation_id,
           answer: { connect: { poll_answer_id: pollAnswer.poll_answer_id } },
         },
       });

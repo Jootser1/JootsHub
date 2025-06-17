@@ -106,7 +106,6 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
 export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
   try {
     const { conversationId, poll } = data
-    logger.info('Received icebreaker poll:', { conversationId, poll })
     chatStore.setCurrentPoll(conversationId, JSON.stringify(poll))
   } catch (error) {
     logger.error(

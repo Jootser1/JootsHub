@@ -1,10 +1,9 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { devtools, persist } from 'zustand/middleware'
 import { User } from '@shared/user.types'
 import { logger } from '@/utils/logger'
-import axiosInstance from '@/app/api/axios-instance'
-import { devtools } from 'zustand/middleware'
 import { getSession } from 'next-auth/react'
+import axiosInstance from '@/app/api/axios-instance'
 
 interface UserStore {
   // User state
@@ -20,6 +19,7 @@ interface UserStore {
   setUserStatus: (isOnline: boolean, source?: 'socket' | 'redis') => void
   updateChatAvailability: (isAvailable: boolean) => void
   syncUserData: () => Promise<void>
+
 }
 
 export const useUserStore = create<UserStore>()(
@@ -39,7 +39,6 @@ export const useUserStore = create<UserStore>()(
         setUserStatus: (isOnline, source = 'socket') => {
           set(state => {
             if (!state.user) return state
-
             const newUser = { ...state.user, isOnline }
             return { user: newUser }
           })
@@ -90,13 +89,18 @@ export const useUserStore = create<UserStore>()(
             )
           }
         },
+
+        // Socket state
+        resetSocketState: () => {
+          logger.debug('[UserStore] État socket réinitialisé')
+        }
       }),
       {
-        name: 'user-storage',
+        name: 'user-store',
         partialize: state => ({
           user: state.user,
-          mobileMenuOpen: state.mobileMenuOpen,
-        }),
+          mobileMenuOpen: state.mobileMenuOpen
+        })
       }
     )
   )
