@@ -1,34 +1,50 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Question } from '@shared/question.types';
 import { Label } from '@/components/ui/Label';
+import { Button } from '@/components/ui/Button';
+import { CurrentPollWithRelations } from '@shared/question.types';
 
 interface ContinuousFormProps {
-  question: Question;
+  question: string;
   onAnswer: (numeric: number) => void;
+  onSubmit: () => void;
+  poll: CurrentPollWithRelations;
 }
 
 export const ContinuousForm: React.FC<ContinuousFormProps> = ({
   question,
   onAnswer,
+  onSubmit,
+  poll
 }) => {
+  const scaleConstraint = poll.poll_scale_constraints;
+  const [currentValue, setCurrentValue] = useState<number>(scaleConstraint?.min_value ?? 0);
+  
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onAnswer(parseFloat(e.target.value));
+    const value = parseFloat(e.target.value);
+    setCurrentValue(value);
+    onAnswer(value);
   };
 
   return (
     <div className="w-full max-w-md mx-auto p-4">
       <div className="mb-6">
         <Label className="block text-lg font-medium mb-4">
-          {question.question}
+          {question}
         </Label>
       </div>
       
-      <div className="relative">
+      <div className="relative mb-6">
+        <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-blue-500 text-white px-3 py-1 rounded-full text-sm font-medium">
+          {currentValue}
+        </div>
+        
         <input
           type="range"
-          min="0"
-          max="100"
-          step="1"
+          min={scaleConstraint?.min_value ?? 0}
+          max={scaleConstraint?.max_value ?? 100}
+          step={scaleConstraint?.step ?? 1}
+          value={currentValue}
           onChange={handleChange}
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer
             [&::-webkit-slider-thumb]:appearance-none
@@ -52,9 +68,18 @@ export const ContinuousForm: React.FC<ContinuousFormProps> = ({
         />
         
         <div className="flex justify-between mt-2 text-sm text-gray-600">
-          <span>Pas d&apos;accord</span>
-          <span>D&apos;accord</span>
+          <span className="bg-gray-100 px-2 py-1 rounded">{scaleConstraint?.min_value ?? 0}</span>
+          <span className="bg-gray-100 px-2 py-1 rounded">{scaleConstraint?.max_value ?? 100}</span>
         </div>
+      </div>
+      
+      <div className="flex justify-center">
+        <Button
+          className="w-full max-w-xs bg-green-500 hover:bg-green-600 text-white transition-all rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          onClick={onSubmit}
+        >
+          Valider
+        </Button>
       </div>
     </div>
   );

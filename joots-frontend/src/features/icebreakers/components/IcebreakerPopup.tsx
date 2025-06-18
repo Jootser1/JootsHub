@@ -37,6 +37,7 @@ const getCategoryDisplayName = (category: Category): string => {
 
 interface IcebreakerPopupProps {
   poll: CurrentPollWithRelations
+  locale: string
   isVisible: boolean
   onAnswer: (pollId: string, response: {
     user_id: string;
@@ -51,7 +52,7 @@ interface IcebreakerPopupProps {
   onClose: () => void
 }
 
-export function IcebreakerPopup({poll, isVisible, onAnswer, onClose }: IcebreakerPopupProps) {
+export function IcebreakerPopup({poll, locale, isVisible, onAnswer, onClose }: IcebreakerPopupProps) {
   const [isRendered, setIsRendered] = useState(false)
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
   const [openTextAnswer, setOpenTextAnswer] = useState<string | null>(null)
@@ -95,60 +96,6 @@ export function IcebreakerPopup({poll, isVisible, onAnswer, onClose }: Icebreake
     setOpenTextAnswer(null)
   }
 
-  const renderPollForm = () => {
-    const questionData = {
-      id: poll.poll_id,
-      groupId: '',
-      locale: 'fr',
-      question: poll.poll_translations[0].translation
-    }
-
-    switch (poll.type) {
-      case PollType.MULTIPLE_CHOICE:
-        return (
-          <MultipleChoiceForm
-            options={poll.options.map(option => ({
-              id: option.poll_option_id,
-              label: option.translations.find(t => t.locale === 'fr')?.translated_option_text || '',
-            }))}
-            selectedOptionId={selectedOptionId}
-            onOptionSelect={handleOptionSelect}
-          />
-        )
-      case PollType.STEP_LABELED:
-        return (
-          <StepLabeledForm
-            options={poll.options}
-            selectedOptionId={selectedOptionId}
-            onOptionSelect={handleOptionSelect}
-          />
-        )
-      case PollType.YES_NO_IDK:
-        return (
-          <YesNoIdkForm
-            selectedOptionId={selectedOptionId}
-            onOptionSelect={handleOptionSelect}
-          />
-        )
-      case PollType.OPEN:
-        return (
-          <OpenForm
-            question={questionData}
-            onAnswer={handleOpenTextAnswer}
-          />
-        )
-      case PollType.CONTINUOUS:
-        return (
-          <ContinuousForm
-            question={questionData}
-            onAnswer={handleNumericAnswer}
-          />
-        )
-      default:
-        return <p className="text-gray-600">Type de sondage non supporté</p>
-    }
-  }
-  
   const handleSubmit = () => {
     if (!poll.poll_id) return;
 
@@ -184,6 +131,65 @@ export function IcebreakerPopup({poll, isVisible, onAnswer, onClose }: Icebreake
     }
 
     onAnswer(poll.poll_id, response);
+  }
+
+  const renderPollForm = () => {
+    const question = poll.poll_translations[0].translation
+
+    switch (poll.type) {
+      case PollType.MULTIPLE_CHOICE:
+        return (
+          <MultipleChoiceForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.STEP_LABELED:
+        return (
+          <StepLabeledForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.YES_NO_IDK:
+        return (
+          <YesNoIdkForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.OPEN:
+        return (
+          <OpenForm
+            question={question}
+            onAnswer={handleOpenTextAnswer}
+            onSubmit={handleSubmit}
+          />
+        )
+      case PollType.CONTINUOUS:
+        return (
+          <ContinuousForm
+            question={question}
+            onAnswer={handleNumericAnswer}
+            onSubmit={handleSubmit}
+            poll={poll}
+          />
+        )
+      default:
+        return <p className="text-gray-600">Type de sondage non supporté</p>
+    }
   }
   
   if (!isRendered) return null
@@ -255,24 +261,8 @@ export function IcebreakerPopup({poll, isVisible, onAnswer, onClose }: Icebreake
           </button>
         </div>
         
-        <div className='mb-6'>
-          <h3 className='text-xl font-semibold text-gray-800'>
-            {poll?.poll_translations?.[0]?.translation || 'Chargement de la question...'}
-          </h3>
-        </div>
-        
         <div className='max-h-[60vh] overflow-y-auto pr-2'>
           {renderPollForm()}
-        </div>
-        
-        <div className='mt-6 flex justify-center'>
-          <Button
-            className='w-full max-w-xs bg-green-500 hover:bg-green-600 text-white transition-all rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-            disabled={!selectedOptionId && !openTextAnswer && numericAnswer === null}
-            onClick={handleSubmit}
-          >
-            Valider
-          </Button>
         </div>
       </div>
     </div>

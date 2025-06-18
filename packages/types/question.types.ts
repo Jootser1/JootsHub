@@ -75,5 +75,7 @@ export type Question = {
       min_value: number;
       max_value: number;
       step: number;
+      min_label?: string;
+      max_label?: string;
     } | null;
   };

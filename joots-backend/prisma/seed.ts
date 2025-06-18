@@ -12,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 const prisma = new PrismaClient();
 
 // Import des données JSON
-const categoryTranslations = JSON.parse(readFileSync('src/config/category_translations.json', 'utf-8'));
+const categoryTranslations = JSON.parse(readFileSync('../../packages/config/category_translations.json', 'utf-8'));
 const filename = 'real_pollseeddata.csv';
 
 // Définir un type pour les données du CSV
@@ -142,6 +142,9 @@ async function main() {
       },
     });
   }
+
+ 
+
 
   // Lire le fichier CSV
   const csvPath = path.join(__dirname, 'data', filename);
@@ -277,7 +280,43 @@ async function main() {
           }
         }
       }
-      console.log(`Sondage ${id} créé avec succès`);
+
+
+ // Créer dans la table poll_option et ses tables jointes les data nécessaires pour les sondages de type YES_NO_IDK
+
+
+
+      if (type === 'YES_NO_IDK') {
+        await prisma.pollOption.create({
+          data: {
+            poll_id: createdPoll.poll_id,
+            order: 0,
+            translations: {
+              create: [{ locale: 'fr_FR', translated_option_text: 'Oui', id: uuidv4() }, { locale: 'en_US', translated_option_text: 'Yes', id: uuidv4() }, { locale: 'es_ES', translated_option_text: 'Sí', id: uuidv4() }]
+            }
+          }
+        });
+        await prisma.pollOption.create({
+          data: {
+            poll_id: createdPoll.poll_id,
+            order: 1,
+            translations: {
+              create: [{ locale: 'fr_FR', translated_option_text: 'Non', id: uuidv4() }, { locale: 'en_US', translated_option_text: 'No', id: uuidv4() }, { locale: 'es_ES', translated_option_text: 'No', id: uuidv4() }]
+            }
+          }
+        });
+        await prisma.pollOption.create({
+          data: {
+            poll_id: createdPoll.poll_id,
+            order: 2,
+            translations: {
+              create: [{ locale: 'fr_FR', translated_option_text: 'Je ne sais pas', id: uuidv4() }, { locale: 'en_US', translated_option_text: 'I don\'t know', id: uuidv4() }, { locale: 'es_ES', translated_option_text: 'No sé', id: uuidv4() }]
+            }
+          }
+        });
+      }
+
+
     } catch (error) {
       console.error(`Erreur lors de la création du sondage ${id}:`, error);
     }

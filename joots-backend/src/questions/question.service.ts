@@ -121,6 +121,7 @@ export class QuestionService {
       Math.random() * unansweredPolls.length
     );
     const randomUnansweredPoll = unansweredPolls[randomIndex];
+
     return {
       ...randomUnansweredPoll,
       categories: randomUnansweredPoll.categories.map(c => ({
@@ -132,7 +133,9 @@ export class QuestionService {
         constraint_id: randomUnansweredPoll.scale_constraint.poll_id,
         min_value: randomUnansweredPoll.scale_constraint.min_value,
         max_value: randomUnansweredPoll.scale_constraint.max_value,
-        step: randomUnansweredPoll.scale_constraint.step_value ?? 1
+        step: randomUnansweredPoll.scale_constraint.step_value ?? 1,
+        min_label: randomUnansweredPoll.scale_constraint.min_label || undefined,
+        max_label: randomUnansweredPoll.scale_constraint.max_label || undefined
       } : null
     };
   }

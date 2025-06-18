@@ -78,13 +78,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
 
   // Show the question if the current user and the other participant are ready
   useEffect(() => {
-    console.log('Icebreaker status:', {
-      currentPoll,
-      parsedPoll,
-      isCurrentUserReady,
-      isOtherParticipantReady,
-      showQuestion
-    })
+    
     if (currentPoll && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true)
     }
@@ -112,6 +106,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
       {currentPoll && (
         <IcebreakerPopup
           poll={parsedPoll as CurrentPollWithRelations}
+          locale={conversation.locale}
           isVisible={showQuestion}
           onAnswer={(pollId, response) => handleAnswerQuestion(pollId, response.option_id, response.opentext, response.numeric)}
           onClose={handleCloseQuestion}

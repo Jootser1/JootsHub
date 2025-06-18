@@ -1,61 +1,61 @@
 import React from 'react'
 import { Button } from '@/components/ui/Button'
+import { Label } from '@/components/ui/Label'
 import { cn } from '@/lib/utils'
 import { CurrentPollWithRelations } from '@shared/question.types'
 
 interface StepLabeledFormProps {
+  question: string
   options: CurrentPollWithRelations['options']
   selectedOptionId: string | null
   onOptionSelect: (optionId: string) => void
+  onSubmit: () => void
+  locale: string
 }
 
-export const StepLabeledForm: React.FC<StepLabeledFormProps> = ({ 
-  options, 
-  selectedOptionId, 
-  onOptionSelect 
+export const StepLabeledForm: React.FC<StepLabeledFormProps> = ({
+  question,
+  options,
+  selectedOptionId,
+  onOptionSelect,
+  onSubmit,
+  locale
 }) => {
-  console.log(options)
-  // Fonction pour obtenir le texte de l'option avec fallback
-  const getOptionText = (option: CurrentPollWithRelations['options'][0]) => {
-    // Si nous avons une traduction, on l'utilise
-    if (option.translations?.[0]?.translated_option_text) {
-      return option.translations[0].translated_option_text;
-    }
-    
-    // Sinon, on essaie de trouver une traduction dans n'importe quelle langue
-    const anyTranslation = option.translations?.find(t => t.translated_option_text);
-    if (anyTranslation) {
-      return anyTranslation.translated_option_text;
-    }
-    
-    // En dernier recours, on utilise l'ID de l'option
-    return option.poll_option_id;
-  };
-
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex justify-between items-center">
+    <div className="w-full max-w-md mx-auto p-4">
+      <div className="mb-6">
+        <Label className="block text-lg font-medium mb-4">
+          {question}
+        </Label>
+      </div>
+      
+      <div className="grid grid-cols-1 gap-3 mb-6">
         {options.map((option) => (
           <Button
             key={option.poll_option_id}
             variant={selectedOptionId === option.poll_option_id ? 'default' : 'outline'}
             className={cn(
-              'flex-1 mx-1 transition-all rounded-xl text-center px-2 py-3 min-h-[48px] whitespace-normal',
+              'transition-all rounded-xl',
               selectedOptionId === option.poll_option_id 
                 ? 'bg-blue-500 text-white hover:bg-blue-600 shadow-md' 
                 : 'hover:bg-gray-50 hover:border-blue-200'
             )}
             onClick={() => onOptionSelect(option.poll_option_id)}
           >
-            {getOptionText(option)}
+            {option.translations.find(t => t.locale === locale)?.translated_option_text || ''}
           </Button>
         ))}
       </div>
-      {selectedOptionId && (
-        <p className="text-center text-sm text-gray-600">
-          {getOptionText(options.find(o => o.poll_option_id === selectedOptionId)!)}
-        </p>
-      )}
+      
+      <div className="flex justify-center">
+        <Button
+          className="w-full max-w-xs bg-green-500 hover:bg-green-600 text-white transition-all rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+          disabled={!selectedOptionId}
+          onClick={onSubmit}
+        >
+          Valider
+        </Button>
+      </div>
     </div>
   )
 } 
