@@ -10,14 +10,12 @@ import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
-import { ProgressionResult } from '@shared/conversation.types';
+import { ProgressionResult } from '@shared/icebreaker-event.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
 import { CurrentPollWithRelations } from '@shared/question.types';
+import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
 
-interface ParticipantIceStatus {
-  user_id: string;
-  is_icebreaker_ready: boolean;
-}
+
 
 @WebSocketGateway({
   cors: {
@@ -118,6 +116,16 @@ export class ChatGateway extends BaseGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversation_id: string; user_id: string }
   ) {
+    console.log('joinConversation', data);
+    
+    // Validation des données
+    if (!data.conversation_id || data.conversation_id === 'null' || data.conversation_id === 'undefined') {
+      this.logger.warn(
+        `[Chat Socket ${client.id}] ${data.user_id} : Tentative de rejoindre une conversation avec un ID invalide: ${data.conversation_id}`
+      );
+      return { success: false, error: 'ID de conversation invalide' };
+    }
+
     try {
       client.join(data.conversation_id);
       this.logger.debug(
@@ -138,6 +146,7 @@ export class ChatGateway extends BaseGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversation_id: string; user_id: string }
   ) {
+    
     try {
       client.leave(data.conversation_id);
       this.logger.debug(
@@ -162,10 +171,11 @@ export class ChatGateway extends BaseGateway {
     const { conversation_id, content, user_id } = data;
 
     // Vérifier que l'utilisateur est bien celui authentifié
-    if (user_id !== client.data.user_id) {
+    if (user_id !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
 
+    console.log('conversation_id: ' + conversation_id + ' content: ' + content + ' user_id: ' + user_id);
     try {
       // Vérifier si la conversation existe
       const conversation = await this.prisma.conversation.findUnique({
@@ -175,7 +185,7 @@ export class ChatGateway extends BaseGateway {
       if (!conversation) {
         return { success: false, error: 'Conversation non trouvée' };
       }
-
+      
       const message = await this.prisma.message.create({
         data: {
           content,
@@ -218,8 +228,10 @@ export class ChatGateway extends BaseGateway {
     data: { conversation_id: string; user_id: string; is_typing: boolean }
   ) {
     const { conversation_id, user_id, is_typing } = data;
+
+
     // Vérifier que l'utilisateur est bien celui authentifié
-    if (user_id !== client.data.user_id) {
+    if (user_id !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
 
@@ -251,7 +263,7 @@ export class ChatGateway extends BaseGateway {
     const { conversation_id, user_id, is_icebreaker_ready } = data;
 
     // Vérifier que l'utilisateur est bien celui authentifié
-    if (user_id !== client.data.user_id) {
+    if (user_id !== client.data.userId) {
       return { success: false, error: 'Non autorisé' };
     }
 
@@ -375,7 +387,8 @@ export class ChatGateway extends BaseGateway {
   ) {
     const socketData = {
       conversation_id,
-      questionLabel,
+      poll_translation: questionLabel,
+      poll_id: 'generated_' + Date.now(),
       user1,
       response1,
       user2,
@@ -426,7 +439,7 @@ export class ChatGateway extends BaseGateway {
     client: Socket,
     conversation_id: string,
     user_id: string,
-    participants: ParticipantIceStatus[]
+    participants: ParticipantIcebreakerStatus[]
   ) {
     try {
       await this.synchronizeIcebreakerQuestion(client, conversation_id);
@@ -472,7 +485,7 @@ export class ChatGateway extends BaseGateway {
   private async synchronizeParticipantStatuses(
     client: Socket,
     conversation_id: string,
-    participants: ParticipantIceStatus[]
+    participants: ParticipantIcebreakerStatus[]
   ) {
     for (const participant of participants) {
       this.emitIcebreakerStatusUpdate(
@@ -486,7 +499,7 @@ export class ChatGateway extends BaseGateway {
   private async synchronizeIcebreakerResponses(
     client: Socket,
     conversation_id: string,
-    participants: ParticipantIceStatus[]
+    participants: ParticipantIcebreakerStatus[]
   ) {
     if (participants.length !== 2) return;
 
@@ -506,10 +519,10 @@ export class ChatGateway extends BaseGateway {
       this.server.to(conversation_id).emit('icebreakerResponses', {
         conversation_id,
         poll_id: parsedResponse1.poll_id,
-        user_id1: user1,
-        option_id1: parsedResponse1.option_id,
-        user_id2: user2,
-        option_id2: parsedResponse2.option_id,
+        user1: user1,
+        response1: parsedResponse1.option_id,
+        user2: user2,
+        response2: parsedResponse2.option_id,
         answered_at: new Date().toISOString(),
       });
     }

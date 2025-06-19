@@ -1,48 +1,56 @@
-import { UserStatusChange } from '@/types/socket'
+import { UserStatusChangeData } from '@shared/user.types'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { logger } from '@/utils/logger'
 
-export function handleUserStatusChange(data: UserStatusChange, currentUserId?: string) {
+export function handleUserStatusChange(data: UserStatusChangeData, currentUserId?: string) {
   if (!currentUserId) {
     logger.warn('handleUserStatusChange: currentUserId manquant')
     return
   }
-  console.log('Data received from socket', data)
+  console.log('handleUserStatusChange: data', data)
 
-  logger.debug(`handleUserStatusChange: Reçu pour ${data.userId}, statut: ${data.isOnline}`)
+  logger.debug(`handleUserStatusChange: Reçu pour ${data.user_id}, statut: ${data.is_online}`)
 
   // Si c'est l'utilisateur actuel, mettre à jour son statut
-  if (data.userId === currentUserId) {
+  if (data.user_id === currentUserId) {
     const userStore = useUserStore.getState()
-    userStore.setUserStatus(data.isOnline)
-    logger.debug(`handleUserStatusChange: Statut utilisateur actuel mis à jour: ${data.isOnline}`)
+    userStore.setUserStatus(data.is_online)
+    logger.debug(`handleUserStatusChange: Statut utilisateur actuel mis à jour: ${data.is_online}`)
     return
   }
 
   // Mise à jour du statut dans le store des contacts uniquement si c'est un contact
   const contactStore = useContactStore.getState()
-  const isContact = contactStore.isContact(data.userId)
+  const isContact = contactStore.isContact(data.user_id)
   
-  logger.debug(`handleUserStatusChange: ${data.userId} est-il un contact? ${isContact}`)
+  logger.debug(`handleUserStatusChange: ${data.user_id} est-il un contact? ${isContact}`)
   
   if (isContact) {
     // Récupérer l'état avant mise à jour
-    const wasOnlineBefore = contactStore.isUserOnline(data.userId)
+    const wasOnlineBefore = contactStore.isUserOnline(data.user_id)
     
     // Mettre à jour le statut
-    contactStore.setUserOnlineStatus(data.userId, data.isOnline)
+    contactStore.setUserOnlineStatus(data.user_id, data.is_online)
     
     // Vérifier l'état après mise à jour
-    const isOnlineAfter = contactStore.isUserOnline(data.userId)
+    const isOnlineAfter = contactStore.isUserOnline(data.user_id)
     
-    logger.info(`handleUserStatusChange: Contact ${data.userId.substring(0, 8)}... - Avant: ${wasOnlineBefore}, Après: ${isOnlineAfter}, Statut reçu: ${data.isOnline}`)
+    if (typeof data.user_id === 'string') {
+      logger.info(`handleUserStatusChange: Contact ${data.user_id.substring(0, 8)}... - Avant: ${wasOnlineBefore}, Après: ${isOnlineAfter}, Statut reçu: ${data.is_online}`)
+    } else {
+      logger.error('handleUserStatusChange: user_id est undefined ou non string', data)
+    }
     
     // Afficher la liste complète des contacts en ligne
     const onlineContacts = Array.from(contactStore.onlineContacts)
     logger.debug(`handleUserStatusChange: Contacts en ligne (${onlineContacts.length}):`, onlineContacts.map(id => id.substring(0, 8) + '...'))
   } else {
-    logger.debug(`handleUserStatusChange: ${data.userId.substring(0, 8)}... n'est pas dans la liste des contacts`)
+    if (typeof data.user_id === 'string') {
+      logger.debug(`handleUserStatusChange: ${data.user_id.substring(0, 8)}... n'est pas dans la liste des contacts`)
+    } else {
+      logger.error('handleUserStatusChange: user_id est undefined ou non string', data)
+    }
     
     // Afficher la liste des contacts pour débogage
     const allContacts = Array.from(contactStore.contactList)

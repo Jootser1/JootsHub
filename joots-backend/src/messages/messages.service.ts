@@ -5,14 +5,6 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 
 
-
-
-// Définir l'interface UserAnswer à l'extérieur de la classe
-interface IcebreakerUserAnswer {
-  user_id: string;
-  poll_option_id: string;
-}
-
 @Injectable()
 export class MessagesService {
   constructor(private readonly prisma: PrismaService) {}

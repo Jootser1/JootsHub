@@ -10,7 +10,7 @@ import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
-import { ProgressionResult } from '../chat.types'
+import { ProgressionResult } from '@shared/icebreaker-event.types'
 import { CurrentPollWithRelations, PollType } from '@shared/question.types'
 
 
@@ -34,11 +34,11 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
   const [showQuestion, setShowQuestion] = useState(false)
   const isCurrentUserReady =
     activeConversationId && user?.user_id
-      ? getParticipant(activeConversationId, user.user_id)?.isIcebreakerReady
+      ? getParticipant(activeConversationId, user.user_id)?.is_icebreaker_ready
       : false
   const isOtherParticipantReady =
     activeConversationId && user?.user_id
-      ? getOtherParticipant(activeConversationId, user.user_id)?.isIcebreakerReady
+      ? getOtherParticipant(activeConversationId, user.user_id)?.is_icebreaker_ready
       : false
 
   const scrollToBottom = () => {
@@ -115,13 +115,11 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
       <div className='relative flex flex-col h-full bg-gray-50'>
         <ChatHeader
           otherUser={otherUser}
-          isOnline={isUserOnline(otherUser.user_id)}
           conversationId={activeConversationId}
-          xpAndLevel={xpAndLevel || conversation.xpAndLevel}
+          xpAndLevel={xpAndLevel || conversation.xp_and_level}
         />
         <div className='flex-1 overflow-y-auto'>
           <ChatMessages
-            messages={conversation?.messages || []}
             conversationId={activeConversationId}
           />
         </div>

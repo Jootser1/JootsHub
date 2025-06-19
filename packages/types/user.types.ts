@@ -35,6 +35,11 @@ export type UserWithAuth = {
   } | null;
 };
 
+export interface UserStatusChangeData {
+  user_id: string
+  is_online: boolean
+}
+
 
 export interface FilteredUserProfile {
   user: {
@@ -45,7 +50,7 @@ export interface FilteredUserProfile {
   }
   revealedAttributes: Record<string, string | string[]>
   conversationLevel: number
-  photoRevealPercent: number | null
+  photo_reveal_percent: number | null
   totalAttributes: number
   revealedCount: number
 }

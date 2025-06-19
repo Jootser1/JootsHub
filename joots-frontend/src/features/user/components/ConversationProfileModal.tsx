@@ -6,6 +6,7 @@ import { FilteredUserProfile } from '@shared/user.types'
 import axiosInstance from '@/app/api/axios-instance'
 import { toast } from 'sonner'
 import Image from 'next/image'
+import { useContactStore } from '@/features/contacts/stores/contact-store'
 
 interface ConversationProfileModalProps {
   isOpen: boolean
@@ -76,8 +77,8 @@ export function ConversationProfileModal({
   const renderAvatar = () => {
     if (!profile || !profile.user) return null
 
-    const { user, photoRevealPercent } = profile
-    const shouldBlur = photoRevealPercent === null || photoRevealPercent < 100
+    const { user, photo_reveal_percent } = profile
+    const shouldBlur = photo_reveal_percent === null || photo_reveal_percent < 100
 
     return (
       <div className="relative">
@@ -103,9 +104,9 @@ export function ConversationProfileModal({
             </div>
           </div>
         )}
-        {photoRevealPercent !== null && photoRevealPercent > 0 && (
+        {photo_reveal_percent !== null && photo_reveal_percent > 0 && (
           <div className="absolute -bottom-2 -right-2 bg-primary text-white text-xs px-2 py-1 rounded-full">
-            {photoRevealPercent}%
+            {photo_reveal_percent}%
           </div>
         )}
       </div>
@@ -141,12 +142,17 @@ export function ConversationProfileModal({
               <div className="text-center">
                 {renderAvatar()}
                 <h3 className="text-lg font-semibold mt-4">{profile.user.username}</h3>
-                <div className="flex items-center justify-center space-x-2 mt-2">
-                  <div className={`w-2 h-2 rounded-full ${profile.user.isOnline ? 'bg-green-500' : 'bg-gray-400'}`} />
-                  <span className="text-sm text-gray-600">
-                    {profile.user.isOnline ? 'En ligne' : 'Hors ligne'}
-                  </span>
-                </div>
+                {(() => {
+                  const is_online = useContactStore.getState().isUserOnline(profile.user.user_id)
+                  return (
+                    <div className="flex items-center justify-center space-x-2 mt-2">
+                      <div className={`w-2 h-2 rounded-full ${is_online ? 'bg-green-500' : 'bg-gray-400'}`} />
+                      <span className="text-sm text-gray-600">
+                        {is_online ? 'En ligne' : 'Hors ligne'}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* Progression */}

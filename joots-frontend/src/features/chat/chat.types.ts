@@ -1,7 +1,7 @@
 import { Conversation, ConversationParticipant } from '@shared/conversation.types'
-import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types'
 import { Question } from '@shared/question.types'
-import { Message, MessageStatus } from '@shared/message.types'
+import { Message, MessageStatus, ChatStoreMessage } from '@shared/message.types'
+import { ProgressionResult, IcebreakerResponse } from '@shared/icebreaker-event.types'
 
 export interface ChatState {
   conversations: Record<string, Conversation>
@@ -15,70 +15,7 @@ export interface ChatState {
   isChatSocketConnected: boolean
 }
 
-// Types exportés pour être utilisés dans chatEventHandlers.ts
-export interface NewMessageEvent {
-  id: string
-  content: string
-  sender?: { id: string }
-  senderId?: string
-  recipientId?: string
-  type?: string
-  createdAt?: string
-  timestamp?: string
-  conversationId: string
-}
 
-export interface TypingEvent {
-  conversationId: string
-  userId: string
-  isTyping: boolean
-}
-
-export interface MessageReadEvent {
-  conversationId: string
-  messageId: string
-}
-
-export interface IcebreakerStatusEvent {
-  conversationId: string
-  userId: string
-  isIcebreakerReady: boolean
-  timestamp?: string
-}
-
-export interface IcebreakerPollEvent {
-  conversationId: string
-  poll: string
-}
-
-export interface IcebreakerResponsesEvent {
-  id?: string
-  conversationId: string
-  questionLabel: string
-  response1: string
-  user1: string
-  response2: string
-  user2: string
-  xpAndLevel?: ProgressionResult
-}
-
-export interface ProgressionResult {
-  xpPerQuestion : number;
-  reachedXP : number;
-  reachedLevel: number;
-  remainingXpAfterLevelUp: number;
-  requiredXpForCurrentLevel: number;
-  requiredXpForNextLevel: number;
-  maxXpForNextLevel: number;
-  nextLevel: number;
-  reward?: string;
-  photoRevealPercent?: number | null;
-}
-
-export interface XpLevelUpdateEvent {
-  conversationId: string
-  xpAndLevel: ProgressionResult
-}
 
 export type ChatActions = {
   // Connection context
@@ -99,7 +36,7 @@ export type ChatActions = {
   updateParticipantField: (
     conversationId: string,
     participantId: string,
-    field: 'isIcebreakerReady' | 'hasGivenAnswer' | 'isTyping',
+    field: 'is_icebreaker_ready' | 'has_given_answer' | 'is_typing',
     value: boolean
   ) => void
 
@@ -110,7 +47,7 @@ export type ChatActions = {
   updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => void
 
   // Helpers
-  getMessagesFromConversation: (conversationId: string) => Message[]
+  getMessagesFromConversation: (conversationId: string) => ChatStoreMessage[]
   getConversation: (conversationId: string) => Conversation | undefined
   getCurrentPoll: (conversationId: string) => string | null
   setCurrentPoll: (conversationId: string, poll: string) => void
@@ -131,7 +68,7 @@ export type ChatActions = {
   setParticipantResponse: (
     conversationId: string,
     participantId: string,
-    response: IcebreakerResponse
+    response: IcebreakerResponse | null
   ) => void
 
   // Conversation actions

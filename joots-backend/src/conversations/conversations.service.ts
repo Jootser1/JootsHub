@@ -348,23 +348,23 @@ export class ConversationsService {
     
     // je veux le dernier niveau qui a un xpRequired inférieur ou égal à currentXp
     const currentLevel = levels.reduce((prev, curr) => {
-      return (currentXp >= curr.xpRequired) ? curr : prev;
+      return (currentXp >= curr.xp_required) ? curr : prev;
     }, null);
     if (!currentLevel) {
       throw new NotFoundException('Level non trouvé');
     }
-    const nextLevel = levels.find(config => config.xpRequired > currentXp);
+    const nextLevel = levels.find(config => config.xp_required > currentXp);
     const levelData = {
       xpPerQuestion: XP_CONFIG.QUESTION_DIFFICULTY[difficulty],
       reachedXP: currentXp,
       reachedLevel: currentLevel.level,
-      remainingXpAfterLevelUp: currentXp - currentLevel.xpRequired,
-      requiredXpForCurrentLevel: currentLevel.xpRequired,
-      maxXpForNextLevel: nextLevel ? nextLevel.xpRequired : 0,
+      remainingXpAfterLevelUp: currentXp - currentLevel.xp_required,
+      requiredXpForCurrentLevel: currentLevel.xp_required,
+      maxXpForNextLevel: nextLevel ? nextLevel.xp_required : 0,
       nextLevel: nextLevel ? nextLevel.level : 0,
-      requiredXpForNextLevel: nextLevel ? nextLevel.xpRequired - currentXp : 0,
+      requiredXpForNextLevel: nextLevel ? nextLevel.xp_required - currentXp : 0,
       reward: currentLevel.reward,
-      photoRevealPercent: currentLevel.photoRevealPercent
+      photo_reveal_percent: currentLevel.photo_reveal_percent
     }
     return levelData;
   }

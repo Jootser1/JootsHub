@@ -9,22 +9,11 @@ import { CurrentPollWithRelations, PollType } from '@shared/question.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { MultipleChoiceForm, StepLabeledForm, YesNoIdkForm, OpenForm, ContinuousForm } from './forms'
+import { Category, CategoryTranslation } from '@shared/poll.types'
 
-interface Option {
-  id: string
-  label: string
-}
 
-interface Category {
-  category_id: number;
-  name: string;
-}
 
-interface CategoryTranslation {
-  id: number;
-  fr: string;
-  icon: string;
-}
+
 
 const findCategoryTranslation = (categoryId: number): CategoryTranslation | undefined => {
   return categoryTranslations.find((c) => c.id === categoryId);

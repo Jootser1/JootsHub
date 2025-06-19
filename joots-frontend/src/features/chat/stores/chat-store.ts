@@ -1,12 +1,15 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { ChatState, ChatStore, ProgressionResult } from '@/features/chat/chat.types'
+import { ChatState, ChatStore } from '@/features/chat/chat.types'
+import { ProgressionResult } from '@shared/icebreaker-event.types'
 import { Conversation, ConversationParticipant } from '@shared/conversation.types'
 import { Message } from '@shared/message.types'
 import { MessageStatus } from '@shared/message.types'
 import { getUnreadCount } from '../../conversations/utils/conversation-utils'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
+import { IcebreakerResponse } from '@shared/icebreaker-event.types'
+import { ChatStoreMessage } from '@shared/message.types'
 
 const initialState: ChatState = {
   conversations: {},
@@ -44,8 +47,13 @@ export const useChatStore = create<ChatStore>()(
               const newConversations = { ...state.conversations }
 
               response.data.forEach((conversation: Conversation) => {
+                const formattedParticipants = conversation.participants.map(p => ({
+                  ...p,
+                  user_id: (p as any).user_id ?? p.user?.user_id
+                }))
                 newConversations[conversation.conversation_id] = {
                   ...conversation,
+                  participants: formattedParticipants,
                   messages: conversation.messages || [],
                 };
               })
@@ -165,13 +173,19 @@ export const useChatStore = create<ChatStore>()(
             };
           }),
 
-        getMessagesFromConversation: (conversationId: string) =>
-          get().conversations[conversationId]?.messages || [],
+        getMessagesFromConversation: (conversationId: string) => {
+          const rawMessages = get().conversations[conversationId]?.messages || []
+          // Assure une sortie conforme à ChatStoreMessage
+          return rawMessages.map((msg: any) => ({
+            message_type: msg.message_type ?? 'MESSAGE',
+            ...msg,
+          })) as unknown as ChatStoreMessage[]
+        },
 
         getConversation: (conversationId: string) => get().conversations[conversationId],
 
         getCurrentPoll: (conversationId: string) =>
-          get().conversations[conversationId]?.currentPoll || null,
+          get().conversations[conversationId]?.current_poll || null,
 
         setCurrentPoll: (conversationId: string, poll: string) =>
           set(state => {
@@ -182,7 +196,7 @@ export const useChatStore = create<ChatStore>()(
                 ...state.conversations,
                 [conversationId]: {
                   ...conversation,
-                  currentPoll: poll,
+                  current_poll: poll,
                 },
               },
             }
@@ -192,7 +206,7 @@ export const useChatStore = create<ChatStore>()(
         updateParticipantField: (
           conversationId: string,
           participantId: string,
-          field: 'isIcebreakerReady' | 'hasGivenAnswer' | 'isTyping',
+          field: 'is_icebreaker_ready' | 'has_given_answer' | 'is_typing',
           value: boolean
         ) =>
           set(state => {
@@ -218,19 +232,25 @@ export const useChatStore = create<ChatStore>()(
         setParticipantResponse: (
           conversationId: string,
           participantId: string,
-          response: {
-            pollId: string
-            optionId: string
-            answeredAt: string
-          } | null
+          response: IcebreakerResponse | null
         ) =>
-          set((state: ChatState) => {
+          set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
 
+            const transformedResponse = response
+              ? {
+                  poll_id: response.pollId,
+                  option_id: response.optionId,
+                  answered_at: response.answeredAt,
+                }
+              : null
+
             const updatedParticipants =
               conversation.participants?.map((p: ConversationParticipant) =>
-                p.user_id === participantId ? { ...p, response, hasGivenAnswer: !!response } : p
+                p.user_id === participantId
+                  ? { ...p, response: transformedResponse, has_given_answer: !!response }
+                  : p
               ) ?? []
 
             return {
@@ -245,7 +265,7 @@ export const useChatStore = create<ChatStore>()(
           }),
 
         resetIcebreakerStatus: (conversationId: string) =>
-          set((state: ChatState) => {
+          set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
 
@@ -254,8 +274,8 @@ export const useChatStore = create<ChatStore>()(
 
             const updatedParticipants = participants.map((p: ConversationParticipant) => ({
               ...p,
-              isIcebreakerReady: false,
-              hasGivenAnswer: false,
+              is_icebreaker_ready: false,
+              has_given_answer: false,
               response: null,
             }))
 
@@ -265,7 +285,7 @@ export const useChatStore = create<ChatStore>()(
                 [conversationId]: {
                   ...conversation,
                   participants: updatedParticipants,
-                  currentPoll: undefined,
+                  current_poll: undefined,
                 },
               },
             }
@@ -290,13 +310,19 @@ export const useChatStore = create<ChatStore>()(
           const conversation = get().conversations[conversationId]
           if (!conversation) return undefined
           const other = conversation.participants.find((p: ConversationParticipant) => p.user_id !== userId)
-          return other?.isIcebreakerReady
+          return other?.is_icebreaker_ready
         },
 
         getParticipantResponse: (conversationId: string, participantId: string) => {
           const conversation = get().conversations[conversationId]
           const participant = conversation?.participants.find((p: ConversationParticipant) => p.user_id === participantId)
-          return participant?.response || null
+          const resp = participant?.response || null
+          if (!resp) return null
+          return {
+            pollId: (resp as any).poll_id,
+            optionId: (resp as any).option_id,
+            answeredAt: (resp as any).answered_at,
+          } as IcebreakerResponse
         },
 
         updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => {

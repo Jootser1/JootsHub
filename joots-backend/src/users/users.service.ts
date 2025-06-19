@@ -216,7 +216,7 @@ export class UsersService {
     const levelData = levelConfig.find(
       config => config.difficulty === conversation.difficulty.toString() && config.level === currentLevel
     );
-    const photoRevealPercent = levelData?.photoRevealPercent || 0;
+    const photoRevealPercent = levelData?.photo_reveal_percent || 0;
 
     const result = {
       user: {
@@ -240,7 +240,7 @@ export class UsersService {
   private getConversationLevel(xp_point: number, difficulty: string): number {
     const levels = levelConfig.filter(config => config.difficulty === difficulty);
     const currentLevel = levels.reduce((prev, curr) => {
-      return (xp_point >= curr.xpRequired) ? curr : prev;
+      return (xp_point >= curr.xp_required) ? curr : prev;
     }, levels[0]);
     
     return currentLevel ? currentLevel.level : 1;

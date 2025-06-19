@@ -1,7 +1,5 @@
 import { Conversation } from '@shared/conversation.types'
 import { User } from '@shared/user.types'
-import { useContactStore } from '@/features/contacts/stores/contact-store'
-import { logger } from '@/utils/logger'
 
 export const getOtherParticipantInConversation = (
   conversation: Conversation,
@@ -10,7 +8,10 @@ export const getOtherParticipantInConversation = (
   if (!conversation?.participants || !currentUserId) {
     return undefined
   }
-  const otherParticipant = conversation.participants.find((p: { user_id: string }) => p.user_id !== currentUserId)
+  const otherParticipant = conversation.participants.find(p => {
+    const participantId = (p as any).user_id ?? p.user?.user_id
+    return participantId && participantId !== currentUserId
+  })
   if (!otherParticipant) return undefined
 
   return otherParticipant.user

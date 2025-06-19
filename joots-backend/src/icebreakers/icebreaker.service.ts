@@ -5,7 +5,7 @@ import { CurrentPollWithRelations } from '@shared/question.types';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
-import { ProgressionResult } from '@shared/conversation.types';
+import { ProgressionResult } from '@shared/icebreaker-event.types';
 import { postedResponse } from '@shared/icebreaker.types';
 
 @Injectable()
@@ -166,15 +166,15 @@ export class IcebreakerService {
     // Mapper les propriétés vers ProgressionResult
     const xpAndLevel: ProgressionResult = {
       xpPerQuestion: levelData.xpPerQuestion,
-      reachedXP: levelData.reachedXP,
-      reachedLevel: levelData.reachedLevel,
-      remainingXpAfterLevelUp: levelData.remainingXpAfterLevelUp,
-      requiredXpForCurrentLevel: levelData.requiredXpForCurrentLevel,
-      maxXpForNextLevel: levelData.maxXpForNextLevel,
-      nextLevel: levelData.nextLevel,
-      requiredXpForNextLevel: levelData.requiredXpForNextLevel,
+      reached_xp: levelData.reachedXP,
+      reached_level: levelData.reachedLevel,
+      remaining_xp_after_level_up: levelData.remainingXpAfterLevelUp,
+      required_xp_for_current_level: levelData.requiredXpForCurrentLevel,
+      max_xp_for_next_level: levelData.maxXpForNextLevel,
+      next_level: levelData.nextLevel,
+      required_xp_for_next_level: levelData.requiredXpForNextLevel,
       reward: levelData.reward,
-      photoRevealPercent: levelData.photoRevealPercent
+      photo_reveal_percent: levelData.photo_reveal_percent
     };
     
     /*

@@ -1,24 +1,24 @@
 import { useEffect, useRef } from 'react'
-import { Message } from '@shared/message.types'
+import { Message, ChatStoreMessage } from '@shared/message.types'
+
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
 import { ensureDate } from '@/utils/date-utils'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { logger } from '@/utils/logger'
 
 interface ChatMessagesProps {
-  messages: Message[]
   conversationId?: string
 }
 
-export function ChatMessages({ messages: propMessages, conversationId }: ChatMessagesProps) {
+export function ChatMessages({ conversationId }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useUserStore()
 
   // N'utiliser qu'une seule source de messages
   const storeMessages = useChatStore.getState().getMessagesFromConversation(conversationId || '')
-  // Si les messages du store sont disponibles, les utiliser, sinon utiliser les props
-  const displayMessages = storeMessages.length > 0 ? storeMessages : propMessages
+
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -26,7 +26,7 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
 
   useEffect(() => {
     scrollToBottom()
-  }, [displayMessages])
+  }, [storeMessages])
 
   if (!user?.user_id) {
     return <div className='flex items-center justify-center h-full text-gray-500'>Déconnecté</div>
@@ -34,8 +34,8 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
 
   return (
     <div className='p-4 space-y-4'>
-      {displayMessages.map((message: Message, index: number) => {
-        const messageType = message.messageType
+      {storeMessages.map((message: ChatStoreMessage, index: number) => {
+        const messageType = message.message_type
         const isCurrentUser = message.sender_id === user.user_id
         const timeAgo = formatDistanceToNow(ensureDate(message.created_at), {
           addSuffix: true,
@@ -43,7 +43,7 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
         })
         let currentUserAnswer, otherUserAnswer
 
-        if (messageType === 'ANSWER') {
+        if (messageType === 'ICEBREAKER') {
           currentUserAnswer =
             message.userAId === user.user_id ? message.userAAnswer : message.userBAnswer
           otherUserAnswer = message.userAId === user.user_id ? message.userBAnswer : message.userAAnswer
@@ -52,21 +52,21 @@ export function ChatMessages({ messages: propMessages, conversationId }: ChatMes
         return (
           <div
             key={`${message.message_id}-${index}`}
-            className={`flex ${messageType === 'ANSWER' ? 'justify-center' : isCurrentUser ? 'justify-start' : 'justify-end'}`}
+            className={`flex ${messageType === 'ICEBREAKER' ? 'justify-center' : isCurrentUser ? 'justify-start' : 'justify-end'}`}
           >
             <div
               className={`max-w-[70%] rounded-lg p-3 ${
-                messageType === 'ANSWER'
+                messageType === 'ICEBREAKER'
                   ? 'bg-orange-100 text-gray-900'
                   : isCurrentUser
                     ? 'bg-blue-500 text-white'
                     : 'bg-gray-100 text-gray-900'
               }`}
             >
-              <p className={`text-sm ${messageType === 'ANSWER' ? 'text-center' : ''}`}>
+              <p className={`text-sm ${messageType === 'ICEBREAKER' ? 'text-center' : ''}`}>
                 {message.content}
               </p>
-              {messageType === 'ANSWER' && (
+              {messageType === 'ICEBREAKER' && (
                 <div className='mt-2 space-y-2'>
                   {currentUserAnswer && (
                     <div className='flex justify-start'>

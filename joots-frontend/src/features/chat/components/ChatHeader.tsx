@@ -2,14 +2,13 @@ import { User } from '@shared/user.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { AnimatedLevelProgress } from '@/features/icebreakers/components/AnimatedProgressionBar'
-import { ProgressionResult } from '@/features/chat/chat.types'
+import { ProgressionResult } from '@shared/icebreaker-event.types'
 import { ConversationProfileModal } from '@/features/user/components/ConversationProfileModal'
 import { useState } from 'react'
 import Image from 'next/image'
 
 interface ChatHeaderProps {
   otherUser: User
-  isOnline: boolean
   isTyping?: boolean
   conversationId: string
   xpAndLevel?: ProgressionResult
@@ -21,8 +20,11 @@ export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeader
   // Écoute réactive du statut 'isTyping' depuis le store
   const isTyping = useChatStore(state => {
     const conversation = state.conversations[conversationId]
-    const participant = conversation?.participants.find(p => p.userId === otherUser.user_id)
-    return participant?.isTyping || false
+    const participant = conversation?.participants.find(p => {
+      const participantId = (p as any).user_id ?? p.user?.user_id
+      return participantId === otherUser.user_id
+    })
+    return participant?.is_typing || false
   })
 
   // Écoute réactive du statut 'isOnline' depuis un selector du contactStore

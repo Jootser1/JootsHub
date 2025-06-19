@@ -40,7 +40,7 @@ export class MyProfileService {
       
       result[attributeKey] = {
         levelRevealed: levelEntry ? levelEntry.level : 0,
-        photoRevealPercent: levelEntry?.photoRevealPercent || null
+        photoRevealPercent: levelEntry?.photo_reveal_percent || null
       };
     });
     

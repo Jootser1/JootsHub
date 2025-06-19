@@ -179,7 +179,6 @@ model PollOption {
   translations   PollOptionTranslation[]
   answers        PollAnswer[]
   histories      PollAnswerHistory[]
-  predefined     PredefinedPollOption?
 }
 
 model PollOptionTranslation {
@@ -317,12 +316,4 @@ enum AttributeKey {
   QUALITY
   FLAW
   BIO
-}
-
-model PredefinedPollOption {
-  predefined_option_id String    @id @default(cuid())
-  poll_option_id      String    @unique
-  poll_option         PollOption @relation(fields: [poll_option_id], references: [poll_option_id])
-  type                String    // 'yes', 'no', 'idk'
-  created_at          DateTime  @default(now())
 }

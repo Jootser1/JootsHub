@@ -71,7 +71,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
           </div>
           {/* Indicateur de statut en ligne */}
           <ConversationStatus
-            isOnline={isOnline}
+            is_online={isOnline}
             className='absolute -bottom-1 -right-1 border-2 border-white'
           />
         </div>

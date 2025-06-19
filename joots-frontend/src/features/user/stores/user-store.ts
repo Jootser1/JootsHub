@@ -39,7 +39,7 @@ export const useUserStore = create<UserStore>()(
         setUserStatus: (isOnline, source = 'socket') => {
           set(state => {
             if (!state.user) return state
-            const newUser = { ...state.user, isOnline }
+            const newUser = { ...state.user, is_online: isOnline }
             return { user: newUser }
           })
         },

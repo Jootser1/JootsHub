@@ -1,14 +1,9 @@
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
 import { AxiosError } from 'axios'
+import { RandomChatResponse } from '@shared/conversation.types'
 
-export interface RandomChatResponse {
-  conversationId: string
-  randomUser: {
-    user_id: string
-    username: string
-  }
-}
+
 
 export const conversationService = {
   async startRandomChat(): Promise<RandomChatResponse> {
@@ -27,7 +22,7 @@ export const conversationService = {
       logger.info(`[ChatService] Nouvelle conversation créée avec ${randomUser.username}`)
 
       return {
-        conversationId: conversation.conversation_id,
+        conversation_id: conversation.conversation_id,
         randomUser: {
           user_id: randomUser.user_id,
           username: randomUser.username,

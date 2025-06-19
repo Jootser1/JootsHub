@@ -1,18 +1,27 @@
 import { Message } from './message.types'
 import { User } from './user.types'
+import { ProgressionResult } from './icebreaker-event.types'
+
+export interface RandomChatResponse {
+  conversation_id: string
+  randomUser: {
+    user_id: string
+    username: string
+  }
+}
 
 export interface ConversationParticipant {
-  conversationId: string
+  conversation_id: string
   user_id: string
   user: User
-  isTyping?: boolean
-  isIcebreakerReady?: boolean
-  hasGivenAnswer?: boolean
-  icebreakerTimestamp?: string
+  is_typing?: boolean
+  is_icebreaker_ready?: boolean
+  has_given_answer?: boolean
+  icebreaker_timestamp?: string
   response?: {
-    pollId: string
-    optionId: string
-    answeredAt: string
+    poll_id: string
+    option_id: string
+    answered_at: string
   } | null
 }
 
@@ -25,29 +34,27 @@ export interface Conversation {
   messages: Message[];
   lastMessage?: Message;
   unreadCount: number;
-  icebreakerStatus: {
-    currentQuestion?: string;
+  icebreaker_status: {
+    current_poll?: string;
   };
-  currentPoll?: string
-  xpPoint?: number
+  current_poll?: string
+  xp_point?: number
   locale: string
   level?: number
-  remainingXp?: number
-  xpToNextLevel?: number
+  remaining_xp?: number
+  xp_to_next_level?: number
   reward?: string
-  photoRevealPercent?: number | null
-  xpAndLevel?: ProgressionResult
+  photo_reveal_percent?: number | null
+  xp_and_level?: ProgressionResult
 }
 
-export type ProgressionResult = {
-  xpPerQuestion : number;
-  reachedXP : number;
-  reachedLevel: number;
-  remainingXpAfterLevelUp: number;
-  requiredXpForCurrentLevel: number;
-  requiredXpForNextLevel: number;
-  maxXpForNextLevel: number;
-  nextLevel: number;
-  reward?: string;
-  photoRevealPercent?: number | null;
-};
+export interface ParticipantIcebreakerStatus {
+  user_id: string;
+  is_icebreaker_ready: boolean;
+}
+
+export interface TypingStatus {
+  conversationId: string
+  userId: string
+  isTyping: boolean
+}

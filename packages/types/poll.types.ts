@@ -1,3 +1,6 @@
+
+
+
 /**
  * Représente les différents types de sondages disponibles dans l'application.
  * @enum {string}
@@ -10,18 +13,13 @@ export enum PollType {
   CONTINUOUS = 'CONTINUOUS'
 }
 
-export type Question = {
-    id: string;
-    groupId: string;
+export type PollTranslation = {
+    poll_translation_id: string;
+    poll_id: string;
     locale: string;
-    question: string;
+    translation: string;
   };
   
-  export type QuestionOption = {
-    id: string;
-    text: string;
-    questionId: string;
-  };
   
   export type Poll = {
     poll_id: string;
@@ -30,17 +28,24 @@ export type Question = {
     moderated_at: Date | null;
     is_pinned: boolean;
     is_enabled: boolean;
-    questions: Question[];
-    options: QuestionOption[];
+    questions: PollTranslation[];
+    options: Option[];
     categories: Category[];
   };
   
   export type Category = {
     id: string;
-    label: string;
-    description: string;
+    name: string;
   };
   
+  
+  export interface CategoryTranslation {
+    id: number;
+    fr: string;
+    icon: string;
+  }
+
+
   // Définir nos propres types pour les relations sans dépendre des types Prisma directement
   export type CurrentPollWithRelations = {
     poll_id: string;
@@ -79,3 +84,28 @@ export type Question = {
       max_label?: string;
     } | null;
   };
+
+  export interface Option {
+    id: string
+    order: number
+    translations: Array<{
+      locale: string;
+      translated_option_text: string;
+    }>
+  }
+  
+  export interface Question {
+    id: string
+    questions: Array<{
+      question: string
+    }>
+    options: Option[]
+    category?: {
+      name: string
+    }
+    categories?: {
+      logo?: string
+    }
+  }
+
+
