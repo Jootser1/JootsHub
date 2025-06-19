@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger'
 import { socketManager } from '@/lib/sockets/socket-manager'
 import axiosInstance from '@/app/api/axios-instance'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { json } from 'stream/consumers'
 
 interface ChatSocketProviderProps {
   children: ReactNode
@@ -47,34 +48,32 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
         })
         clearTimeout(timeoutId)
 
-        logger.debug('ChatSocketProvider: Réponse API conversations reçue', { response: response.data })
-
         const conversations = response.data.map((conv: { 
-          id: string, 
+          conversation_id: string, 
           participants: string[], 
           last_message?: { 
-            id: string, 
+            message_id: string, 
             content: string, 
             created_at: string, 
             sender_id: string, 
             is_read: boolean 
           } 
         }) => ({
-          id: conv.id,
+          conversation_id: conv.conversation_id,
           participants: conv.participants,
           lastMessage: conv.last_message ? {
-            id: conv.last_message.id,
+            id: conv.last_message.message_id,
             content: conv.last_message.content,
             createdAt: conv.last_message.created_at,
             senderId: conv.last_message.sender_id,
             isRead: conv.last_message.is_read
           } : null
         }))
-        const chatStore = useChatStore.getState()
-        const conversationIds = conversations.map((conv: { id: string }) => conv.id)
-        chatStore.setConversationsIds(conversationIds)
+        const conversationIds = conversations.map((conv: { conversation_id: string }) => conv.conversation_id)
+        useChatStore.getState().setConversationsIds(conversationIds)
+
         
-        // Mettre en cache
+        // Add ConversationIds into cache
         conversationsCache.current = conversationIds
         
         logger.info('ChatSocketProvider: Conversations chargées avec succès', { count: conversationIds.length })

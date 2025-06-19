@@ -11,7 +11,8 @@ import { Conversation } from '@shared/conversation.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ExperienceLogo } from '@/components/ExperienceLogo'
-import { ProgressionResult } from '@/features/chat/chat.types'
+import { ProgressionResult } from '@shared/icebreaker-event.types'
+import { logger } from '@/utils/logger'
 // ChatSocketHandler supprimé - redondant avec ChatSocketProvider
 
 // Définition du composant de contenu de conversation
@@ -43,21 +44,19 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       fetchAttemptedRef.current = true
 
       try {
-        console.log('Fetching conversation:', resolvedParams.id)
-        const response = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
-        const conversationData = response.data
-        const xpAndLevel = response.data.xpAndLevel
-        console.log('Conversation data received:', conversationData)
-        setConversation(conversationData)
+        const conversation = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
+        const xpAndLevel = conversation.data.xpAndLevel
+        logger.debug('Conversation data received:', conversation.data)
+        setConversation(conversation.data)
         setXpAndLevel(xpAndLevel)
         // Ajout de la conversation entière au chatStore, une seule fois
-        if (conversationData && !conversationInitializedRef.current) {
+        if (conversation.data && !conversationInitializedRef.current) {
           console.log('Initializing conversation in chatStore')
           conversationInitializedRef.current = true
           // Définir d'abord l'ID de conversation actif
-          useChatStore.getState().setActiveConversation(conversationData.conversation_id)
+          useChatStore.getState().setActiveConversation(conversation.data.conversation_id)
           // Puis initialiser la conversation
-          useChatStore.getState().initializeConversation(conversationData)
+          useChatStore.getState().initializeConversation(conversation.data)
         }
       } catch (error: unknown) {
         console.error('Error fetching conversation:', error)
@@ -74,11 +73,8 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
     }
 
     if (user && resolvedParams.id && !fetchAttemptedRef.current) {
-      console.log('User and conversation ID available:', { userId: user.user_id, conversationId: resolvedParams.id })
       fetchConversation()
-    } else {
-      console.log('Missing data:', { user: !!user, conversationId: resolvedParams.id, fetchAttempted: fetchAttemptedRef.current })
-    }
+    } 
   }, [user, resolvedParams.id])
 
   if (isLoading) {
