@@ -1,5 +1,4 @@
-
-export type MessageStatus = 'sent' | 'delivered' | 'read'
+export type MessageStatus = 'SENT' | 'DELIVERED' | 'READ' | 'DELETED'
 export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
 export type MessageType = 'ICEBREAKER' | 'MESSAGE' | 'SYSTEM' ;
 
@@ -9,7 +8,6 @@ export interface Message {
   sender_id: string
   content: string
   created_at: Date 
-  receiver_id?: string 
   status: MessageStatus
 }
 

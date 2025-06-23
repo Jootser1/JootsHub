@@ -1,4 +1,5 @@
-import { PollType } from "./poll.types";
+import { CurrentPollWithRelations, PollType } from "./poll.types";
+import { xp_and_level } from "./conversation.types";
 
 export interface PostedResponseEvent {
     poll_type: PollType,
@@ -41,7 +42,7 @@ export interface IcebreakerStatusEvent {
 
 export interface IcebreakerPollEvent {
   conversation_id: string
-  poll: string
+  poll: CurrentPollWithRelations
 }
 
 export interface IcebreakerResponsesEvent {
@@ -52,7 +53,7 @@ export interface IcebreakerResponsesEvent {
   user1: string
   response2: string
   user2: string
-  xpAndLevel?: ProgressionResult
+  xpAndLevel?: xp_and_level
 }
 
 export interface IcebreakerResponse {
@@ -63,18 +64,7 @@ export interface IcebreakerResponse {
 
 export interface XpLevelUpdateEvent {
   conversationId: string
-  xpAndLevel: ProgressionResult
+  xpAndLevel: xp_and_level
 }
 
-export type ProgressionResult = {
-  xpPerQuestion : number;
-  reached_xp : number;
-  reached_level: number;
-  remaining_xp_after_level_up: number;
-  required_xp_for_current_level: number;
-  required_xp_for_next_level: number;
-  max_xp_for_next_level: number;
-  next_level: number;
-  reward?: string;
-  photo_reveal_percent?: number | null;
-};
+
