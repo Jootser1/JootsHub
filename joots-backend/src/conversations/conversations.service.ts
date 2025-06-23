@@ -5,29 +5,32 @@ import { UserContactsService } from '../users/contacts/contacts.service';
 import { XP_CONFIG } from 'src/config/points_per_difficulty';
 import levelConfig from '../config/leveling_config_seed.json';
 import { AppLogger } from '../logger/logger.service';
+import { Conversation, ConversationWithPollAndXp, ConversationWithXpAndLevel, xp_and_level, PollAnswerSourceWithAnswer } from '@shared/conversation.types';
+import { UsersService } from 'src/users/users.service'; 
 
 @Injectable()
 export class ConversationsService {
   private readonly logger = new AppLogger();
-
+  
   constructor(
     private readonly prisma: PrismaService,
     private readonly userGateway: UserGateway,
-    private readonly userContactsService: UserContactsService
+    private readonly userContactsService: UserContactsService,
+    private readonly usersService: UsersService
   ) {}
-
+  
   private readonly userSelect = {
     user_id: true,
     username: true,
     avatar: true,
     last_seen: true,
   };
-
-
-
-  async findAllConversationsForAUserId(userId: string) {
+  
+  
+  
+  async findAllConversationsWithPollandXpForAUserId(userId: string): Promise<ConversationWithPollAndXp[]> {
     try {
-      return await this.prisma.conversation.findMany({
+      const conversations = await this.prisma.conversation.findMany({
         where: {
           participants: {
             some: { user_id: userId },
@@ -35,9 +38,15 @@ export class ConversationsService {
         },
         select: {
           conversation_id: true,
+          xp_point: true,
+          difficulty: true,
+          created_at: true,
+          locale: true,
           updated_at: true,
           participants: {
             select: {
+              conversation_id: true,
+              user_id: true,
               user: {
                 select: this.userSelect,
               },
@@ -45,6 +54,9 @@ export class ConversationsService {
             },
           },
           messages: {
+            where: {
+              status: { not: 'DELETED' },
+            },
             orderBy: { created_at: 'desc' },
             take: 1,
             select: {
@@ -52,11 +64,87 @@ export class ConversationsService {
               content: true,
               created_at: true,
               sender_id: true,
+              status: true,
+            },
+          },
+          current_poll: {
+            select: {
+              poll_id: true,
+              type: true,
+              author_id: true,
+              created_at: true,
+              is_moderated: true,
+              is_pinned: true,
+              is_enabled: true,
+              poll_translations: {
+                select: {
+                  poll_translation_id: true,
+                  poll_id: true,
+                  locale: true,
+                  translation: true,
+                },
+              },
+              categories: {
+                select: {
+                  category: {
+                    select: {
+                      category_id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+              options: {
+                select: {
+                  poll_option_id: true,
+                  order: true,
+                  translations: {
+                    select: {
+                      locale: true,
+                      translated_option_text: true,
+                    },
+                  },
+                },
+              },
+              scale_constraint: {
+                select: {
+                  is_labeled: true,
+                  min_value: true,
+                  max_value: true,
+                  step_value: true,
+                  min_label: true,
+                  max_label: true,
+                  mid_label: true,
+                },
+              },
             },
           },
         },
         orderBy: { updated_at: 'desc' },
       });
+      
+      if (conversations.length === 0) {
+        throw new NotFoundException('Aucune conversation trouvée');
+      }    
+      
+      
+      const conversationsWithPollAnswers = await Promise.all(
+        conversations.map(async (conversation) => {
+          const pollAnswerForConversation = await this.getPollAnswerSourcesForConversation(conversation);
+          //if (pollAnswerForConversation.length > 0) {
+          //  const pollAnswers = await this.transformPollAnswersForConversationIntoMessages(pollAnswerForConversation);
+          //}
+          // Fusionner et trier tous les éléments par date
+          //const allContent = [...messages, ...pollAnswers].sort(
+          //  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          //);
+          
+          const xp_and_level = await this.getConversationLevel(conversation.xp_point, conversation.difficulty);
+          return { ...conversation, xp_and_level, pollAnswerForConversation } as unknown as ConversationWithPollAndXp;
+        })
+      );
+      
+      return conversationsWithPollAnswers;
     } catch (error) {
       console.error(
         "Erreur lors de la récupération des conversations pour l'utilisateur:",
@@ -65,7 +153,7 @@ export class ConversationsService {
       throw error;
     }
   }
-
+  
   async findAllConversationsIdsForAUserId(userId: string): Promise<string[]> {
     const conversations = await this.prisma.conversation.findMany({
       where: {
@@ -75,8 +163,40 @@ export class ConversationsService {
     });
     return conversations.map((conversation) => conversation.conversation_id);
   }
-
-  async fetchConversationById(id: string, userId?: string) {
+  
+  async fetchOnlyConversationById(id: string, userId?: string) : Promise<Conversation> {
+    const conversation = await this.prisma.conversation.findFirst({
+      where: {
+        conversation_id: id,
+      },
+      include: {
+        participants: {
+          select: {
+            user_id: true,
+            conversation_id: true,
+            user: true,
+            is_icebreaker_ready: true,
+          },
+        },
+        messages: {
+          select: {
+            message_id: true,
+            content: true,
+            created_at: true,
+            sender_id: true,
+            status: true,
+          },
+        },
+      },
+    });
+    
+    if (!conversation) {
+      throw new NotFoundException('Conversation non trouvée');
+    }
+    return conversation;
+  }
+  
+  async fetchConversationByIdWithXpAndLevel(id: string, userId?: string) : Promise<ConversationWithXpAndLevel> {
     const conversation = await this.prisma.conversation.findFirst({
       where: {
         conversation_id: id,
@@ -88,6 +208,8 @@ export class ConversationsService {
         conversation_id: true,
         xp_point: true,
         difficulty: true,
+        created_at: true,
+        updated_at: true,
         locale: true,
         participants: {
           include: {
@@ -96,63 +218,31 @@ export class ConversationsService {
         },
         messages: {
           orderBy: { created_at: 'asc' },
+          select: {
+            message_id: true,
+            content: true,
+            created_at: true,
+            sender_id: true,
+            status: true,
+          },
         },
       },
     });
-
+    
+    
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée');
     }
-
-    const xpAndLevel = await this.getConversationLevel(conversation.xp_point, conversation.difficulty);
+    
+    const xp_and_level = await this.getConversationLevel(conversation.xp_point, conversation.difficulty);
     
     return {
       ...conversation,
-      xpAndLevel
+      xp_and_level
     };
   }
-
-  async findConversation(userId: string, receiverId: string) {
-    const conversation = await this.prisma.conversation.findFirst({
-      where: {
-        AND: [
-          { participants: { some: { user_id: userId } } },
-          { participants: { some: { user_id: receiverId } } },
-        ],
-      },
-      select: {
-        conversation_id: true,
-        xp_point: true,
-        difficulty: true,
-        locale: true,
-        participants: {
-          include: {
-            user: { select: this.userSelect },
-          },
-        },
-        messages: {
-          orderBy: { created_at: 'desc' },
-          take: 50,
-          include: {
-            sender: {
-              select: {
-                user_id: true,
-                username: true,
-                avatar: true,
-              },
-            },
-          },
-        },
-      },
-    });
-
-    if (!conversation) {
-      throw new NotFoundException('Conversation non trouvée');
-    }
-
-    return conversation;
-  }
-
+  
+  
   async getConversationLocale(conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { conversation_id: conversationId },
@@ -163,8 +253,8 @@ export class ConversationsService {
     }
     return conversation.locale;
   }
-
-  async create(userId: string, receiverId: string) {
+  
+  async createConversation(userId: string, receiverId: string) {
     const [user1, user2] = await Promise.all([
       this.prisma.user.findUnique({ where: { user_id: userId } }),
       this.prisma.user.findUnique({ where: { user_id: receiverId } }),
@@ -189,11 +279,11 @@ export class ConversationsService {
         },
       },
     });
-
+    
     if (existingConversation) {
       return existingConversation;
     }
-
+    
     try {
       // Créer les contacts réciproques de manière séquentielle pour éviter les erreurs en cascade
       await this.userContactsService.addUserContactinBDD(user1.user_id, user2.user_id);
@@ -201,27 +291,27 @@ export class ConversationsService {
     } catch (error) {
       console.error('Erreur lors de la création des contacts:', error);
     }
-
+    
     // Gestion des sockets de manière optionnelle
     try {
       const socketId1 = this.userGateway.findSocketIdByUserId(user1.user_id);
       const socketId2 = this.userGateway.findSocketIdByUserId(user2.user_id);
-
+      
       if (socketId1 && socketId2) {
         // Utiliser les rooms Socket.IO avec la nouvelle API
         const room1 = `user-status-${user1.user_id}`;
         const room2 = `user-status-${user2.user_id}`;
-
+        
         // Ajouter les sockets aux rooms respectives
         this.userGateway.server.in(socketId1).socketsJoin(room2);
         this.userGateway.server.in(socketId2).socketsJoin(room1);
-
+        
       }
     } catch (socketError) {
       console.warn('Erreur lors de la gestion des sockets:', socketError);
       // On continue même si la gestion des sockets échoue
     }
-
+    
     // Créer la conversation
     return this.prisma.conversation.create({
       data: {
@@ -238,111 +328,36 @@ export class ConversationsService {
       },
     });
   }
-
-  async findConversationContent(conversationId: string, userId: string) {
-    this.logger.log(`Début de findConversationContent - Conversation: ${conversationId} - User: ${userId}`);
-
-    // Vérifier que l'utilisateur a accès à la conversation
-    const conversation = await this.prisma.conversation.findFirst({
+  
+  
+  private async getPollAnswerSourcesForConversation(conversation: any): Promise<PollAnswerSourceWithAnswer[]> {
+    const sources = await this.prisma.pollAnswerSource.findMany({
       where: {
-        conversation_id: conversationId,
-        participants: {
-          some: { user_id: userId },
-        },
-      },
-    });
-
-    if (!conversation) {
-      this.logger.error(`Conversation non trouvée - Conversation: ${conversationId} - User: ${userId}`);
-      throw new NotFoundException(
-        'Conversation non trouvée ou accès non autorisé'
-      );
-    }
-
-    this.logger.log(`Conversation trouvée - Conversation: ${conversationId}`);
-
-    // Récupérer les messages avec les informations de l'expéditeur
-    const messages = await this.prisma.message.findMany({
-      where: {
-        conversation_id: conversationId,
-        is_deleted: false,
-      },
-      include: {
-        sender: {
-          select: {
-            user_id: true,
-            username: true,
-            avatar: true,
-          },
-        },
-      },
-      orderBy: {
-        created_at: 'asc',
-      },
-    });
-
-    this.logger.log(`Messages trouvés: ${messages.length} - Conversation: ${conversationId}`);
-    if (messages.length > 0) {
-      this.logger.log(`Premier message: ${JSON.stringify(messages[0])}`);
-      this.logger.log(`Dernier message: ${JSON.stringify(messages[messages.length - 1])}`);
-    }
-
-    // Récupérer les questions-réponses
-    const pollAnswerSources = await this.prisma.pollAnswerSource.findMany({
-      where: {
-        conversation_id: conversationId,
+        conversation_id: conversation.conversation_id,
+        locale: conversation.locale as any,
       },
       include: {
         answer: {
           include: {
             poll: {
               include: {
-                poll_translations: true,
-                options: {
-                  include: {
-                    translations: true,
+                poll_translations: {
+                  where: {
+                    locale: conversation.locale as any,
                   },
                 },
               },
             },
-            option: {
-              include: {
-                translations: true,
-              },
-            },
+            
           },
         },
       },
     });
 
-    this.logger.log(`Sources de réponses trouvées: ${pollAnswerSources.length} - Conversation: ${conversationId}`);
-
-    // Transformer les questions-réponses en format similaire aux messages
-    const pollAnswers = pollAnswerSources.map(source => ({
-      type: 'poll_answer',
-      created_at: source.answer?.answered_at || new Date(),
-      poll: source.answer?.poll,
-      answer: source.answer,
-      source_type: source.source_type,
-    }));
-
-    this.logger.log(`Réponses transformées: ${pollAnswers.length} - Conversation: ${conversationId}`);
-
-    // Fusionner et trier tous les éléments par date
-    const allContent = [...messages, ...pollAnswers].sort(
-      (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-    );
-
-    this.logger.log(`Contenu total après fusion: ${allContent.length} - Conversation: ${conversationId}`);
-    if (allContent.length > 0) {
-      this.logger.log(`Premier élément: ${JSON.stringify(allContent[0])}`);
-      this.logger.log(`Dernier élément: ${JSON.stringify(allContent[allContent.length - 1])}`);
-    }
-
-    return allContent;
+    return sources as PollAnswerSourceWithAnswer[];
   }
-
-  async getConversationLevel(xpPoint: number, difficulty: string) {
+  
+  async getConversationLevel(xpPoint: number, difficulty: string) : Promise<xp_and_level> {
     const levels = levelConfig.filter(config => config.difficulty === difficulty);
     const currentXp = xpPoint;
     
@@ -355,24 +370,35 @@ export class ConversationsService {
     }
     const nextLevel = levels.find(config => config.xp_required > currentXp);
     const levelData = {
-      xpPerQuestion: XP_CONFIG.QUESTION_DIFFICULTY[difficulty],
-      reachedXP: currentXp,
-      reachedLevel: currentLevel.level,
-      remainingXpAfterLevelUp: currentXp - currentLevel.xp_required,
-      requiredXpForCurrentLevel: currentLevel.xp_required,
-      maxXpForNextLevel: nextLevel ? nextLevel.xp_required : 0,
-      nextLevel: nextLevel ? nextLevel.level : 0,
-      requiredXpForNextLevel: nextLevel ? nextLevel.xp_required - currentXp : 0,
+      difficulty: difficulty,
+      xp_per_question: XP_CONFIG.QUESTION_DIFFICULTY[difficulty],
+      reached_xp: currentXp,
+      reached_level: currentLevel.level,
+      remaining_xp_after_level_up: currentXp - currentLevel.xp_required,
+      required_xp_for_current_level: currentLevel.xp_required,
+      required_xp_for_next_level: nextLevel ? nextLevel.xp_required - currentXp : 0,
+      max_xp_for_next_level: nextLevel ? nextLevel.xp_required : 0,
+      next_level: nextLevel ? nextLevel.level : 0,
       reward: currentLevel.reward,
       photo_reveal_percent: currentLevel.photo_reveal_percent
     }
     return levelData;
   }
-
+  
+  async transformPollAnswersForConversationIntoMessages(pollAnswerSources: PollAnswerSourceWithAnswer[]) {
+    return pollAnswerSources.map(source => ({
+      type: 'poll_answer',
+      created_at: source.answer?.answered_at || new Date(),
+      poll: source.answer?.poll,
+      answer: source.answer,
+      source_type: (source as any).source_type,
+    }));
+  }
+  
   async updateXpToConversationId(conversationId: string, difficulty: string) {
     if (!conversationId) throw new Error('Conversation not found'); 
-   const xpPerQuestion = XP_CONFIG.QUESTION_DIFFICULTY[difficulty];
-
+    const xpPerQuestion = XP_CONFIG.QUESTION_DIFFICULTY[difficulty];
+    
     // Étape 2 — Ajouter l'XP
     const updatedXp = await this.prisma.conversation.update({
       where: { conversation_id: conversationId },
@@ -381,5 +407,15 @@ export class ConversationsService {
       },
     });
     return updatedXp.xp_point
+  }
+  
+  async startRandomConversation(userId: string) {
+    
+    const randomUser = await this.usersService.getRandomAvailableUser(userId);
+    if (!randomUser) {
+      throw new NotFoundException('Aucun utilisateur disponible pour le moment. Revenez plus tard !');
+    }
+    const conversation = await this.createConversation(userId, randomUser.user_id);
+    return conversation
   }
 }

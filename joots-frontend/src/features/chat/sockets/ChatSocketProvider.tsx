@@ -26,12 +26,13 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
   // ✅ Optimisation : Récupération des conversations avec cache et debouncing
   const fetchUserConversations = useCallback(async () => {
     try {
-      // Vérifier le cache d'abord
+      // Check cache first
       if (conversationsCache.current.length > 0) {
         logger.debug('ChatSocketProvider: Utilisation du cache des conversations')
         return conversationsCache.current
       }
 
+      // Check if conversationsIds are already in the store
       let conversationIds = useChatStore.getState().conversationsIds
       if (conversationIds.length > 0) {
         conversationsCache.current = conversationIds
@@ -42,6 +43,7 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000)
 
+      // if still not fetched, fetch conversations,update the store and add to cache
       try {
         const response = await axiosInstance.get('/conversations', {
           signal: controller.signal
@@ -76,7 +78,7 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
         // Add ConversationIds into cache
         conversationsCache.current = conversationIds
         
-        logger.info('ChatSocketProvider: Conversations chargées avec succès', { count: conversationIds.length })
+        logger.info('[ChatSocketProvider] Conversations Ids stored in store', { count: conversationIds.length })
         return conversationIds
       } catch (error) {
         clearTimeout(timeoutId)
@@ -135,8 +137,6 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
           logger.error('ChatSocketProvider: Impossible de connecter le chat - socket utilisateur non disponible')
           return false
         }
-
-        logger.debug('ChatSocketProvider: Socket utilisateur prêt, connexion du chat...')
 
         // ✅ Optimisation : Récupération des conversations en parallèle
         const [conversationIds] = await Promise.all([

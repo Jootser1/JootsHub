@@ -1,10 +1,16 @@
-import { Conversation, ConversationParticipant } from '@shared/conversation.types'
-import { Question } from '@shared/question.types'
+import { Conversation, ConversationParticipant, xp_and_level } from '@shared/conversation.types'
+import { CurrentPollWithRelations, Question } from '@shared/question.types'
 import { Message, MessageStatus, ChatStoreMessage } from '@shared/message.types'
-import { ProgressionResult, IcebreakerResponse } from '@shared/icebreaker-event.types'
+import { IcebreakerResponse } from '@shared/icebreaker-event.types'
+
+// Type étendu pour le frontend avec current_poll comme objet au lieu de string
+export interface ConversationWithCurrentPollObject extends Omit<Conversation, 'current_poll'> {
+  current_poll?: CurrentPollWithRelations | null
+  xpAndLevel?: xp_and_level | null
+}
 
 export interface ChatState {
-  conversations: Record<string, Conversation>
+  conversations: Record<string, ConversationWithCurrentPollObject>
   activeConversationId: string | null
   currentPoll: string | null
   error: string | null
@@ -24,8 +30,8 @@ export type ChatActions = {
 
   // Conversation lifecycle
   loadAllConversations: () => Promise<void>
-  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void
-  initializeConversation: (conversation: Conversation) => void
+  updateConversation: (conversationId: string, updates: Partial<ConversationWithCurrentPollObject>) => void
+  initializeConversation: (conversation: ConversationWithCurrentPollObject) => void
 
   // Message lifecycle
   addMessage: (conversationId: string, message: Message) => void
@@ -44,13 +50,13 @@ export type ChatActions = {
   resetIcebreakerStatus: (conversationId: string) => void
 
   // XP and Level progression
-  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => void
+  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: xp_and_level) => void
 
   // Helpers
   getMessagesFromConversation: (conversationId: string) => ChatStoreMessage[]
-  getConversation: (conversationId: string) => Conversation | undefined
-  getCurrentPoll: (conversationId: string) => string | null
-  setCurrentPoll: (conversationId: string, poll: string) => void
+  getConversation: (conversationId: string) => ConversationWithCurrentPollObject | undefined
+  getCurrentPoll: (conversationId: string) => CurrentPollWithRelations | null
+  setCurrentPoll: (conversationId: string, poll: CurrentPollWithRelations) => void
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined
   getOtherParticipant: (
     conversationId: string,

@@ -10,7 +10,7 @@ import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
-import { ProgressionResult } from '@shared/icebreaker-event.types';
+import { xp_and_level } from '@shared/conversation.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
 import { CurrentPollWithRelations } from '@shared/question.types';
 import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
@@ -92,13 +92,6 @@ export class ChatGateway extends BaseGateway {
           is_typing: false,
           timestamp: new Date().toISOString(),
         });
-
-        // Réinitialiser le statut icebreaker
-        await this.icebreakerService.setParticipantIcebreakerReady(
-          conversation_id,
-          user_id,
-          false
-        );
       }
 
       this.logger.log(
@@ -116,7 +109,6 @@ export class ChatGateway extends BaseGateway {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { conversation_id: string; user_id: string }
   ) {
-    console.log('joinConversation', data);
     
     // Validation des données
     if (!data.conversation_id || data.conversation_id === 'null' || data.conversation_id === 'undefined') {
@@ -175,7 +167,6 @@ export class ChatGateway extends BaseGateway {
       return { success: false, error: 'Non autorisé' };
     }
 
-    console.log('conversation_id: ' + conversation_id + ' content: ' + content + ' user_id: ' + user_id);
     try {
       // Vérifier si la conversation existe
       const conversation = await this.prisma.conversation.findUnique({
@@ -191,6 +182,7 @@ export class ChatGateway extends BaseGateway {
           content,
           sender: { connect: { user_id: user_id } },
           conversation: { connect: { conversation_id: conversation_id } },
+          status: 'SENT',
         },
         include: {
           sender: {
@@ -269,7 +261,7 @@ export class ChatGateway extends BaseGateway {
 
     try {
       // Sauvegarder le nouveau statut dans la base de données et redis
-      await this.icebreakerService.setParticipantIcebreakerReady(
+      await this.icebreakerService.updateParticipantIcebreakerReady(
         conversation_id,
         user_id,
         is_icebreaker_ready
@@ -340,6 +332,7 @@ export class ChatGateway extends BaseGateway {
       a.user_id,
       b.user_id
     );
+    console.log('poll', poll);
 
     if (!poll) return;
     await this.icebreakerService.storeCurrentPollForAGivenConversation(
@@ -383,7 +376,7 @@ export class ChatGateway extends BaseGateway {
     response1: string,
     user2: string,
     response2: string,
-    xpAndLevel: ProgressionResult
+    xpAndLevel: xp_and_level
   ) {
     const socketData = {
       conversation_id,
@@ -405,7 +398,7 @@ export class ChatGateway extends BaseGateway {
     try {
       // Trouver toutes les conversations auxquelles l'utilisateur participe
       const conversations =
-        await this.conversationsService.findAllConversationsForAUserId(user_id);
+        await this.conversationsService.findAllConversationsWithPollandXpForAUserId(user_id);
       this.logger.log(
         `[Chat Socket ${client.id}] ${user_id} devrait rejoindre ${conversations.length} conversations`
       );
@@ -417,7 +410,7 @@ export class ChatGateway extends BaseGateway {
         // Synchroniser l'état de la conversation
         const participants = conversation.participants.map((p) => ({
           user_id: p.user.user_id,
-          is_icebreaker_ready: p.is_icebreaker_ready,
+          is_icebreaker_ready: p.is_icebreaker_ready ?? false,
         }));
         await this.synchronizeConversationState(
           client,
@@ -453,12 +446,7 @@ export class ChatGateway extends BaseGateway {
         conversation_id,
         participants
       );
-      await this.synchronizeTypingStatus(
-        client,
-        conversation_id,
-        user_id,
-        participants
-      );
+      
     } catch (error) {
       this.logger.warn(
         `Erreur lors de la synchronisation de la conversation ${conversation_id}: ${error.message}`
@@ -528,25 +516,4 @@ export class ChatGateway extends BaseGateway {
     }
   }
 
-  private async synchronizeTypingStatus(
-    client: Socket,
-    conversation_id: string,
-    user_id: string,
-    participants: any[]
-  ) {
-    const otherParticipant = participants.find((p) => p.user_id !== user_id);
-    if (!otherParticipant) return;
-
-    const typingKey = `conversation:${conversation_id}:typing:${otherParticipant.user_id}`;
-    const is_typing = await this.redis.get(typingKey);
-
-    if (is_typing) {
-      client.emit('typing', {
-        conversation_id,
-        user_id: otherParticipant.user_id,
-        is_typing: true,
-        timestamp: new Date().toISOString(),
-      });
-    }
-  }
 }

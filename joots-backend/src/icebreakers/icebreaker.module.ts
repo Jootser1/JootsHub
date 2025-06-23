@@ -9,6 +9,7 @@ import { GatewaysModule } from '../gateways/gateways.module';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from 'src/conversations/conversations.service';
 import { ContactsModule } from '../users/contacts/contacts.module';
+import { UsersService } from 'src/users/users.service';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ContactsModule } from '../users/contacts/contacts.module';
     QuestionService,
     MessagesService,
     ConversationsService, 
+    UsersService,
     Logger,
   ],
   exports: [IcebreakerService],

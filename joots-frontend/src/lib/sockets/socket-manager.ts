@@ -267,9 +267,9 @@ class SocketManager {
     if (!this.userSocket?.isConnected()) return
 
     try {
+      logger.debug(`[UserSocket] Demande des statuts en ligne pour ${contactIds.length} contacts`)
       // Utiliser la méthode publique du UserSocketService
       this.userSocket.requestContactsOnlineStatus(contactIds)
-      logger.debug(`[UserSocket] Demande des statuts en ligne pour ${contactIds.length} contacts`)
     } catch (error) {
       logger.error('Erreur lors de la demande des statuts en ligne:', error as Error)
     }

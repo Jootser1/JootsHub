@@ -14,6 +14,9 @@ CREATE TYPE "LocaleCode" AS ENUM ('fr_FR', 'en_US', 'es_ES');
 CREATE TYPE "MessageType" AS ENUM ('TEXT', 'ANSWER');
 
 -- CreateEnum
+CREATE TYPE "MessageStatus" AS ENUM ('SENT', 'DELETED', 'DELIVERED', 'READ');
+
+-- CreateEnum
 CREATE TYPE "Difficulty" AS ENUM ('EASY', 'INTERMEDIATE', 'HARDCORE');
 
 -- CreateEnum
@@ -92,6 +95,7 @@ CREATE TABLE "Conversation" (
     "locale" "LocaleCode" NOT NULL DEFAULT 'fr_FR',
     "xp_point" INTEGER NOT NULL DEFAULT 0,
     "difficulty" "Difficulty" NOT NULL DEFAULT 'INTERMEDIATE',
+    "current_poll_id" TEXT,
 
     CONSTRAINT "Conversation_pkey" PRIMARY KEY ("conversation_id")
 );
@@ -109,13 +113,11 @@ CREATE TABLE "ConversationParticipant" (
 -- CreateTable
 CREATE TABLE "Message" (
     "message_id" TEXT NOT NULL,
-    "sender_id" TEXT,
+    "sender_id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "conversation_id" TEXT NOT NULL,
-    "is_read" BOOLEAN NOT NULL DEFAULT false,
-    "edited_at" TIMESTAMP(3),
-    "is_deleted" BOOLEAN NOT NULL DEFAULT false,
+    "status" "MessageStatus" NOT NULL,
 
     CONSTRAINT "Message_pkey" PRIMARY KEY ("message_id")
 );
@@ -335,6 +337,9 @@ ALTER TABLE "UserContact" ADD CONSTRAINT "UserContact_contact_id_fkey" FOREIGN K
 ALTER TABLE "UserContact" ADD CONSTRAINT "UserContact_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "User"("user_id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
+ALTER TABLE "Conversation" ADD CONSTRAINT "Conversation_current_poll_id_fkey" FOREIGN KEY ("current_poll_id") REFERENCES "Poll"("poll_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
 ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "Conversation"("conversation_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
@@ -344,7 +349,7 @@ ALTER TABLE "ConversationParticipant" ADD CONSTRAINT "ConversationParticipant_us
 ALTER TABLE "Message" ADD CONSTRAINT "Message_conversation_id_fkey" FOREIGN KEY ("conversation_id") REFERENCES "Conversation"("conversation_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "Message" ADD CONSTRAINT "Message_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "User"("user_id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "Message" ADD CONSTRAINT "Message_sender_id_fkey" FOREIGN KEY ("sender_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "Poll" ADD CONSTRAINT "Poll_author_id_fkey" FOREIGN KEY ("author_id") REFERENCES "User"("user_id") ON DELETE RESTRICT ON UPDATE CASCADE;

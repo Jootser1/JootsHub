@@ -122,6 +122,11 @@ export class QuestionService {
     );
     const randomUnansweredPoll = unansweredPolls[randomIndex];
 
+    await this.prisma.conversation.update({
+      where: { conversation_id: conversationId },
+      data: { current_poll_id: randomUnansweredPoll.poll_id },
+    });
+
     return {
       ...randomUnansweredPoll,
       categories: randomUnansweredPoll.categories.map(c => ({
@@ -143,7 +148,6 @@ export class QuestionService {
 
   // Méthode spécifique pour enregistrer la réponse en BDD
   async saveUserAnswerInDB(response: postedResponse) {
-    console.log('saveUserAnswerInDB', response)
 
     return this.prisma.$transaction(async (prisma) => {
       let pollAnswer: PollAnswer;

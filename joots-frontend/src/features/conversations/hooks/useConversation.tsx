@@ -3,10 +3,12 @@ import { useSession } from 'next-auth/react'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
 import { Conversation } from '@shared/conversation.types'
+import { useChatStore } from '@/features/chat/stores/chat-store'
 
 export function useConversation() {
+  
   const { data: session, status } = useSession()
-  const [conversations, setConversations] = useState<Conversation[]>([])
+  const { conversations, loadAllConversations, initializeConversation } = useChatStore()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const conversationCache = useRef<Record<string, Conversation>>({})
@@ -14,10 +16,7 @@ export function useConversation() {
 
   const fetchConversations = async () => {
     try {
-      console.log('Fetching conversations...')
-      const response = await axiosInstance.get('/conversations')
-      console.log('Conversations response:', response.data)
-      setConversations(response.data)
+      await loadAllConversations()
     } catch (error) {
       console.error('Error fetching conversations:', error)
       logger.error(
@@ -33,7 +32,7 @@ export function useConversation() {
       logger.debug('Creating new conversation with:', receiverId)
       const response = await axiosInstance.post('/conversations', { receiverId })
       logger.debug('New conversation created:', response.data)
-      setConversations(prev => [...prev, response.data])
+      initializeConversation(response.data)
       return response.data
     } catch (error) {
       logger.error(
@@ -100,7 +99,7 @@ export function useConversation() {
   }, [session?.user?.id, status])
 
   return {
-    conversations,
+    conversations: Object.values(conversations),
     loading,
     error,
     fetchConversations,

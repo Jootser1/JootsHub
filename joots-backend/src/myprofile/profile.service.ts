@@ -3,9 +3,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AttributeKey } from '@prisma/client';
 import { UpdateMyProfileDto } from './dto/update-myprofile.dto';
 import levelConfig from '../config/leveling_config_seed.json';
+import { AppLogger } from '../logger/logger.service';
 
 @Injectable()
 export class MyProfileService {
+  private readonly logger = new AppLogger();
+
   constructor(private readonly prisma: PrismaService) {}
 
   /**
@@ -73,7 +76,7 @@ export class MyProfileService {
     difficulty: string = 'INTERMEDIATE'
   ) {
     const { avatar, ...attributes } = dto;
-    console.log('Mise à jour de mon profil', { userId, difficulty });
+    this.logger.log('Mise à jour de mon profil');
 
     // Update attributs dynamiques avec le bon levelRevealed
     const entries = Object.entries(attributes) as [AttributeKey, any][];

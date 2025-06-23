@@ -175,9 +175,9 @@ export default function HubPage() {
                       <Image
                         src={app.logo}
                         alt={app.title}
-                        width={48}
-                        height={48}
-                        className='w-12'
+                        width={64}
+                        height={64}
+                        className='w-16 h-16 object-contain'
                       />
                     </div>
 
@@ -239,6 +239,7 @@ export default function HubPage() {
                           width={64}
                           height={64}
                           className='w-16'
+                          style={{ height: "auto" }}
                         />
                       </div>
                     </div>

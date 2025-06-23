@@ -87,6 +87,8 @@ model Conversation {
   participants    ConversationParticipant[]
   messages        Message[]
   sourceOf        PollAnswerSource[]
+  current_poll_id String?
+  current_poll    Poll?                     @relation(fields: [current_poll_id], references: [poll_id])
 }
 
 model ConversationParticipant {
@@ -103,15 +105,13 @@ model ConversationParticipant {
 
 model Message {
   message_id      String       @id @default(uuid())
-  sender_id       String?
+  sender_id       String
   content         String
   created_at      DateTime     @default(now())
   conversation_id String
-  is_read         Boolean      @default(false)
-  edited_at       DateTime?
-  is_deleted      Boolean      @default(false)
+  status          MessageStatus
   conversation    Conversation @relation(fields: [conversation_id], references: [conversation_id])
-  sender          User?        @relation("SentMessages", fields: [sender_id], references: [user_id])
+  sender          User        @relation("SentMessages", fields: [sender_id], references: [user_id])
 
   @@index([conversation_id])
   @@index([sender_id])
@@ -130,24 +130,25 @@ model Poll {
   poll_id           String               @id @default(cuid())
   type              PollType
   created_at        DateTime             @default(now())
-  updated_at         DateTime             @updatedAt
+  updated_at        DateTime             @updatedAt
   is_moderated      Boolean              @default(false)
   is_pinned         Boolean              @default(false)
   is_enabled        Boolean              @default(true)
   author_id         String
   author            User                 @relation(fields: [author_id], references: [user_id])
   poll_translations PollTranslation[]
-  categories PollCategory[]
+  categories        PollCategory[]
   options           PollOption[]
   answers           PollAnswer[]
   scale_constraint  PollScaleConstraint?
+  Conversation      Conversation[]
 }
 
 model Category {
-  category_id            Int                   @id
-  name                   String                   @unique
-  polls                  PollCategory[]
-  user_preferences       UserCategoryPreference[]
+  category_id      Int                      @id
+  name             String                   @unique
+  polls            PollCategory[]
+  user_preferences UserCategoryPreference[]
 }
 
 model PollCategory {
@@ -213,9 +214,9 @@ model PollAnswer {
   poll_option_id String?
   opentext       String?
   numeric        Float?
-  answered_at     DateTime @default(now())
+  answered_at    DateTime @default(now())
   comment        String?
-  is_flagged      Boolean  @default(false)
+  is_flagged     Boolean  @default(false)
 
   poll      Poll                @relation(fields: [poll_id], references: [poll_id])
   option    PollOption?         @relation(fields: [poll_option_id], references: [poll_option_id])
@@ -264,9 +265,9 @@ model PollAnswerHistory {
   history_id     String   @id @default(uuid())
   poll_answer_id String
   poll_option_id String
-  answered_at     DateTime @default(now())
+  answered_at    DateTime @default(now())
   note           String?
-  is_flagged      Boolean  @default(false)
+  is_flagged     Boolean  @default(false)
   source_id      String
 
   history_source PollAnswerSource @relation(fields: [source_id], references: [source_id])
@@ -291,6 +292,13 @@ enum LocaleCode {
 enum MessageType {
   TEXT
   ANSWER
+}
+
+enum MessageStatus {
+  SENT
+  DELETED
+  DELIVERED
+  READ
 }
 
 enum Difficulty {

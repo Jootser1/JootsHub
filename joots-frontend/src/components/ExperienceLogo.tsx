@@ -30,8 +30,8 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   const currentUser = getParticipant(activeConversationId, user.user_id)
   const otherParticipant = getOtherParticipant(activeConversationId, user.user_id)
 
-  const isCurrentUserReady = currentUser?.isIcebreakerReady
-  const isOtherParticipantReady = otherParticipant?.isIcebreakerReady
+  const isCurrentUserReady = currentUser?.is_icebreaker_ready
+  const isOtherParticipantReady = otherParticipant?.is_icebreaker_ready
 
   let imageSrc = '/icebreaker_oo.png'
   if (isCurrentUserReady && isOtherParticipantReady) {

@@ -11,6 +11,7 @@ import { ConversationsService } from '../conversations/conversations.service';
 import { UserContactsService } from '../users/contacts/contacts.service';
 import { Logger } from '@nestjs/common';
 import { AppLogger } from 'src/logger/logger.service';
+import { UsersService } from 'src/users/users.service';
 
 @Module({
   imports: [PrismaModule, RedisModule, forwardRef(() => GatewaysModule)],
@@ -22,6 +23,7 @@ import { AppLogger } from 'src/logger/logger.service';
     MessagesService,
     ConversationsService,
     UserContactsService,
+    UsersService,
     Logger,
     AppLogger,
   ],

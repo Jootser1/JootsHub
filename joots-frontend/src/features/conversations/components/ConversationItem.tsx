@@ -4,7 +4,7 @@ import { Conversation } from '@shared/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
+import { getOtherParticipantUser } from '@/features/conversations/utils/conversation-utils'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ensureDate } from '@/utils/date-utils'
@@ -28,7 +28,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
     return null
   }
   
-  const otherUser = getOtherParticipantInConversation(conversation, currentUserId)
+  const otherUser = getOtherParticipantUser(conversation, currentUserId)
   logger.debug('ConversationItem - Other user', { otherUser })
   
   if (!otherUser) {

@@ -17,8 +17,8 @@ export class IcebreakerController {
   async postResponseToQuestion(
     @Body() postedResponse: postedResponse
   ) {
-    console.log('postResponseToQuestion', postedResponse)
     const { poll_type, user_id, poll_id, option_id, opentext, numeric, conversation_id, locale } = postedResponse;
+    console.log('postedResponse', postedResponse);
 
     // Vérification des paramètres de base requis pour tous les types
     if (!user_id || !poll_id || !conversation_id || !locale) {
@@ -44,7 +44,7 @@ export class IcebreakerController {
 
     // 2. Mettre à jour le statut de l'icebreaker si dans le contexte d'une conversation
     if (conversation_id) {
-      await this.icebreakerService.processIcebreakersPostResponses(postedResponse);
+      await this.icebreakerService.processIcebreakersPostResponse(postedResponse);
     }
 
     return savedResponse;

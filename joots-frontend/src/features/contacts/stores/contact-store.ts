@@ -60,7 +60,7 @@ export const useContactStore = create<ContactStore>()(
         loadContacts: async () => {
           try {
             const response = await axiosInstance.get('/users/me/contacts')
-            console.log('RESPONSE', response)
+            console.log('RESPONSE', response.data)
             set(() => {
               const newContactList = new Set<string>()
               response.data.forEach((contact: ContactResponse) => {

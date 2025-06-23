@@ -2,7 +2,7 @@ import { User } from '@shared/user.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { AnimatedLevelProgress } from '@/features/icebreakers/components/AnimatedProgressionBar'
-import { ProgressionResult } from '@shared/icebreaker-event.types'
+import { xp_and_level } from '@shared/conversation.types'
 import { ConversationProfileModal } from '@/features/user/components/ConversationProfileModal'
 import { useState } from 'react'
 import Image from 'next/image'
@@ -11,7 +11,7 @@ interface ChatHeaderProps {
   otherUser: User
   isTyping?: boolean
   conversationId: string
-  xpAndLevel?: ProgressionResult
+  xpAndLevel?: xp_and_level
 }
 
 export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeaderProps) {

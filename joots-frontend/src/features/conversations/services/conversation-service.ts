@@ -9,23 +9,15 @@ export const conversationService = {
   async startRandomChat(): Promise<RandomChatResponse> {
     try {
       // 1. Trouver un utilisateur aléatoire
-      const response = await axiosInstance.get('/users/random/available')
-      const randomUser = response.data
-      console.log('randomUser', randomUser)
-
-      // 2. Créer une conversation avec cet utilisateur
-      const conversationResponse = await axiosInstance.post('/conversations', {
-        receiverId: randomUser.user_id,
-      })
-      const conversation = conversationResponse.data
-
-      logger.info(`[ChatService] Nouvelle conversation créée avec ${randomUser.username}`)
+      const conversation = await axiosInstance.post('/conversations/random-chat')
+ 
+      logger.info(`[ChatService] Nouvelle conversation créée avec ${conversation.data.randomUser.username}`)
 
       return {
-        conversation_id: conversation.conversation_id,
+        conversation_id: conversation.data.conversation_id,
         randomUser: {
-          user_id: randomUser.user_id,
-          username: randomUser.username,
+          user_id: conversation.data.randomUser.user_id,
+          username: conversation.data.randomUser.username,
         },
       }
     } catch (error) {

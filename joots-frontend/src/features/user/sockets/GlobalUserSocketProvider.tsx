@@ -126,8 +126,7 @@ export function GlobalUserSocketProvider({ children }: { children: ReactNode }) 
               logger.error('GlobalUserSocketProvider: Échec de la synchronisation des données utilisateur')
               return
             }
-            logger.info('GlobalUserSocketProvider: Données utilisateur synchronisées avec succès', { user: updatedUser })
-          } catch (error) {
+            logger.info('[User Store] User Data successfully stored', { updatedUser })          } catch (error) {
             logger.error('GlobalUserSocketProvider: Erreur lors de la synchronisation', { error })
             return
           }
@@ -146,7 +145,6 @@ export function GlobalUserSocketProvider({ children }: { children: ReactNode }) 
         }
 
         // Connexion du socket utilisateur seulement si pas déjà connecté
-        logger.info('GlobalUserSocketProvider: Session', { session })
         const success = await connectUserSocket(session.user.id, session.accessToken)
         
         setupDoneRef.current = true

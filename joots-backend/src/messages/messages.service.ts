@@ -31,10 +31,10 @@ export class MessagesService {
       where: {
         conversation_id: conversationId,
         sender: { NOT: { user_id: userId } }, // Messages envoyés par d'autres utilisateurs
-        is_read: false,
+        status: 'DELIVERED',
       },
       data: {
-        is_read: true,
+        status: 'READ',
       },
     });
 

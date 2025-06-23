@@ -1,23 +1,23 @@
 import { useState, useEffect, useRef } from 'react'
-import { Conversation } from '@shared/conversation.types'
+import { ConversationWithXpAndLevel } from '@shared/conversation.types'
 import { ChatHeader } from './ChatHeader'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
+import { getOtherParticipantUser } from '@/features/conversations/utils/conversation-utils'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '../stores/chat-store'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
-import { ProgressionResult } from '@shared/icebreaker-event.types'
+import { xp_and_level } from '@shared/conversation.types'
 import { CurrentPollWithRelations, PollType } from '@shared/question.types'
 
 
 
 interface ChatContainerProps {
-  conversation: Conversation
-  xpAndLevel?: ProgressionResult | null
+  conversation: ConversationWithXpAndLevel
+  xpAndLevel?: xp_and_level | null 
 }
 
 export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
@@ -27,7 +27,8 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
   const currentPoll = activeConversationId
     ? getCurrentPoll(activeConversationId)
     : null
-  const parsedPoll = currentPoll ? JSON.parse(currentPoll) : null
+  // currentPoll est maintenant directement un objet CurrentPollWithRelations
+  const parsedPoll = currentPoll
   const user = useUserStore(state => state.user)
   const isUserOnline = useContactStore(state => state.isUserOnline)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -95,7 +96,7 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
     return null
   }
 
-  const otherUser = getOtherParticipantInConversation(conversation, user.user_id)
+  const otherUser = getOtherParticipantUser(conversationInStore, user.user_id)
 
   if (!otherUser) {
     return <div className='flex items-center justify-center h-full'>Utilisateur non trouvé</div>

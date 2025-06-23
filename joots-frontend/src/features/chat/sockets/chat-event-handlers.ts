@@ -37,7 +37,7 @@ export function handleNewMessageEvent(message: NewMessageEvent) {
       content: message.content,
       sender_id: message.sender_id,
       created_at: message.created_at,
-      status: 'delivered',
+      status: 'DELIVERED',
     }
     
     // Vérifier que la date est valide avant d'ajouter le message
@@ -109,7 +109,10 @@ export function handleIcebreakerStatusUpdatedEvent(data: IcebreakerStatusEvent) 
 export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
   try {
     const { conversation_id, poll } = data
-    chatStore.setCurrentPoll(conversation_id, JSON.stringify(poll))
+    // poll est maintenant un objet CurrentPollWithRelations, on le stocke directement
+    chatStore.setCurrentPoll(conversation_id, poll)
+    console.log('Poll reçu pour conversation', conversation_id, poll)
+    logger.info(`Poll reçu pour conversation ${conversation_id}:`, poll)
   } catch (error) {
     logger.error(
       "Erreur lors du traitement de la question de l'icebreaker:",
@@ -120,6 +123,7 @@ export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
 
 // Handler pour 'icebreakerResponses' event
 export function handleIcebreakerResponsesEvent(data: IcebreakerResponsesEvent) {
+  console.log('RESET STATUS ICEBREAKER', data)
   try {
     // Vérifier si c'est le format de synchronisation (sans questionLabel)
     if (!data.poll_translation && data.poll_id) {
@@ -139,7 +143,7 @@ export function handleIcebreakerResponsesEvent(data: IcebreakerResponsesEvent) {
       message_id: data.poll_id,
       content: data.poll_translation,
       sender_id: 'JOOTS',
-      status: 'delivered',
+      status: 'DELIVERED',
       created_at: new Date(),
       message_type: 'ICEBREAKER',
       userAId: data.user1,

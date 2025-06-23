@@ -6,17 +6,17 @@ import { AxiosError } from 'axios'
 import { AppLayout } from '@/components/AppLayout'
 import { ChatContainer } from '@/features/chat/components/ChatContainer'
 import { toast } from 'sonner'
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
-import { Conversation } from '@shared/conversation.types'
+import { getOtherParticipant } from '@/features/conversations/utils/conversation-utils'
+import { ConversationWithXpAndLevel, Conversation } from '@shared/conversation.types'
 import { useChatStore } from '@/features/chat/stores/chat-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ExperienceLogo } from '@/components/ExperienceLogo'
-import { ProgressionResult } from '@shared/icebreaker-event.types'
+import { xp_and_level } from '@shared/conversation.types'
 import { logger } from '@/utils/logger'
 // ChatSocketHandler supprimé - redondant avec ChatSocketProvider
 
 // Définition du composant de contenu de conversation
-function ConversationContent({ conversation, xpAndLevel }: { conversation: Conversation, xpAndLevel?: ProgressionResult | null }) {
+function ConversationContent({ conversation, xpAndLevel }: { conversation: ConversationWithXpAndLevel, xpAndLevel?: xp_and_level | null }) {
   return (
     <div className='max-w-md w-full mx-auto bg-white shadow-lg flex flex-col h-full'>
       <ChatContainer conversation={conversation} xpAndLevel={xpAndLevel} />
@@ -28,14 +28,14 @@ function ConversationContent({ conversation, xpAndLevel }: { conversation: Conve
 export default function ConversationPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params)
   const user = useUserStore(state => state.user)
-  const [conversation, setConversation] = useState<Conversation | null>(null)
+  const [conversation, setConversation] = useState<ConversationWithXpAndLevel | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const fetchAttemptedRef = useRef(false)
   const conversationInitializedRef = useRef(false)
-  const [xpAndLevel, setXpAndLevel] = useState<ProgressionResult | null>(null)
+  const [xpAndLevel, setXpAndLevel] = useState<xp_and_level | null>(null)
   
   // Appel inconditionnel du Hook
-  const otherUser = getOtherParticipantInConversation(conversation as Conversation, user?.user_id || '')
+  const otherUser = conversation ? getOtherParticipant({ ...conversation, current_poll: null }, user?.user_id || '') : null
 
   useEffect(() => {
     const fetchConversation = async () => {
@@ -57,6 +57,10 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
           useChatStore.getState().setActiveConversation(conversation.data.conversation_id)
           // Puis initialiser la conversation
           useChatStore.getState().initializeConversation(conversation.data)
+          // Ajouter les données XP au store si elles existent
+          if (xpAndLevel) {
+            useChatStore.getState().updateConversationXpAndLevel(conversation.data.conversation_id, xpAndLevel)
+          }
         }
       } catch (error: unknown) {
         console.error('Error fetching conversation:', error)

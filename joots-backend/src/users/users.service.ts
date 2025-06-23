@@ -108,6 +108,8 @@ export class UsersService {
         },
       },
     });
+
+
     
     // Créer un Set des IDs des utilisateurs avec qui nous avons déjà parlé
     const existingUserIds = new Set(
@@ -131,7 +133,6 @@ export class UsersService {
         avatar: true,
       },
     });
-    console.log('availableUsers', availableUsers)
     if (availableUsers.length === 0) {
       throw new NotFoundException('Aucun utilisateur disponible pour le chat');
     }
@@ -143,7 +144,6 @@ export class UsersService {
 
 
   async getUserProfileForConversation(userId: string, conversationId: string, requesterId: string) {
-    console.log(`[getUserProfileForConversation] userId: ${userId}, conversationId: ${conversationId}, requesterId: ${requesterId}`);
     
     // Vérifier que l'utilisateur qui fait la demande fait partie de la conversation
     const conversation = await this.prisma.conversation.findFirst({
@@ -174,7 +174,6 @@ export class UsersService {
       }
     });
 
-    console.log(`[getUserProfileForConversation] Conversation found:`, conversation);
 
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée ou accès non autorisé');
@@ -185,19 +184,13 @@ export class UsersService {
       throw new NotFoundException('Utilisateur non trouvé dans cette conversation');
     }
 
-    console.log(`[getUserProfileForConversation] Target participant:`, targetParticipant);
-
     // Calculer le niveau actuel de la conversation
     const currentLevel = this.getConversationLevel(conversation.xp_point, conversation.difficulty.toString());
-
-    console.log(`[getUserProfileForConversation] Current level: ${currentLevel}`);
 
     // Récupérer tous les attributs de l'utilisateur
     const userAttributes = await this.prisma.userAttribute.findMany({
       where: { user_id: userId }
     });
-
-    console.log(`[getUserProfileForConversation] User attributes:`, userAttributes);
 
     // Filtrer les attributs selon le niveau atteint
     const revealedAttributes: Record<string, any> = {};
@@ -210,7 +203,6 @@ export class UsersService {
       }
     }
 
-    console.log(`[getUserProfileForConversation] Revealed attributes:`, revealedAttributes);
 
     // Calculer le pourcentage de révélation de la photo
     const levelData = levelConfig.find(
@@ -233,7 +225,6 @@ export class UsersService {
       revealedCount: Object.keys(revealedAttributes).length
     };
 
-    console.log(`[getUserProfileForConversation] Final result:`, result);
     return result;
   }
 

@@ -14,7 +14,7 @@ export function useRandomChat() {
   const startRandomChat = async () => {
     setIsLoading(true)
     try {
-      const { conversationId } = await conversationService.startRandomChat()
+      const { conversation_id } = await conversationService.startRandomChat()
 
       // Attendre que la conversation soit disponible
       let retries = 0
@@ -23,7 +23,7 @@ export function useRandomChat() {
 
       while (retries < maxRetries) {
         try {
-          const response = await axiosInstance.get(`/conversations/${conversationId}`)
+          const response = await axiosInstance.get(`/conversations/${conversation_id}`)
           if (response.data) {
             // Charger les contacts après la création de la conversation
             await loadContacts()
@@ -31,13 +31,13 @@ export function useRandomChat() {
             toast.success('Conversation créée ! Redirection vers le chat...')
             
             // Utiliser replace au lieu de push pour éviter les problèmes de navigation
-            router.replace(`/conversations/${conversationId}`)
+            router.replace(`/conversations/${conversation_id}`)
             
             // Vérifier que la redirection a bien été effectuée
             setTimeout(() => {
-              if (window.location.pathname !== `/conversations/${conversationId}`) {
+              if (window.location.pathname !== `/conversations/${conversation_id}`) {
                 logger.warn('Redirection échouée, tentative de redirection manuelle')
-                window.location.href = `/conversations/${conversationId}`
+                window.location.href = `/conversations/${conversation_id}`
               }
             }, 1000)
             
