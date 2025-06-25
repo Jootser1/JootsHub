@@ -40,20 +40,30 @@ const DEFAULT_XP_DATA: xp_and_level = {
 }
 
 export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel }: AnimatedLevelProgressProps) {
-  // Récupérer les données de la conversation
+  // Récupérer les données de la conversation - utiliser getState() pour avoir les données immédiatement
   const conversation = useChatStore(state => state.conversations[conversationId])
-  const xpData = conversation?.xpAndLevel || initialXpAndLevel
+  
+  // Récupérer les données directement du store pour l'initialisation
+  const getConversationData = () => {
+    const state = useChatStore.getState()
+    return state.conversations[conversationId]?.xp_and_level || initialXpAndLevel || DEFAULT_XP_DATA
+  }
+  
+  const xpData = conversation?.xp_and_level || initialXpAndLevel || DEFAULT_XP_DATA
 
   // Ref pour stocker les données XP de l'état *avant* l'animation actuelle
-  const prevXpDataRef = useRef<xp_and_level>(xpData || DEFAULT_XP_DATA)
+  const prevXpDataRef = useRef<xp_and_level>(getConversationData())
   // État pour suivre la phase d'animation du level up
   const [animatingLevelUpPhase, setAnimatingLevelUpPhase] = useState<null | 'phase1' | 'phase3'>(null)
   
-  // État d'affichage simplifié
-  const [displayState, setDisplayState] = useState<DisplayState>({
-    level: xpData?.reached_level || DEFAULT_XP_DATA.reached_level,
-    totalXp: xpData?.reached_xp || DEFAULT_XP_DATA.reached_xp,
-    isAnimating: false,
+  // État d'affichage simplifié - utiliser getState() pour l'initialisation
+  const [displayState, setDisplayState] = useState<DisplayState>(() => {
+    const initialData = getConversationData()
+    return {
+      level: initialData.reached_level,
+      totalXp: initialData.reached_xp,
+      isAnimating: false,
+    }
   })
   
   // État pour la popup de level up
@@ -65,7 +75,6 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
 
   // Calculer le pourcentage de progression
   const progressPercentage = useMemo(() => {
-    if (!xpData) return 0
     
     const dataForProgress = animatingLevelUpPhase === 'phase1' && prevXpDataRef.current
       ? prevXpDataRef.current
@@ -207,8 +216,7 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     }
   }, [xpData, displayState.isAnimating, displayState.level, displayState.totalXp, animatingLevelUpPhase])
   
-  // Early return après tous les hooks si pas de données
-  if (!xpData) return null
+  // Plus besoin d'early return car xpData a toujours une valeur par défaut maintenant
   
   return (
     <div className='flex flex-col justify-between rounded-3xl max-w-md relative'>

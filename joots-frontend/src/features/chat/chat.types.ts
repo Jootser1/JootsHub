@@ -6,7 +6,7 @@ import { IcebreakerResponse } from '@shared/icebreaker-event.types'
 // Type étendu pour le frontend avec current_poll comme objet au lieu de string
 export interface ConversationWithCurrentPollObject extends Omit<Conversation, 'current_poll'> {
   current_poll?: CurrentPollWithRelations | null
-  xpAndLevel?: xp_and_level | null
+  xp_and_level?: xp_and_level | null
 }
 
 export interface ChatState {

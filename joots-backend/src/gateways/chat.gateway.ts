@@ -277,6 +277,7 @@ export class ChatGateway extends BaseGateway {
 
       const allReady =
         await this.icebreakerService.areAllParticipantsReady(conversation_id);
+      console.log('allReady', allReady);
 
       if (allReady) {
         await this.triggerIcebreakerQuestion(conversation_id, client);
@@ -395,7 +396,7 @@ export class ChatGateway extends BaseGateway {
 
   // Nouvelle méthode pour rejoindre toutes les conversations de l'utilisateur
   private async joinUserConversations(client: Socket, user_id: string) {
-    try {
+    /* try {
       // Trouver toutes les conversations auxquelles l'utilisateur participe
       const conversations =
         await this.conversationsService.findAllConversationsWithPollandXpForAUserId(user_id);
@@ -424,8 +425,8 @@ export class ChatGateway extends BaseGateway {
         `Erreur lors de la récupération des conversations: ${error.message}`
       );
       throw error;
-    }
-  }
+    }*/
+  } 
 
   // Synchroniser l'état d'une conversation quand on rejoint la discussion
   private async synchronizeConversationState(

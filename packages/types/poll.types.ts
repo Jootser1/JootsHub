@@ -33,8 +33,8 @@ export type PollTranslation = {
     categories: Category[];
   };
   
-  export type Category = {
-    id: string;
+  export type Category = {  //TODO: check if this is correct
+    category_id: number;
     name: string;
   };
   

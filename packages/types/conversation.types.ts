@@ -1,7 +1,8 @@
-import { Message } from './message.types'
+import { Message, MessageType } from './message.types'
 import { User } from './user.types'
-import { CurrentPollWithRelations } from './poll.types'
+import { CurrentPollWithRelations, PollTranslation } from './poll.types'
 import { PollAnswer } from './pollAnswer.types'
+
 
 export interface RandomChatResponse {
   conversation_id: string
@@ -85,7 +86,118 @@ export interface xp_and_level {
   reward: string;
   photo_reveal_percent: number | null;
 }
-//------- Menage a faire apres ici ---------
+//-----------------
+
+
+export type RawAnswer = {
+  locale: string;
+  answer: {
+    poll_id: string;
+    answered_at: string;
+    user_id: string;
+    poll: {
+      type: MessageType;
+      poll_translations: { translation: string }[];
+    };
+    option: {
+      translations: { translated_option_text: string }[];
+    };
+  };
+};
+
+export type GroupedResult = {
+  poll_id: string;
+  question: string;
+  type: string;
+  latest_answered_at: string;
+  answers: {
+    user_id: string;
+    answerText: string;
+  }[];
+};
+
+
+//------- Types pour les polls et réponses dans les conversations ---------
+
+export type UserInfo = {
+  user_id: string;
+  username: string;
+  avatar: string | null;
+};
+
+export type PollOptionTranslation = {
+  translated_option_text: string;
+};
+
+export type PollOptionWithTranslations = {
+  poll_option_id: string;
+  order: number;
+  translations: PollOptionTranslation[];
+};
+
+export type PollAnswerInConversation = {
+  poll_answer_id: string;
+  user_id: string | null;
+  answered_at: Date;
+  opentext: string | null;
+  numeric: number | null;
+  comment: string | null;
+  user: UserInfo | null;
+  option: PollOptionWithTranslations | null;
+};
+
+export type PollScaleConstraint = {
+  is_labeled: boolean;
+  min_value: number;
+  max_value: number;
+  step_value: number | null;
+  min_label: string | null;
+  max_label: string | null;
+  mid_label: string | null;
+};
+
+export type PollCategory = {
+  category: {
+    category_id: number;
+    name: string;
+  };
+};
+
+export type PollWithAllAnswersInConversation = {
+  poll_id: string;
+  type: string;
+  author_id: string;
+  created_at: Date;
+  is_moderated: boolean;
+  is_pinned: boolean;
+  is_enabled: boolean;
+  poll_translations: PollTranslation[];
+  categories: PollCategory[];
+  options: PollOptionWithTranslations[];
+  scale_constraint: PollScaleConstraint | null;
+  answers: PollAnswerInConversation[];
+};
+
+export type EnrichedPollAnswerSource = {
+  source_id: string;
+  source_type: string;
+  locale: string;
+  conversation_id: string | null;
+  answer: {
+    poll_answer_id: string;
+    answered_at: Date;
+    poll_id: string;
+    user_id: string | null;
+    opentext: string | null;
+    numeric: number | null;
+    comment: string | null;
+    user: UserInfo | null;
+    option: PollOptionWithTranslations | null;
+    poll: PollWithAllAnswersInConversation;
+  } | null;
+};
+
+//------- Types existants (à conserver pour compatibilité) ---------
 export type PollWithRelations = {
   poll_id: string;
   type: string;
@@ -109,10 +221,6 @@ export type PollWithRelations = {
   }>;
 };
 
-
-
-
-
 export type PollAnswerSourceWithAnswer = {
   locale: string;
   answer: PollAnswerWithRelations | null;
@@ -121,13 +229,4 @@ export type PollAnswerSourceWithAnswer = {
 export type PollAnswerWithRelations = PollAnswer & {
   poll: PollWithRelations;
   option: PollOptionWithTranslations | null;
-};
-
-export type PollOptionWithTranslations = {
-  poll_option_id: string;
-  order: number;
-  translations: Array<{
-    locale: string;
-    translated_option_text: string;
-  }>;
 };

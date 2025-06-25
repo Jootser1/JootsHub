@@ -85,7 +85,7 @@ export function IcebreakerPopup({poll, locale, isVisible, onAnswer, onClose }: I
     setOpenTextAnswer(null)
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = (directOpenText?: string) => {
     if (!poll.poll_id) return;
 
     const response = {
@@ -108,7 +108,10 @@ export function IcebreakerPopup({poll, locale, isVisible, onAnswer, onClose }: I
         }
         break;
       case PollType.OPEN:
-        if (openTextAnswer) {
+        // Priorité au paramètre direct, sinon utiliser le state
+        if (directOpenText) {
+          response.opentext = directOpenText;
+        } else if (openTextAnswer) {
           response.opentext = openTextAnswer;
         }
         break;

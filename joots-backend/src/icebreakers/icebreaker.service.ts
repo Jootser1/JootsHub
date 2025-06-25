@@ -219,18 +219,36 @@ export class IcebreakerService {
       );
       return;
     }
+    
+    // Fonction utilitaire pour extraire la réponse selon le type de poll
+    const extractAnswerText = (userAnswer: any): string => {
+      if (userAnswer.opentext) {
+        // Pour les sondages de type OPEN
+        return userAnswer.opentext;
+      } else if (userAnswer.numeric !== null && userAnswer.numeric !== undefined) {
+        // Pour les sondages de type CONTINUOUS
+        return userAnswer.numeric.toString();
+      } else if (userAnswer.option && userAnswer.option.translations && userAnswer.option.translations.length > 0) {
+        // Pour les sondages avec options (MULTIPLE_CHOICE, STEP_LABELED, YES_NO_IDK)
+        return userAnswer.option.translations[0].translated_option_text;
+      } else {
+        // Fallback si aucune réponse n'est trouvée
+        return 'Réponse non disponible';
+      }
+    };
+    
     const userAnswerA = {
       userId: userAnswers[0]?.user_id ?? 'defaultUserId',
-      questionOption: userAnswers[0]?.option?.translations[0]?.translated_option_text ?? 'defaultOptionText',
+      questionOption: extractAnswerText(userAnswers[0]),
     };
     
     const userAnswerB = {
       userId: userAnswers[1]?.user_id ?? 'defaultUserId',
-      questionOption: userAnswers[1]?.option?.translations[0]?.translated_option_text ?? 'defaultOptionText',
+      questionOption: extractAnswerText(userAnswers[1]),
     };
 
     
-    await this.resetIcebreakerStatus(conversationId);
+    await this.resetIcebreakerStatus(conversationId, userAnswerA.userId, userAnswerB.userId);
     const levelData = await this.conversationsService.getConversationLevel(conversation.xp_and_level.reached_xp, conversation.xp_and_level.difficulty);  
     
     // Mapper les propriétés vers ProgressionResult
@@ -325,7 +343,8 @@ export class IcebreakerService {
   
   
   // Reset icebreaker status in prisma and redis
-  private async resetIcebreakerStatus(conversationId: string) {
+  private async resetIcebreakerStatus(conversationId: string, userAId: string, userBId: string) {
+    console.log('COUCOU resetIcebreakerStatus', conversationId);
     // Mettre à jour la base de données
     await this.prisma.conversationParticipant.updateMany({
       where: { conversation_id: conversationId },
@@ -335,16 +354,27 @@ export class IcebreakerService {
       },
     });
     
-    // Mettre à jour Redis
-    const redisIcebreakerKey = `icebreaker:ready:${conversationId}`;
-    await this.redis.set(
+    // Mettre à jour Redis pour les deux participants
+    const redisIcebreakerKey = `conversation:${conversationId}:participants`
+    const participantData = JSON.stringify({
+      isIcebreakerReady: false,
+      hasGivenAnswer: false,
+    });
+    
+    // Mettre à jour le premier participant
+    await this.redis.hset(
       redisIcebreakerKey,
-      JSON.stringify({
-        isIcebreakerReady: false,
-        hasGivenAnswer: false,
-      }),
-      86400
-    ); // Expire après 24 heures
+      userAId,
+      participantData
+    );
+    
+    // Mettre à jour le deuxième participant
+    await this.redis.hset(
+      redisIcebreakerKey,
+      userBId,
+      participantData
+    );
+
   }
   
   

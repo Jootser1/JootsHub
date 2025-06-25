@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 interface OpenFormProps {
   question: string;
   onAnswer: (opentext: string) => void;
-  onSubmit: () => void;
+  onSubmit: (opentext?: string) => void;
 }
 
 export const OpenForm: React.FC<OpenFormProps> = ({
@@ -21,7 +21,7 @@ export const OpenForm: React.FC<OpenFormProps> = ({
     e.preventDefault();
     if (text.trim()) {
       onAnswer(text.trim());
-      onSubmit();
+      onSubmit(text.trim());
     }
   };
 

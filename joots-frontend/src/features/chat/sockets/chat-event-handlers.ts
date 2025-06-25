@@ -112,7 +112,6 @@ export function handleIcebreakerPollEvent(data: IcebreakerPollEvent) {
     // poll est maintenant un objet CurrentPollWithRelations, on le stocke directement
     chatStore.setCurrentPoll(conversation_id, poll)
     console.log('Poll reçu pour conversation', conversation_id, poll)
-    logger.info(`Poll reçu pour conversation ${conversation_id}:`, poll)
   } catch (error) {
     logger.error(
       "Erreur lors du traitement de la question de l'icebreaker:",

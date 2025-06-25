@@ -5,8 +5,9 @@ import { UserContactsService } from '../users/contacts/contacts.service';
 import { XP_CONFIG } from 'src/config/points_per_difficulty';
 import levelConfig from '../config/leveling_config_seed.json';
 import { AppLogger } from '../logger/logger.service';
-import { Conversation, ConversationWithPollAndXp, ConversationWithXpAndLevel, xp_and_level, PollAnswerSourceWithAnswer } from '@shared/conversation.types';
+import { Conversation, ConversationWithPollAndXp, ConversationWithXpAndLevel, xp_and_level, PollAnswerSourceWithAnswer, RawAnswer, GroupedResult } from '@shared/conversation.types';
 import { UsersService } from 'src/users/users.service'; 
+import { ChatStoreMessage, MessageStatus, MessageType } from '@shared/message.types';
 
 @Injectable()
 export class ConversationsService {
@@ -27,124 +28,45 @@ export class ConversationsService {
   };
   
   
-  
-  async findAllConversationsWithPollandXpForAUserId(userId: string): Promise<ConversationWithPollAndXp[]> {
+  async findAllConversationsWithPollandXpForAUserId(userId: string): Promise<any[]> {
     try {
-      const conversations = await this.prisma.conversation.findMany({
-        where: {
-          participants: {
-            some: { user_id: userId },
-          },
-        },
-        select: {
-          conversation_id: true,
-          xp_point: true,
-          difficulty: true,
-          created_at: true,
-          locale: true,
-          updated_at: true,
-          participants: {
-            select: {
-              conversation_id: true,
-              user_id: true,
-              user: {
-                select: this.userSelect,
-              },
-              is_icebreaker_ready: true,
-            },
-          },
-          messages: {
-            where: {
-              status: { not: 'DELETED' },
-            },
-            orderBy: { created_at: 'desc' },
-            take: 1,
-            select: {
-              message_id: true,
-              content: true,
-              created_at: true,
-              sender_id: true,
-              status: true,
-            },
-          },
-          current_poll: {
-            select: {
-              poll_id: true,
-              type: true,
-              author_id: true,
-              created_at: true,
-              is_moderated: true,
-              is_pinned: true,
-              is_enabled: true,
-              poll_translations: {
-                select: {
-                  poll_translation_id: true,
-                  poll_id: true,
-                  locale: true,
-                  translation: true,
-                },
-              },
-              categories: {
-                select: {
-                  category: {
-                    select: {
-                      category_id: true,
-                      name: true,
-                    },
-                  },
-                },
-              },
-              options: {
-                select: {
-                  poll_option_id: true,
-                  order: true,
-                  translations: {
-                    select: {
-                      locale: true,
-                      translated_option_text: true,
-                    },
-                  },
-                },
-              },
-              scale_constraint: {
-                select: {
-                  is_labeled: true,
-                  min_value: true,
-                  max_value: true,
-                  step_value: true,
-                  min_label: true,
-                  max_label: true,
-                  mid_label: true,
-                },
-              },
-            },
-          },
-        },
-        orderBy: { updated_at: 'desc' },
-      });
       
-      if (conversations.length === 0) {
+      const conversationsIds = await this.findAllConversationsIdsForAUserId(userId);
+      
+      if (conversationsIds.length === 0) {
         throw new NotFoundException('Aucune conversation trouvée');
-      }    
+      } 
+      
+      const conversations: any[] = [];
+      
+      for (const conversationId of conversationsIds) {
+        const conversation = await this.fetchConversationWithMessagesAndCurrentPoll(conversationId, userId);
+
+        if (!conversation) {
+          throw new NotFoundException('Conversation non trouvée');
+        }
+
+        const pollAnswerForConversation = await this.getPollAnswerSourcesForConversation(conversation);
+        
+        const chatPollAnswers = pollAnswerForConversation.length > 0 
+        ? await this.integratePollAnswersIntoChatMessages(pollAnswerForConversation as any, conversation.participants[0].user_id)
+        : [];
+        
+        // Fusionner et trier tous les éléments par date
+        const allContent = [...conversation.messages, ...chatPollAnswers].sort(
+          (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        );
+        
+        conversation.messages = allContent;
+        
+        const xp_and_level = await this.getConversationLevel(conversation.xp_point, conversation.difficulty)
+        
+        conversations.push({...conversation, xp_and_level});
+      }
+      
+      return conversations;
       
       
-      const conversationsWithPollAnswers = await Promise.all(
-        conversations.map(async (conversation) => {
-          const pollAnswerForConversation = await this.getPollAnswerSourcesForConversation(conversation);
-          //if (pollAnswerForConversation.length > 0) {
-          //  const pollAnswers = await this.transformPollAnswersForConversationIntoMessages(pollAnswerForConversation);
-          //}
-          // Fusionner et trier tous les éléments par date
-          //const allContent = [...messages, ...pollAnswers].sort(
-          //  (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-          //);
-          
-          const xp_and_level = await this.getConversationLevel(conversation.xp_point, conversation.difficulty);
-          return { ...conversation, xp_and_level, pollAnswerForConversation } as unknown as ConversationWithPollAndXp;
-        })
-      );
-      
-      return conversationsWithPollAnswers;
     } catch (error) {
       console.error(
         "Erreur lors de la récupération des conversations pour l'utilisateur:",
@@ -153,6 +75,8 @@ export class ConversationsService {
       throw error;
     }
   }
+  
+  
   
   async findAllConversationsIdsForAUserId(userId: string): Promise<string[]> {
     const conversations = await this.prisma.conversation.findMany({
@@ -241,8 +165,7 @@ export class ConversationsService {
       xp_and_level
     };
   }
-  
-  
+    
   async getConversationLocale(conversationId: string) {
     const conversation = await this.prisma.conversation.findUnique({
       where: { conversation_id: conversationId },
@@ -329,31 +252,52 @@ export class ConversationsService {
     });
   }
   
-  
   private async getPollAnswerSourcesForConversation(conversation: any): Promise<PollAnswerSourceWithAnswer[]> {
     const sources = await this.prisma.pollAnswerSource.findMany({
       where: {
         conversation_id: conversation.conversation_id,
         locale: conversation.locale as any,
       },
-      include: {
+      select: {
+        locale: true,
         answer: {
-          include: {
+          select: {
+            user_id: true,
+            answered_at: true,
+            poll_id: true,
+            opentext: true,
+            numeric: true,
+            option: {
+              select: {
+                translations: {
+                  where: {
+                    locale: conversation.locale as any,
+                  },
+                  select: {
+                    translated_option_text: true,
+                  },
+                },
+              },
+            },
             poll: {
-              include: {
+              select: {
+                type: true,
                 poll_translations: {
                   where: {
                     locale: conversation.locale as any,
                   },
                 },
               },
+              
             },
             
           },
         },
       },
     });
-
+    
+    
+    
     return sources as PollAnswerSourceWithAnswer[];
   }
   
@@ -385,16 +329,6 @@ export class ConversationsService {
     return levelData;
   }
   
-  async transformPollAnswersForConversationIntoMessages(pollAnswerSources: PollAnswerSourceWithAnswer[]) {
-    return pollAnswerSources.map(source => ({
-      type: 'poll_answer',
-      created_at: source.answer?.answered_at || new Date(),
-      poll: source.answer?.poll,
-      answer: source.answer,
-      source_type: (source as any).source_type,
-    }));
-  }
-  
   async updateXpToConversationId(conversationId: string, difficulty: string) {
     if (!conversationId) throw new Error('Conversation not found'); 
     const xpPerQuestion = XP_CONFIG.QUESTION_DIFFICULTY[difficulty];
@@ -417,5 +351,165 @@ export class ConversationsService {
     }
     const conversation = await this.createConversation(userId, randomUser.user_id);
     return conversation
+  }
+  
+  async fetchConversationWithMessagesAndCurrentPoll(conversationId: string, userId: string) {
+    return await this.prisma.conversation.findFirst({
+      where: {
+        conversation_id: conversationId,
+        participants: {
+          some: { user_id: userId },
+        },
+      },
+      select: {
+        conversation_id: true,
+        xp_point: true,
+        difficulty: true,
+        created_at: true,
+        locale: true,
+        updated_at: true,
+        participants: {
+          select: {
+            conversation_id: true,
+            user_id: true,
+            user: {
+              select: this.userSelect,
+            },
+            is_icebreaker_ready: true,
+          },
+        },
+        messages: {
+          where: {
+            status: { not: 'DELETED' },
+          },
+          orderBy: { created_at: 'desc' },
+          select: {
+            message_id: true,
+            content: true,
+            created_at: true,
+            sender_id: true,
+            status: true,
+          },
+        },
+        current_poll: {
+          select: {
+            poll_id: true,
+            type: true,
+            author_id: true,
+            created_at: true,
+            is_moderated: true,
+            is_pinned: true,
+            is_enabled: true,
+            poll_translations: {
+              select: {
+                poll_translation_id: true,
+                poll_id: true,
+                locale: true,
+                translation: true,
+              },
+            },
+            categories: {
+              select: {
+                category: {
+                  select: {
+                    category_id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+            options: {
+              select: {
+                poll_option_id: true,
+                order: true,
+                translations: {
+                  select: {
+                    locale: true,
+                    translated_option_text: true,
+                  },
+                },
+              },
+            },
+            scale_constraint: {
+              select: {
+                is_labeled: true,
+                min_value: true,
+                max_value: true,
+                step_value: true,
+                min_label: true,
+                max_label: true,
+                mid_label: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: { updated_at: 'desc' },
+    });
+  }
+  
+  async integratePollAnswersIntoChatMessages(
+    data: RawAnswer[],
+    currentUserId: string
+  ): Promise<ChatStoreMessage[]> {
+    const map = new Map<string, {
+      poll_id: string;
+      question: string;
+      answers: { user_id: string; answer: string; answered_at: string }[];
+    }>();
+    
+    for (const item of data) {
+      const answer = item.answer as any; // Cast temporaire pour accéder aux propriétés
+      const { poll_id, answered_at, user_id } = answer;
+      const question = answer.poll.poll_translations[0].translation;
+      
+      // Déterminer le texte de la réponse selon le type de sondage
+      let answerText: string;
+      if (answer.opentext) {
+        // Pour les sondages de type OPEN
+        answerText = answer.opentext;
+      } else if (answer.numeric !== null && answer.numeric !== undefined) {
+        // Pour les sondages de type CONTINUOUS
+        answerText = answer.numeric.toString();
+      } else if (answer.option && answer.option.translations && answer.option.translations.length > 0) {
+        // Pour les sondages avec options (MULTIPLE_CHOICE, STEP_LABELED, YES_NO_IDK)
+        answerText = answer.option.translations[0].translated_option_text;
+      } else {
+        // Fallback si aucune réponse n'est trouvée
+        answerText = 'Réponse non disponible';
+      }
+      
+      if (!map.has(poll_id)) {
+        map.set(poll_id, {
+          poll_id,
+          question,
+          answers: [{ user_id, answer: answerText, answered_at }]
+        });
+      } else {
+        map.get(poll_id)!.answers.push({ user_id, answer: answerText, answered_at });
+      }
+    }
+    
+    return Array.from(map.values()).map(group => {
+      const a = group.answers.find(ans => ans.user_id === currentUserId);
+      const b = group.answers.find(ans => ans.user_id !== currentUserId);
+      
+      const created_at = new Date(
+        Math.max(...group.answers.map(a => new Date(a.answered_at).getTime()))
+      );
+      
+      return {
+        message_id: group.poll_id,
+        message_type: 'ICEBREAKER' as MessageType,
+        sender_id: 'JOOTS',
+        content: group.question,
+        userAId: a?.user_id,
+        userAAnswer: a?.answer,
+        userBId: b?.user_id,
+        userBAnswer: b?.answer,
+        created_at,
+        status: 'DELIVERED' as MessageStatus,
+      };
+    });
   }
 }
