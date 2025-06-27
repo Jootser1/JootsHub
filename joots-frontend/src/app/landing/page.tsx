@@ -1,71 +1,55 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
+import { useSession } from "next-auth/react"
+import { useState } from "react"
 import HeroSection from "@/components/landing/Hero-section"
 import FeatureCard from "@/components/landing/Feature-card"
 import IcebreakerMockup from "@/components/landing/IceBreaker-mockup"
 import SocioscopyMockup from "@/components/landing/Socioscopy-mockup"
-import MobileNavigationSection from "@/components/Navigation"
 import StatsSection from "@/components/landing/Stats"
 import Footer from "@/components/Footer"
 import { MessageCircle, BarChart3 } from "lucide-react"
+import LoginModal from "@/components/LoginModal"
 
 export default function LandingPage() {
   const router = useRouter()
+  const { data: session } = useSession()
+  const [showLogin, setShowLogin] = useState(false)
+  const [pendingRoute, setPendingRoute] = useState<string | null>(null)
 
-  useEffect(() => {
-    // PWA-specific setup
-    if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker.register("/sw.js").then(
-          (registration) => {
-            console.log("ServiceWorker registration successful with scope: ", registration.scope)
-          },
-          (err) => {
-            console.log("ServiceWorker registration failed: ", err)
-          },
-        )
-      })
+  const handleProtectedNavigate = (route: string) => {
+    if (session?.user) {
+      router.push(route)
+    } else {
+      setPendingRoute(route)
+      setShowLogin(true)
     }
+  }
 
-    // Prevent zoom on double tap for better mobile experience
-    let lastTouchEnd = 0
-    document.addEventListener(
-      "touchend",
-      (event) => {
-        const now = new Date().getTime()
-        if (now - lastTouchEnd <= 300) {
-          event.preventDefault()
-        }
-        lastTouchEnd = now
-      },
-      false,
-    )
-
-    // Add mobile-specific viewport handling
-    const viewport = document.querySelector('meta[name="viewport"]')
-    if (viewport) {
-      viewport.setAttribute("content", "width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no")
+  const handleLoginSuccess = () => {
+    setShowLogin(false)
+    if (pendingRoute) {
+      router.push(pendingRoute)
+      setPendingRoute(null)
     }
-  }, [])
+  }
+
 
   const handleNavigateToIcebreaker = () => {
-    // Navigate to Icebreaker feature
     router.push("/icebreaker")
   }
 
   const handleNavigateToSocioscopy = () => {
-    // Navigate to Socioscopy feature
     router.push("/socioscopy")
   }
 
   return (
     <div className="min-h-screen overflow-x-hidden">
-      {/* Mobile Hero Section */}
+      {/* Hero Section */}
       <HeroSection />
 
-      {/* Icebreaker Feature - Mobile optimized */}
+      {/* Icebreaker Feature */}
       <FeatureCard
         title="Icebreaker"
         subtitle="Connect & Chat"
@@ -79,11 +63,11 @@ export default function LandingPage() {
           "Group conversations & events",
           "Privacy-first connections",
         ]}
-        onExplore={handleNavigateToIcebreaker}
+        onExplore={() => handleProtectedNavigate(`/icebreaker/${session?.user?.id ?? ""}`)}
         mockupContent={<IcebreakerMockup />}
       />
 
-      {/* Socioscopy Feature - Mobile optimized */}
+      {/* Socioscopy Feature */}
       <FeatureCard
         title="Socioscopy"
         subtitle="Discover Insights"
@@ -97,23 +81,16 @@ export default function LandingPage() {
           "Compare with similar profiles",
           "Trending topics & insights",
         ]}
-        onExplore={handleNavigateToSocioscopy}
+        onExplore={() => handleProtectedNavigate(`/questions/${session?.user?.id ?? ""}`)}
         mockupContent={<SocioscopyMockup />}
         isReversed={true}
       />
 
-      {/* Mobile Navigation Section */}
-      <MobileNavigationSection
-        onNavigateToIcebreaker={handleNavigateToIcebreaker}
-        onNavigateToSocioscopy={handleNavigateToSocioscopy}
-      />
-
-      {/* Mobile Stats Section */}
+      {/* Stats Section */}
       <StatsSection />
 
       {/* Footer */}
       <Footer />
-
     </div>
   )
-}
+} 
