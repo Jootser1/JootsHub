@@ -12,6 +12,9 @@ services:
     build:
       context: ./joots-backend
       dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - SEED_DB=true
     depends_on:
       - postgres
       - redis
