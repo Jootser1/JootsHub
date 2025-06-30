@@ -154,9 +154,9 @@ export function handleIcebreakerResponsesEvent(data: IcebreakerResponsesEvent) {
     chatStore.addMessage(data.conversation_id, message)
     
     // Mettre à jour les données XP et niveau si disponibles
-    if (data.xpAndLevel) {      
+    if (data.xp_and_level) {      
       // Mettre à jour le store de chat - AnimatedProgressionBar détectera automatiquement le changement
-      chatStore.updateConversationXpAndLevel(data.conversation_id, data.xpAndLevel)
+      chatStore.updateConversationXpAndLevel(data.conversation_id, data.xp_and_level)
     }
     
     chatStore.resetIcebreakerStatus(data.conversation_id)

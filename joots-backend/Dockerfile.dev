@@ -20,7 +20,7 @@ COPY ./joots-backend/prisma ./prisma
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Étape 4 : copier le reste
-COPY ./joots-backend .
+#COPY ./joots-backend .
 
 # Exposer le port Nest.js
 EXPOSE 4000

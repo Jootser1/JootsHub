@@ -53,7 +53,7 @@ export interface IcebreakerResponsesEvent {
   user1: string
   response2: string
   user2: string
-  xpAndLevel?: xp_and_level
+  xp_and_level?: xp_and_level
 }
 
 export interface IcebreakerResponse {

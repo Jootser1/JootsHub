@@ -42,7 +42,7 @@ out/
 /build
 
 # Docker
-docker-compose.override.yml
+
 .dockerignore
 
 # Environnement (⚠️ très important)
