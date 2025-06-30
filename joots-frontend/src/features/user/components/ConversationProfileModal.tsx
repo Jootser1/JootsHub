@@ -161,15 +161,32 @@ export function ConversationProfileModal({
                   <span className="text-sm font-medium">Niveau de conversation</span>
                   <span className="text-sm text-gray-600">Niveau {profile.conversationLevel}</span>
                 </div>
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
                   <span>Informations révélées</span>
                   <span>{profile.revealedCount}/{profile.totalAttributes}</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                {/* Barre de progression améliorée */}
+                <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
                   <div 
-                    className="bg-primary h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(profile.revealedCount / profile.totalAttributes) * 100}%` }}
+                    className="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-blue-500 to-purple-600"
+                    style={{ 
+                      width: `${profile.totalAttributes > 0 ? Math.min(100, Math.max(0, (profile.revealedCount / profile.totalAttributes) * 100)) : 0}%` 
+                    }}
                   />
+                </div>
+                {/* Pourcentage affiché */}
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs text-gray-400">
+                    {profile.totalAttributes > 0 
+                      ? `${Math.round((profile.revealedCount / profile.totalAttributes) * 100)}% découvert`
+                      : 'Aucune donnée'
+                    }
+                  </span>
+                  {profile.revealedCount < profile.totalAttributes && (
+                    <span className="text-xs text-blue-600 font-medium">
+                      +{profile.totalAttributes - profile.revealedCount} à découvrir
+                    </span>
+                  )}
                 </div>
               </div>
 
