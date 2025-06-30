@@ -76,6 +76,8 @@ export class MyProfileService {
     difficulty: string = 'INTERMEDIATE'
   ) {
     const { avatar, ...attributes } = dto;
+    console.log('userId', userId);
+    console.log('Mise à jour de mon profil', dto);
     this.logger.log('Mise à jour de mon profil');
 
     // Update attributs dynamiques avec le bon levelRevealed

@@ -2,7 +2,6 @@
 
 import React from 'react';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Avatar } from '../../../components/ui/Avatar';
 import { Button } from '../../../components/ui/Button';
 import { useUserStore } from '@/features/user/stores/user-store';
@@ -87,7 +86,15 @@ export default function MyProfileForm() {
   useEffect(() => {
     if (!loading && profile) {
       console.log('Mise à jour du formulaire avec:', profile);
-      setForm(profile);
+      // S'assurer que PASSIONS est toujours un tableau de 3 éléments
+      const formData = {
+        ...profile,
+        PASSIONS: profile.PASSIONS && Array.isArray(profile.PASSIONS) 
+          ? [...profile.PASSIONS, '', '', ''].slice(0, 3)
+          : ['', '', '']
+      };
+      console.log('Données du formulaire après formatage:', formData);
+      setForm(formData);
       setAvatarUrl(profile.avatar || null);
     }
   }, [profile, loading]);
@@ -97,8 +104,10 @@ export default function MyProfileForm() {
   };
 
   const handlePassionChange = (i: number, value: string) => {
-    const updated = [...form.PASSIONS];
+    const currentPassions = form.PASSIONS && Array.isArray(form.PASSIONS) ? form.PASSIONS : ['', '', ''];
+    const updated = [...currentPassions];
     updated[i] = value;
+    console.log(`Mise à jour passion ${i}: "${value}"`, updated);
     setForm(prev => ({ ...prev, PASSIONS: updated }));
   };
 
@@ -202,7 +211,7 @@ export default function MyProfileForm() {
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Passions</label>
           <div className="space-y-2">
-            {form.PASSIONS.map((p, i) => (
+            {(form.PASSIONS && Array.isArray(form.PASSIONS) ? form.PASSIONS : ['', '', '']).map((p, i) => (
               <input key={i} type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={p} onChange={e => handlePassionChange(i, e.target.value)} placeholder={`Passion ${i+1}`} />
             ))}
           </div>
