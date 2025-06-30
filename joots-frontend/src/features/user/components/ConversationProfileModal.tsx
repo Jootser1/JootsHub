@@ -7,6 +7,7 @@ import axiosInstance from '@/app/api/axios-instance'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
+import { useTranslations } from '@/contexts/TranslationContext'
 
 interface ConversationProfileModalProps {
   isOpen: boolean
@@ -15,18 +16,7 @@ interface ConversationProfileModalProps {
   conversationId: string
 }
 
-const ATTRIBUTE_LABELS: Record<string, string> = {
-  CITY: 'Ville',
-  AGE: 'Âge',
-  GENDER: 'Genre',
-  JOB: 'Métier',
-  ORIGIN: 'Origine',
-  ORIENTATION: 'Orientation',
-  PASSIONS: 'Passions',
-  QUALITY: 'Qualité',
-  FLAW: 'Défaut',
-  BIO: 'Bio'
-}
+
 
 export function ConversationProfileModal({ 
   isOpen, 
@@ -36,6 +26,7 @@ export function ConversationProfileModal({
 }: ConversationProfileModalProps) {
   const [profile, setProfile] = useState<FilteredUserProfile | null>(null)
   const [loading, setLoading] = useState(false)
+  const { dictionary } = useTranslations()
 
   useEffect(() => {
     if (isOpen && userId && conversationId) {
@@ -121,7 +112,7 @@ export function ConversationProfileModal({
       <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-xl font-semibold">Profil de conversation</h2>
+          <h2 className="text-xl font-semibold">{dictionary.conversation_modal.title}</h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 rounded-full transition-colors"
@@ -139,7 +130,7 @@ export function ConversationProfileModal({
           ) : profile && profile.user ? (
             <div className="space-y-6">
               {/* Avatar et informations de base */}
-              <div className="text-center">
+              <div className="text-center flex flex-col items-center">
                 {renderAvatar()}
                 <h3 className="text-lg font-semibold mt-4">{profile.user.username}</h3>
                 {(() => {
@@ -148,7 +139,7 @@ export function ConversationProfileModal({
                     <div className="flex items-center justify-center space-x-2 mt-2">
                       <div className={`w-2 h-2 rounded-full ${is_online ? 'bg-green-500' : 'bg-gray-400'}`} />
                       <span className="text-sm text-gray-600">
-                        {is_online ? 'En ligne' : 'Hors ligne'}
+                        {is_online ? dictionary.common.online : dictionary.common.offline}
                       </span>
                     </div>
                   )
@@ -158,11 +149,11 @@ export function ConversationProfileModal({
               {/* Progression */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium">Niveau de conversation</span>
-                  <span className="text-sm text-gray-600">Niveau {profile.conversationLevel}</span>
+                  <span className="text-sm font-medium">{dictionary.conversation_modal.conversation_level}</span>
+                  <span className="text-sm text-gray-600">{dictionary.common.level} {profile.conversationLevel}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-500 mb-2">
-                  <span>Informations révélées</span>
+                  <span>{dictionary.conversation_modal.revealed_info}</span>
                   <span>{profile.revealedCount}/{profile.totalAttributes}</span>
                 </div>
                 {/* Barre de progression améliorée */}
@@ -176,17 +167,17 @@ export function ConversationProfileModal({
                 </div>
                 {/* Pourcentage affiché */}
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-gray-400">
-                    {profile.totalAttributes > 0 
-                      ? `${Math.round((profile.revealedCount / profile.totalAttributes) * 100)}% découvert`
-                      : 'Aucune donnée'
-                    }
-                  </span>
-                  {profile.revealedCount < profile.totalAttributes && (
-                    <span className="text-xs text-blue-600 font-medium">
-                      +{profile.totalAttributes - profile.revealedCount} à découvrir
+                                      <span className="text-xs text-gray-400">
+                      {profile.totalAttributes > 0 
+                        ? `${Math.round((profile.revealedCount / profile.totalAttributes) * 100)}${dictionary.conversation_modal.discovered_percent}`
+                        : dictionary.common.not_defined
+                      }
                     </span>
-                  )}
+                    {profile.revealedCount < profile.totalAttributes && (
+                      <span className="text-xs text-blue-600 font-medium">
+                        +{profile.totalAttributes - profile.revealedCount} {dictionary.conversation_modal.to_discover}
+                      </span>
+                    )}
                 </div>
               </div>
 
@@ -194,14 +185,14 @@ export function ConversationProfileModal({
               <div className="space-y-3">
                 <h4 className="font-medium flex items-center">
                   <Eye className="w-4 h-4 mr-2" />
-                  Informations révélées
+                  {dictionary.conversation_modal.revealed_info}
                 </h4>
                 {Object.entries(profile.revealedAttributes || {}).length > 0 ? (
                   <div className="space-y-2">
                     {Object.entries(profile.revealedAttributes).map(([key, value]) => (
                       <div key={key} className="flex justify-between items-start">
                         <span className="text-sm font-medium text-gray-600">
-                          {ATTRIBUTE_LABELS[key] || key}
+                          {dictionary.conversation_modal.attributes[key as keyof typeof dictionary.conversation_modal.attributes] || key}
                         </span>
                         <span className="text-sm text-right max-w-[60%]">
                           {renderAttributeValue(key, value)}
@@ -211,8 +202,8 @@ export function ConversationProfileModal({
                   </div>
                 ) : (
                   <p className="text-sm text-gray-500 text-center py-4">
-                    Aucune information révélée pour le moment.
-                    Continuez à discuter pour en savoir plus !
+                    {dictionary.conversation_modal.no_info_revealed}
+                    {dictionary.conversation_modal.keep_chatting}
                   </p>
                 )}
               </div>
@@ -222,18 +213,17 @@ export function ConversationProfileModal({
                 <div className="space-y-3">
                   <h4 className="font-medium flex items-center text-gray-500">
                     <Lock className="w-4 h-4 mr-2" />
-                    À découvrir
+                    {dictionary.conversation_modal.to_unlock}
                   </h4>
                   <p className="text-xs text-gray-500">
-                    {profile.totalAttributes - profile.revealedCount} information(s) supplémentaire(s) 
-                    à débloquer en progressant dans votre conversation.
+                    {profile.totalAttributes - profile.revealedCount} {dictionary.conversation_modal.additional_info}
                   </p>
                 </div>
               )}
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500">Impossible de charger le profil</p>
+              <p className="text-gray-500">{dictionary.conversation_modal.failed_to_load}</p>
               <p className="text-xs text-gray-400 mt-2">Données reçues: {JSON.stringify(profile)}</p>
             </div>
           )}

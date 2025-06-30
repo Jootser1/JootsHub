@@ -8,13 +8,17 @@ import { ConversationList } from '@/features/conversations/components/Conversati
 import { useRandomChat } from '@/features/conversations/hooks/useRandomChat'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ExperienceLogo } from '@/components/ExperienceLogo'
+import { useLocalizedPath } from '@/hooks/useTranslations'
+import { useTranslations } from '@/contexts/TranslationContext'
 
 export default function IcebreakerHome() {
   const user = useUserStore(state => state.user)
   const { isLoading, startRandomChat } = useRandomChat()
+  const getLocalizedPath = useLocalizedPath()
+  const { dictionary } = useTranslations()
 
   if (!user) {
-    return <div className='flex items-center justify-center min-h-screen'>Chargement...</div>
+    return <div className='flex items-center justify-center min-h-screen'>{dictionary.common.loading}</div>
   }
 
   return (
@@ -23,12 +27,12 @@ export default function IcebreakerHome() {
         {/* Header */}
         <div className='sticky top-0 z-10 bg-white border-b'>
           <div className='p-4 flex items-center'>
-            <Link href='/hub'>
+            <Link href={getLocalizedPath('/hub')}>
               <div className='w-10 h-10 rounded-full bg-[#E59C45] flex items-center justify-center'>
                 <ChevronLeft className='h-5 w-5 text-white' />
               </div>
             </Link>
-            <h1 className='text-xl font-semibold ml-4'>Icebreaker</h1>
+            <h1 className='text-xl font-semibold ml-4'>{dictionary.icebreaker.title}</h1>
           </div>
 
           {/* Action buttons */}
@@ -38,40 +42,40 @@ export default function IcebreakerHome() {
                 className='bg-[#E59C45] hover:bg-[#E59C45]/90 text-white rounded-full aspect-square p-0'
                 onClick={startRandomChat}
                 disabled={isLoading}
-                title={isLoading ? 'Recherche...' : 'Nouvelle Aventure Humaine'}
+                title={isLoading ? dictionary.icebreaker.searching : dictionary.icebreaker.new_adventure}
               >
                 <Sparkles className='h-5 w-5' />
               </Button>
-              <span className='text-xs text-center'>Nouvelle</span>
+              <span className='text-xs text-center'>{dictionary.icebreaker.new_short}</span>
             </div>
 
             <div className='flex flex-col items-center gap-1'>
               <Button
                 variant='outline'
                 className='bg-[#E59C45] hover:bg-[#E59C45]/90 text-white rounded-full aspect-square p-0'
-                title='Redécouvre un ami'
+                title={dictionary.icebreaker.rediscover_friend}
               >
                 <Users className='h-5 w-5' />
               </Button>
-              <span className='text-xs text-center'>Amis</span>
+              <span className='text-xs text-center'>{dictionary.icebreaker.friends}</span>
             </div>
 
             <div className='flex flex-col items-center gap-1'>
               <Button
                 variant='outline'
                 className='border-[#E59C45] text-[#E59C45] hover:bg-[#E59C45]/10 rounded-full aspect-square p-0'
-                title='Nouveau Contact selon critères'
+                title={dictionary.icebreaker.new_contact_criteria}
               >
                 <Filter className='h-5 w-5' />
               </Button>
-              <span className='text-xs text-center'>Filtres</span>
+              <span className='text-xs text-center'>{dictionary.icebreaker.filters}</span>
             </div>
 
             <div className='flex flex-col items-center gap-1'>
-              <Button variant='ghost' className='rounded-full aspect-square p-0' title='Rechercher'>
+              <Button variant='ghost' className='rounded-full aspect-square p-0' title={dictionary.icebreaker.search}>
                 <Search className='h-5 w-5 text-gray-500' />
               </Button>
-              <span className='text-xs text-center'>Recherche</span>
+              <span className='text-xs text-center'>{dictionary.icebreaker.search}</span>
             </div>
           </div>
         </div>

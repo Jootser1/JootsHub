@@ -4,11 +4,13 @@ import { useConversation } from '@/features/conversations/hooks/useConversation'
 import { ConversationItem } from '@/features/conversations/components/ConversationItem'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { logger } from '@/utils/logger'
+import { useTranslations } from '@/contexts/TranslationContext'
 
 export function ConversationList() {
   const { data: session, status } = useSession()
   const { conversations, loading, error } = useConversation()
   const user = useUserStore(state => state.user)
+  const { dictionary } = useTranslations()
 
   logger.debug('ConversationList - Session status', { status })
   logger.debug('ConversationList - Session data', { session })
@@ -36,7 +38,7 @@ export function ConversationList() {
     logger.error('ConversationList - Rendering error state', { error })
     return (
       <div className='flex items-center justify-center h-full text-red-500'>
-        Une erreur est survenue lors du chargement des conversations
+        {dictionary.chat.error_loading_conversations}
       </div>
     )
   }
@@ -45,8 +47,8 @@ export function ConversationList() {
     logger.debug('ConversationList - Rendering empty state')
     return (
       <div className='flex flex-col items-center justify-center h-full text-gray-500'>
-        <p>Aucune conversation</p>
-        <p className='text-sm mt-2'>Commencez une nouvelle conversation !</p>
+        <p>{dictionary.chat.no_conversations}</p>
+        <p className='text-sm mt-2'>{dictionary.chat.start_new_conversation}</p>
       </div>
     )
   }

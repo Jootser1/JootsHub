@@ -6,41 +6,42 @@ import Image from 'next/image'
 import { AppLayout } from '@/components/AppLayout'
 import { Button } from '@/components/ui/Button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-
-const apps = [
-  {
-    id: 'icebreaker',
-    title: 'Icebreaker',
-    description:
-      'Un inconnu, des questions, un conversation sans préjugés. Chaque discussion est une rencontre, chaque rencontre une surprise !',
-    color: '#E59C45',
-    enabled: true,
-    path: '/icebreaker',
-    logo: '/icebreaker_oo.png',
-  },
-  {
-    id: 'socioscopy',
-    title: 'Socioscopy',
-    description:
-      'Découvrez ce que les autres pensent vraiment, challengez vos certitudes et ouvrez le débat',
-    color: '#5211CE',
-    enabled: false,
-    path: '/socioscopy/landing',
-    logo: '/socioscopy.png',
-  },
-  {
-    id: 'revelio',
-    title: 'Revelio',
-    description:
-      'Vous croyez bien connaître vos proches ? Défiez-les et voyez si vous aviez raison !',
-    color: '#3CBF77',
-    enabled: false,
-    path: '/revelio/landing',
-    logo: '/revelio.png',
-  },
-]
+import { useTranslations } from '@/contexts/TranslationContext'
+import { useLocalizedPath } from '@/hooks/useTranslations'
 
 export default function HubPage() {
+  const { dictionary } = useTranslations()
+  const getLocalizedPath = useLocalizedPath()
+  
+  const apps = [
+    {
+      id: 'icebreaker',
+      title: dictionary.hub.apps.icebreaker.title,
+      description: dictionary.hub.apps.icebreaker.description,
+      color: '#E59C45',
+      enabled: true,
+      path: getLocalizedPath('/icebreaker'),
+      logo: '/icebreaker_oo.png',
+    },
+    {
+      id: 'socioscopy',
+      title: dictionary.hub.apps.socioscopy.title,
+      description: dictionary.hub.apps.socioscopy.description,
+      color: '#5211CE',
+      enabled: false,
+      path: getLocalizedPath('/socioscopy/landing'),
+      logo: '/socioscopy.png',
+    },
+    {
+      id: 'revelio',
+      title: dictionary.hub.apps.revelio.title,
+      description: dictionary.hub.apps.revelio.description,
+      color: '#3CBF77',
+      enabled: false,
+      path: getLocalizedPath('/revelio/landing'),
+      logo: '/revelio.png',
+    },
+  ]
   const [currentApp, setCurrentApp] = useState(0)
   const [touchStart, setTouchStart] = useState(0)
   const [touchEnd, setTouchEnd] = useState(0)
@@ -254,7 +255,7 @@ export default function HubPage() {
                           color: 'white',
                         }}
                       >
-                        {app.enabled ? 'Commencer' : 'Bientôt disponible'}
+                        {app.enabled ? dictionary.hub.start : dictionary.hub.coming_soon}
                       </Button>
                     </div>
                   </div>
@@ -268,7 +269,7 @@ export default function HubPage() {
             <button
               onClick={handlePrevious}
               className='transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400'
-              aria-label='Application précédente'
+              aria-label={dictionary.hub.aria.previous_app}
             >
               <ChevronLeft className='h-6 w-6' />
             </button>
@@ -278,7 +279,7 @@ export default function HubPage() {
             <button
               onClick={handleNext}
               className='transform -translate-y-1/2 p-3 rounded-full bg-white shadow-lg hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400'
-              aria-label='Application suivante'
+              aria-label={dictionary.hub.aria.next_app}
             >
               <ChevronRight className='h-6 w-6' />
             </button>
@@ -293,7 +294,7 @@ export default function HubPage() {
                 className={`w-3 h-3 rounded-full transition-all duration-300 ${
                   index === currentApp ? 'bg-gray-800 scale-125' : 'bg-gray-300 hover:bg-gray-400'
                 }`}
-                aria-label={`Aller à l'application ${index + 1}`}
+                aria-label={`${dictionary.hub.aria.go_to_app} ${index + 1}`}
               />
             ))}
           </div>

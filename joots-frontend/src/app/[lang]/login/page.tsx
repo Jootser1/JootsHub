@@ -1,8 +1,13 @@
 'use client'
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
+import { useTranslations } from '@/contexts/TranslationContext'
+import { LanguageSwitcher } from '@/components/LanguageSwitcher'
+import { useLocale } from '@/hooks/useTranslations'
 
 export default function LoginPage() {
+  const { dictionary } = useTranslations()
+  const locale = useLocale()
   const [error, setError] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -18,16 +23,16 @@ export default function LoginPage() {
         email,
         password,
         redirect: true,
-        callbackUrl: '/hub',
+        callbackUrl: `/${locale}/hub`,
       })
 
       if (result?.error) {
         setError(result.error)
       }
-    } catch (err) {
-      console.error(err)
-      setError('Une erreur est survenue lors de la connexion.')
-    } finally {
+          } catch (err) {
+        console.error(err)
+        setError(dictionary.common.error)
+      } finally {
       setIsLoading(false)
     }
   }
@@ -35,13 +40,16 @@ export default function LoginPage() {
   return (
     <div className='flex flex-col items-center justify-center h-screen w-screen bg-gray-100'>
       <div className='bg-white p-6 rounded-2xl shadow-lg w-80'>
-        <h1 className='text-2xl font-bold text-center mb-4'>JOOTS</h1>
+        <div className='flex justify-between items-center mb-4'>
+          <h1 className='text-2xl font-bold'>JOOTS</h1>
+          <LanguageSwitcher />
+        </div>
         <form onSubmit={handleSubmit}>
           <input
             type='email'
             id='email'
             name='email'
-            placeholder='Email / ID Jootser'
+            placeholder={dictionary.auth.email}
             value={email}
             onChange={e => setEmail(e.target.value)}
             autoComplete='email'
@@ -52,7 +60,7 @@ export default function LoginPage() {
             type='password'
             id='password'
             name='password'
-            placeholder='Password'
+            placeholder={dictionary.auth.password}
             value={password}
             onChange={e => setPassword(e.target.value)}
             autoComplete='current-password'
@@ -64,7 +72,7 @@ export default function LoginPage() {
             className='w-full bg-purple-600 text-white p-2 rounded disabled:opacity-50'
             disabled={isLoading}
           >
-            {isLoading ? 'Connexion...' : 'Se connecter'}
+            {isLoading ? dictionary.common.loading : dictionary.auth.signin}
           </button>
           {error && <p className='text-red-500 text-sm mt-2'>{error}</p>}
         </form>

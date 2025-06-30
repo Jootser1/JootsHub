@@ -6,6 +6,7 @@ import { Avatar } from '../../../components/ui/Avatar';
 import { Button } from '../../../components/ui/Button';
 import { useUserStore } from '@/features/user/stores/user-store';
 import axiosInstance  from '../../../app/api/axios-instance';
+import { useTranslations } from '@/contexts/TranslationContext';
 
 type UserProfileState = {
   CITY: string;
@@ -81,6 +82,7 @@ export default function MyProfileForm() {
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [avatarLoading, setAvatarLoading] = useState(false);
   const { user } = useUserStore();
+  const { dictionary } = useTranslations();
 
   // Mettre à jour le formulaire quand le profil est chargé
   useEffect(() => {
@@ -146,20 +148,31 @@ export default function MyProfileForm() {
     // Inclure l'avatar dans la mise à jour du profil
     const formWithAvatar = { ...form, avatar: avatarUrl };
     await updateProfile(formWithAvatar);
-    alert("Profil mis à jour !");
+    alert(dictionary.profile_form.profile_updated);
   };
 
-  if (loading) return <p>Chargement...</p>;
+  if (loading) return <p>{dictionary.common.loading}</p>;
 
   return (
-    <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-10 font-sans">
+    <div className="max-w-xl mx-auto bg-white rounded-2xl shadow-lg p-6 md:p-10 font-sans relative">
+      {/* Bouton de fermeture */}
+      <button
+        type="button"
+        className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={() => window.history.back()}
+        aria-label={dictionary.common.close}
+      >
+        <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
       <h2 className="text-3xl font-bold text-center mb-6 text-gray-900">{user?.username}</h2>
       <div className="flex flex-col items-center mb-6">
         <Avatar>
           <img
             src={avatarPreview || avatarUrl || '/placeholder.svg'}
             alt="Avatar"
-            className="rounded-full w-24 h-24 object-cover border-4 border-white shadow-md bg-gray-100 cursor-pointer"
+            className="rounded-full w-24 h-24 object-cover object-center border-4 border-white shadow-md bg-gray-100 cursor-pointer"
             onClick={() => fileInputRef.current?.click()}
           />
         </Avatar>
@@ -170,31 +183,31 @@ export default function MyProfileForm() {
           onClick={() => fileInputRef.current?.click()}
           disabled={avatarLoading}
         >
-          {avatarLoading ? 'Chargement...' : 'Changer la photo'}
+          {avatarLoading ? dictionary.common.loading : dictionary.profile_form.change_photo}
         </button>
         
       </div>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">Tranche d'âge</label>
+            <label htmlFor="age" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.age_range}</label>
             <select id="age" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.AGE} onChange={e => handleChange('AGE', e.target.value)}>
-              <option value="">-- Choisir --</option>
+              <option value="">{dictionary.common.choose}</option>
               {['18-25','25-35','35-45','45-55','55-65','65-75','75+'].map(v => (
                 <option key={v} value={v}>{v}</option>
               ))}
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Genre</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.gender}</label>
             <div className="flex gap-4 mt-2">
-              {['Homme','Femme','Non-Binaire'].map(g => (
-                <label key={g} className="flex items-center gap-2 text-base text-gray-700">
+              {[dictionary.profile_form.male, dictionary.profile_form.female, dictionary.profile_form.non_binary].map((g, index) => (
+                <label key={index} className="flex items-center gap-2 text-base text-gray-700">
                   <input
                     type="radio"
                     name="genre"
-                    value={g}
-                    checked={form.GENDER === g}
+                    value={['Homme','Femme','Non-Binaire'][index]}
+                    checked={form.GENDER === ['Homme','Femme','Non-Binaire'][index]}
                     onChange={e => handleChange('GENDER', e.target.value)}
                     className="accent-blue-600 w-4 h-4"
                   />
@@ -205,58 +218,62 @@ export default function MyProfileForm() {
           </div>
         </div>
         <div>
-          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">Ville</label>
-          <input id="city" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.CITY} onChange={e => handleChange('CITY', e.target.value)} placeholder="Paris" />
+          <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.city}</label>
+          <input id="city" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.CITY} onChange={e => handleChange('CITY', e.target.value)} placeholder={dictionary.profile.city_placeholder} />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Passions</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.passions}</label>
           <div className="space-y-2">
             {(form.PASSIONS && Array.isArray(form.PASSIONS) ? form.PASSIONS : ['', '', '']).map((p, i) => (
-              <input key={i} type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={p} onChange={e => handlePassionChange(i, e.target.value)} placeholder={`Passion ${i+1}`} />
+              <input key={i} type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={p} onChange={e => handlePassionChange(i, e.target.value)} placeholder={`${dictionary.profile_form.passion_placeholder} ${i+1}`} />
             ))}
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">Origine culturelle</label>
-            <input id="origin" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.ORIGIN} onChange={e => handleChange('ORIGIN', e.target.value)} placeholder="Ex : Française" />
+            <label htmlFor="origin" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.cultural_origin}</label>
+            <input id="origin" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.ORIGIN} onChange={e => handleChange('ORIGIN', e.target.value)} placeholder={dictionary.profile.origin_placeholder} />
           </div>
           <div>
-            <label htmlFor="job" className="block text-sm font-medium text-gray-700 mb-1">Métier</label>
-            <input id="job" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.JOB} onChange={e => handleChange('JOB', e.target.value)} placeholder="Ex : Enseignant" />
+            <label htmlFor="job" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.job}</label>
+            <input id="job" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.JOB} onChange={e => handleChange('JOB', e.target.value)} placeholder={dictionary.profile.job_placeholder} />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-            <label htmlFor="quality" className="block text-sm font-medium text-gray-700 mb-1">Plus grande qualité</label>
-            <input id="quality" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.QUALITY} onChange={e => handleChange('QUALITY', e.target.value)} placeholder="Ex : Empathie" />
+            <label htmlFor="quality" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.greatest_quality}</label>
+            <input id="quality" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.QUALITY} onChange={e => handleChange('QUALITY', e.target.value)} placeholder={dictionary.profile.quality_placeholder} />
           </div>
           
           <div>
-            <label htmlFor="flaw" className="block text-sm font-medium text-gray-700 mb-1">Plus gros défaut</label>
-            <input id="flaw" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.FLAW} onChange={e => handleChange('FLAW', e.target.value)} placeholder="Ex : Impatience" />
+            <label htmlFor="flaw" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.biggest_flaw}</label>
+            <input id="flaw" type="text" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400" value={form.FLAW} onChange={e => handleChange('FLAW', e.target.value)} placeholder={dictionary.profile.flaw_placeholder} />
           </div>
         </div>
         <div>
-          <label htmlFor="orientation" className="block text-sm font-medium text-gray-700 mb-1">Orientation sexuelle</label>
+          <label htmlFor="orientation" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.sexual_orientation}</label>
           <select
             id="orientation"
             className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400"
             value={form.ORIENTATION}
             onChange={e => handleChange('ORIENTATION', e.target.value)}
           >
-            <option value="">-- Choisir --</option>
-            {['Hétérosexuel','Homosexuel','Bisexuel','Asexuel','Pansexuel','Autre','Préférer ne pas dire'].map(o => (
-              <option key={o} value={o}>{o}</option>
-            ))}
+            <option value="">{dictionary.common.choose}</option>
+            <option value="Hétérosexuel">{dictionary.profile_form.orientations.heterosexual}</option>
+            <option value="Homosexuel">{dictionary.profile_form.orientations.homosexual}</option>
+            <option value="Bisexuel">{dictionary.profile_form.orientations.bisexual}</option>
+            <option value="Asexuel">{dictionary.profile_form.orientations.asexual}</option>
+            <option value="Pansexuel">{dictionary.profile_form.orientations.pansexual}</option>
+            <option value="Autre">{dictionary.profile_form.orientations.other}</option>
+            <option value="Préférer ne pas dire">{dictionary.profile_form.orientations.prefer_not_say}</option>
           </select>
         </div>
         <div>
-          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">Bio</label>
-          <textarea id="bio" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 resize-none" rows={3} value={form.BIO} onChange={e => handleChange('BIO', e.target.value)} placeholder="Quelques mots sur vous..." />
+          <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">{dictionary.profile_form.bio}</label>
+          <textarea id="bio" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-base focus:ring-2 focus:ring-blue-500 focus:border-blue-500 placeholder-gray-400 resize-none" rows={3} value={form.BIO} onChange={e => handleChange('BIO', e.target.value)} placeholder={dictionary.profile.bio_placeholder} />
         </div>
         <div className="pt-2">
-          <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md text-lg transition">Sauvegarder</Button>
+          <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md text-lg transition">{dictionary.common.save}</Button>
         </div>
       </form>
     </div>
