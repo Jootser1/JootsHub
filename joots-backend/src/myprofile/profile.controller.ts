@@ -17,4 +17,5 @@ export class MyProfileController {
   updateMyProfile(@Req() req, @Body() dto: UpdateMyProfileDto) {
     return this.myProfileService.updateMyProfile(req.user.id, dto);
   }
+
 }

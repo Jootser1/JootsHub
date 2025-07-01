@@ -3,7 +3,10 @@
 import Image from 'next/image'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { useUserStore } from '@/features/user/stores/user-store'
+import { useTranslations } from '@/contexts/TranslationContext'
 import { xp_and_level } from '@shared/conversation.types'
+import axiosInstance from '@/app/api/axios-instance'
 
 interface AnimatedLevelProgressProps {
   conversationId: string
@@ -36,12 +39,20 @@ const DEFAULT_XP_DATA: xp_and_level = {
   max_xp_for_next_level: 100,
   next_level: 2,
   reward: '',
-  photo_reveal_percent: null
+  photo_reveal_percent: null,
 }
 
 export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel }: AnimatedLevelProgressProps) {
   // Récupérer les données de la conversation - utiliser getState() pour avoir les données immédiatement
   const conversation = useChatStore(state => state.conversations[conversationId])
+  const currentUser = useUserStore(state => state.user)
+  const otherParticipant = useMemo(() => {
+      if (!currentUser?.user_id) return null
+      return useChatStore.getState().getOtherParticipant(conversationId, currentUser.user_id)
+    }, [conversationId, currentUser?.user_id])
+  const { dictionary } = useTranslations()
+  const [currentRewardText, setCurrentRewardText] = useState<string | null>(null)
+
   
   // Récupérer les données directement du store pour l'initialisation
   const getConversationData = () => {
@@ -72,6 +83,51 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     level: 0, 
     reward: undefined
   })
+  
+  // Fonction pour mapper les valeurs de BDD vers les traductions
+  const getTranslatedValue = (reward: string, value: string) => {
+    if (reward === 'GENDER') {
+      const genderMap: { [key: string]: keyof typeof dictionary.profile_form } = {
+        'male': 'male',
+        'female': 'female',
+        'non_binary': 'non_binary'
+      }
+      return dictionary.profile_form[genderMap[value]] || value
+    }
+    
+    if (reward === 'ORIENTATION') {
+      const orientationMap: { [key: string]: keyof typeof dictionary.profile_form } = {
+        'heterosexual': 'heterosexual',
+        'homosexual': 'homosexual',
+        'bisexual': 'bisexual',
+        'asexual': 'asexual',
+        'pansexual': 'pansexual',
+        'other': 'other',
+        'prefer_not_say': 'prefer_not_say'
+      }
+      return dictionary.profile_form[orientationMap[value]] || value
+    }
+    
+    return value
+  }
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      const response = await axiosInstance.get(
+        `/users/profile/${otherParticipant?.user?.user_id}/${conversationId}`
+      )
+      const reward = conversation?.xp_and_level?.reward
+      let rewardText = ''
+      if (reward && ['GENDER', 'ORIENTATION'].includes(reward)) {
+        const rawValue = response.data.revealedAttributes[reward as keyof typeof response.data.revealedAttributes]
+        rewardText = getTranslatedValue(reward, rawValue)
+      } else {
+        rewardText = response.data.revealedAttributes[reward as keyof typeof response.data.revealedAttributes]
+      }
+      setCurrentRewardText(rewardText)
+    }
+    fetchProfile()
+  }, [conversation?.xp_and_level?.reached_level]); 
 
   // Calculer le pourcentage de progression
   const progressPercentage = useMemo(() => {
@@ -217,6 +273,9 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
   }, [xpData, displayState.isAnimating, displayState.level, displayState.totalXp, animatingLevelUpPhase])
   
   
+  
+
+  
   return (
     <div className='flex flex-col justify-between rounded-3xl max-w-md relative'>
     {/* Niveau et Trophée */}
@@ -258,13 +317,18 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     {levelUpInfo.show && (
       <div className="fixed inset-0 flex items-center justify-center bg-black/75 z-50 p-4">
       <div className="bg-white p-8 rounded-lg shadow-xl text-center transform transition-all scale-100 opacity-100">
-      <div className="text-yellow-400 text-6xl mb-4">🎉</div>
-      <h2 className="text-3xl font-bold text-gray-800 mb-2">LEVEL UP!</h2>
+      <div className="text-yellow-400 text-6xl mb-4">{dictionary.level_up.celebration_emoji}</div>
+      <h2 className="text-3xl font-bold text-gray-800 mb-2">{dictionary.level_up.popup_title}</h2>
       <p className="text-xl text-gray-600">
-      Vous avez atteint le <span className="font-bold text-orange-500">Niveau {levelUpInfo.level}</span> !
+      {dictionary.level_up.congratulations} <span className="font-bold text-orange-500">{dictionary.level_up.level_prefix} {levelUpInfo.level}</span> !
       </p>
       <p className="text-sm text-gray-500 mt-4">
-      {levelUpInfo.reward ? `Vous avez gagné un ${levelUpInfo.reward} !` : 'Continuez comme ça !'}
+      {levelUpInfo.reward ? (
+        otherParticipant?.user?.username ? `${otherParticipant.user.username}
+        ${dictionary.level_up[`${levelUpInfo.reward.toLowerCase()}_as_reward_text` as keyof typeof dictionary.level_up]} 
+        ${levelUpInfo.reward === 'ONE_MORE_CONV' || levelUpInfo.reward === 'VOICE' ? '' : currentRewardText}`
+          : dictionary.level_up.keep_going
+      ) : dictionary.level_up.keep_going}
       </p>
       </div>
       </div>

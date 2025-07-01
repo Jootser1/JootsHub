@@ -154,15 +154,13 @@
     "greatest_quality": "Greatest quality",
     "biggest_flaw": "Biggest flaw",
     "sexual_orientation": "Sexual orientation",
-    "orientations": {
-      "heterosexual": "Heterosexual",
-      "homosexual": "Homosexual",
-      "bisexual": "Bisexual",
-      "asexual": "Asexual",
-      "pansexual": "Pansexual",
-      "other": "Other",
-      "prefer_not_say": "Prefer not to say"
-    },
+    "heterosexual": "Heterosexual",
+    "homosexual": "Homosexual",
+    "bisexual": "Bisexual",
+    "asexual": "Asexual",
+    "pansexual": "Pansexual",
+    "other": "Other",
+    "prefer_not_say": "Prefer not to say",
     "bio": "Bio",
     "profile_updated": "Profile updated!"
   },
@@ -189,5 +187,33 @@
       "FLAW": "Flaw",
       "BIO": "Bio"
     }
+  },
+  "exp_progression": {
+    "title": "Experience progression",
+    "description": "This section contains experimental and development features.",
+    "global_progress": "Global progress",
+    "anonymous": "Anonymous",
+    "threshold": "Threshold",
+    "revealed": "Revealed",
+    "alternative_approaches": "Alternative approaches"
+  },
+  "level_up": {
+    "popup_title": "LEVEL UP!",
+    "congratulations": "You have reached",
+    "level_prefix": "Level",
+    "one_more_conv_as_reward_text": "gives you +1 on the number of conversations!",
+    "city_as_reward_text": "lives in ",
+    "gender_as_reward_text": "identifies as ",
+    "passions_as_reward_text": "has as main passions:",
+    "quality_as_reward_text": "thinks their greatest quality is:",
+    "age_as_reward_text": "is in the age range: ",
+    "job_as_reward_text": "works as: ",
+    "orientation_as_reward_text": "considers themselves ",
+    "flaw_as_reward_text": "thinks their biggest flaw is:",
+    "bio_as_reward_text": "wrote about their life:",
+    "origin_as_reward_text": "has as cultural origin:",
+    "voice_as_reward_text": " and you can now send voice messages!",
+    "keep_going": "Keep it up!",
+    "celebration_emoji": "🎉"
   }
 } 

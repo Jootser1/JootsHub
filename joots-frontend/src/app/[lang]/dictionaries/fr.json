@@ -154,15 +154,13 @@
     "greatest_quality": "Plus grande qualité",
     "biggest_flaw": "Plus gros défaut",
     "sexual_orientation": "Orientation sexuelle",
-    "orientations": {
-      "heterosexual": "Hétérosexuel",
-      "homosexual": "Homosexuel",
-      "bisexual": "Bisexuel",
-      "asexual": "Asexuel",
-      "pansexual": "Pansexuel",
-      "other": "Autre",
-      "prefer_not_say": "Préférer ne pas dire"
-    },
+    "heterosexual": "Hétérosexuel",
+    "homosexual": "Homosexuel",
+    "bisexual": "Bisexuel",
+    "asexual": "Asexuel",
+    "pansexual": "Pansexuel",
+    "other": "Autre",
+    "prefer_not_say": "Préférer ne pas dire",
     "bio": "Bio",
     "profile_updated": "Profil mis à jour !"
   },
@@ -189,5 +187,24 @@
       "FLAW": "Défaut",
       "BIO": "Bio"
     }
+  },
+  "level_up": {
+    "popup_title": "LEVEL UP!",
+    "congratulations": "Vous avez atteint le",
+    "level_prefix": "Niveau",
+    "one_more_conv_as_reward_text": "vous donne +1 sur le nombre de conversations !",
+    "city_as_reward_text": "habite à ",
+    "gender_as_reward_text": "se définit comme ",
+    "passions_as_reward_text": "a pour principales passions :",
+    "quality_as_reward_text": "pense que sa plus grande qualité est :",
+    "age_as_reward_text": "est sur la tranche d'âge : ",
+    "job_as_reward_text": "travaille comme : ",
+    "orientation_as_reward_text": "se considère ",
+    "flaw_as_reward_text": "pense que son plus gros défaut est : ",
+    "bio_as_reward_text": "a écrit à propos de sa vie : ",
+    "origin_as_reward_text": "a pour origine culturelle : ",
+    "voice_as_reward_text": " et vous pouvez désormais échanger des vocaux !",
+    "keep_going": "Continuez comme ça !",
+    "celebration_emoji": "🎉"
   }
 } 

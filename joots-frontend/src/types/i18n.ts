@@ -156,15 +156,13 @@ export interface Dictionary {
     greatest_quality: string
     biggest_flaw: string
     sexual_orientation: string
-    orientations: {
-      heterosexual: string
-      homosexual: string
-      bisexual: string
-      asexual: string
-      pansexual: string
-      other: string
-      prefer_not_say: string
-    }
+    heterosexual: string
+    homosexual: string
+    bisexual: string
+    asexual: string
+    pansexual: string
+    other: string
+    prefer_not_say: string
     bio: string
     profile_updated: string
   }
@@ -191,5 +189,26 @@ export interface Dictionary {
       FLAW: string
       BIO: string
     }
+  }
+  level_up: {
+    popup_title: string
+    congratulations: string
+    level_prefix: string
+    reward_text: string
+    reward_suffix: string
+    keep_going: string
+    celebration_emoji: string
+    one_more_conv_as_reward_text: string
+    city_as_reward_text: string
+    gender_as_reward_text: string
+    passions_as_reward_text: string
+    quality_as_reward_text: string
+    origin_as_reward_text: string
+    voice_as_reward_text: string
+    age_as_reward_text: string
+    job_as_reward_text: string
+    flaw_as_reward_text: string
+    orientation_as_reward_text: string
+    bio_as_reward_text: string
   }
 } 
