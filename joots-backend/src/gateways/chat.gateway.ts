@@ -22,7 +22,7 @@ import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
     origin:
       process.env.NODE_ENV === 'production'
         ? 'https://joots.app'
-        : 'http://localhost:3000',
+        : ['https://localhost', 'http://localhost:3000'],
     credentials: true,
   },
   namespace: 'chat',

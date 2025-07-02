@@ -19,10 +19,16 @@ RUN npm cache clean --force && npm install --verbose
 COPY ./joots-backend/prisma ./prisma
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
+
 # Étape 4 : copier le reste
 COPY ./joots-backend .
 
-# Exposer le port Nest.js
+# Étape 5 : Copier les certificats SSL pour HTTPS
+RUN mkdir -p /app/ssl
+COPY ./nginx/ssl/backend/backend.key /app/ssl/backend.key
+COPY ./nginx/ssl/backend/backend.crt /app/ssl/backend.crt
+
+# Exposer le port HTTPS Nest.js
 EXPOSE 4000
 
 # Activer le watch mode (supposant que tu as nest CLI installé localement)

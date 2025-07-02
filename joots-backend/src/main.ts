@@ -11,17 +11,57 @@ async function checkTypesPackage() {
   }
 }
 
+function getHttpsOptions() {
+  const isProduction = process.env.NODE_ENV === 'production';
+  
+  if (isProduction) {
+    // En production, utiliser les vrais certificats SSL
+    const keyPath = process.env.SSL_KEY_PATH || '/etc/ssl/private/backend.key';
+    const certPath = process.env.SSL_CERT_PATH || '/etc/ssl/certs/backend.crt';
+    
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      return {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath),
+      };
+    }
+  } else {
+    // En développement, utiliser des certificats auto-signés
+    const keyPath = '/app/ssl/backend.key';
+    const certPath = '/app/ssl/backend.crt';
+    
+    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+      return {
+        key: fs.readFileSync(keyPath),
+        cert: fs.readFileSync(certPath),
+      };
+    }
+  }
+  
+  // Fallback : pas de HTTPS
+  return null;
+}
+
 async function bootstrap() {
   // Vérifier que le package types est construit
   await checkTypesPackage();
 
-  const app = await NestFactory.create(AppModule);
+  const httpsOptions = getHttpsOptions();
   const logger = new Logger('Bootstrap');
+
+  // Création de l'application avec ou sans HTTPS
+  const app = httpsOptions 
+    ? await NestFactory.create(AppModule, { httpsOptions })
+    : await NestFactory.create(AppModule);
+
+  // Ajouter le préfixe global API
+  app.setGlobalPrefix('api');
+
   app.enableCors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? 'http://localhost:3000' // URL de production
-        : 'http://localhost:3000', // URL de développement
+        ? ['https://joots.app', 'https://www.joots.app']
+        : ['https://localhost', 'https://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
@@ -29,7 +69,11 @@ async function bootstrap() {
   // Configuration WebSocket
   app.enableShutdownHooks();
 
-  await app.listen(process.env.PORT || 4000);
-  console.log(`Application is running on: ${await app.getUrl()}`);
+  const port = process.env.PORT || 4000;
+  await app.listen(port);
+  
+  const protocol = httpsOptions ? 'https' : 'http';
+  logger.log(`🚀 Backend démarré sur ${protocol}://localhost:${port}`);
+  logger.log(`SSL activé: ${httpsOptions ? '✅' : '❌'}`);
 }
 bootstrap().catch((err) => console.error(err));

@@ -26,8 +26,7 @@ export class UsersController {
   async getUsersCount() {
     const count = await this.usersService.getUsersCount();
     return { totalUsers: count };
-  }
- 
+  } 
 
   @Get('profile/:id/:conversationId')
   @UseGuards(JwtAuthGuard)
@@ -56,6 +55,7 @@ export class UsersController {
   }
 
 
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   async getUser(@Param('id') id: string) {
@@ -71,4 +71,6 @@ export class UsersController {
       last_seen: user.last_seen,
     };
   }
+
+
 }
