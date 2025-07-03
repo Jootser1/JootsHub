@@ -49,7 +49,7 @@ export class ChatSocketService extends BaseSocketService {
 
     // Quitter toutes les conversations actives
     this.activeConversations.forEach(conversationId => {
-      this.socket?.emit('leaveConversation', conversationId)
+      this.socket?.emit('leaveConversation', { conversation_id: conversationId, user_id: this.userId })
     })
     this.activeConversations.clear()
 
@@ -62,9 +62,15 @@ export class ChatSocketService extends BaseSocketService {
       return
     }
 
+    // Validation du conversationId
+    if (!conversationId || conversationId === 'null' || conversationId === 'undefined') {
+      logger.warn('Tentative de rejoindre une conversation avec un ID invalide:', conversationId)
+      return
+    }
+
     // Rejoindre la nouvelle conversation si pas déjà active
     if (!this.activeConversations.has(conversationId)) {
-      this.socket.emit('joinConversation', { conversationId, userId: this.userId })
+      this.socket.emit('joinConversation', { conversation_id: conversationId, user_id: this.userId })
       this.activeConversations.add(conversationId)
       logger.info(`Conversation rejointe: ${conversationId}`)
     }
@@ -77,7 +83,7 @@ export class ChatSocketService extends BaseSocketService {
     }
 
     if (this.activeConversations.has(conversationId)) {
-      this.socket.emit('leaveConversation', { conversationId, userId: this.userId })
+      this.socket.emit('leaveConversation', { conversation_id: conversationId, user_id: this.userId })
       this.activeConversations.delete(conversationId)
       logger.info(`Conversation quittée: ${conversationId}`)
     }
@@ -90,7 +96,7 @@ export class ChatSocketService extends BaseSocketService {
     }
 
     for (const conversationId of this.activeConversations) {
-      this.socket.emit('leaveConversation', conversationId)
+      this.socket.emit('leaveConversation', { conversation_id: conversationId, user_id: this.userId })
     }
     this.activeConversations.clear()
     logger.info('Toutes les conversations quittées')
@@ -101,10 +107,10 @@ export class ChatSocketService extends BaseSocketService {
       logger.warn('Impossible de rejoindre les conversations: non connecté')
       return
     }
-
+    console.log('joinAllConversations')
     for (const conversationId of conversationIds) {
       if (!this.activeConversations.has(conversationId)) {
-        this.socket.emit('joinConversation', { conversationId, userId: this.userId })
+        this.socket.emit('joinConversation', { conversation_id: conversationId, user_id: this.userId })
         this.activeConversations.add(conversationId)
       }
     }
@@ -137,7 +143,7 @@ export class ChatSocketService extends BaseSocketService {
                   if (!this.activeConversations.has(conversationId)) {
                     this.joinConversation(conversationId)
                   }
-                  this.socket.emit('sendMessage', { conversationId, content, userId })
+                  this.socket.emit('sendMessage', { conversation_id: conversationId, content, user_id: userId })
                   logger.info(
                     `Message envoyé après reconnexion dans la conversation ${conversationId}`
                   )
@@ -170,7 +176,7 @@ export class ChatSocketService extends BaseSocketService {
       if (!this.activeConversations.has(conversationId)) {
         this.joinConversation(conversationId)
       }
-      this.socket.emit('sendMessage', { conversationId, content, userId })
+      this.socket.emit('sendMessage', { conversation_id: conversationId, content, user_id: userId })
       return true
     } catch (e) {
       logger.error("Erreur lors de l'envoi du message", e as Error)
@@ -190,9 +196,9 @@ export class ChatSocketService extends BaseSocketService {
     }
 
     this.socket.emit('typing', {
-      conversationId,
-      userId: this.userId,
-      isTyping,
+      conversation_id: conversationId,
+      user_id: this.userId,
+      is_typing: isTyping,
     })
   }
 
@@ -208,9 +214,9 @@ export class ChatSocketService extends BaseSocketService {
     }
 
     this.socket.emit('icebreakerReady', {
-      conversationId,
-      userId: userId,
-      isIcebreakerReady,
+      conversation_id: conversationId,
+      user_id: userId,
+      is_icebreaker_ready: isIcebreakerReady,
     })
   }
 

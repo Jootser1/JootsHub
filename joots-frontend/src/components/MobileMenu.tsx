@@ -22,11 +22,15 @@ import { Label } from '@/components/ui/Label'
 import axiosInstance from '@/app/api/axios-instance'
 import { useSocketManager } from '@/hooks/useSocketManager'
 import { logger } from '@/utils/logger'
+import { useSocketStore } from '@/features/socket/stores/socket-store'
 
 export function MobileMenu() {
   const router = useRouter()
   const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useUserStore()
   const socketManager = useSocketManager()
+  const { isUserConnected } = useSocketStore()
+
+  
 
   const handleLogout = async () => {
     try {
@@ -45,13 +49,13 @@ export function MobileMenu() {
   }
 
   const copyClientId = () => {
-    navigator.clipboard.writeText(user?.id || '')
+    navigator.clipboard.writeText(user?.user_id || '')
     // Vous pourriez ajouter une notification de succès ici
   }
 
   const handleChatPreferenceChange = async (checked: boolean) => {
     try {
-      await axiosInstance.patch(`/users/${user?.id}/chat-preference`, {
+      await axiosInstance.patch(`/users/${user?.user_id}/chat-preference`, {
         isAvailableForChat: checked,
       })
 
@@ -85,7 +89,7 @@ export function MobileMenu() {
           <div className='mb-6'>
             <div className='text-gray-500 text-sm mb-2'>ID de clientèle</div>
             <div className='flex items-center bg-gray-100 rounded-full py-2 px-4'>
-              <span className='text-gray-700 flex-1'>{user?.id || 'Non connecté'}</span>
+              <span className='text-gray-700 flex-1'>{user?.user_id || 'Non connecté'}</span>
               <button
                 onClick={copyClientId}
                 className='text-gray-400 hover:text-gray-600'
@@ -98,8 +102,9 @@ export function MobileMenu() {
 
           {/* Profil utilisateur */}
           <Link
-            href={`/profile/${user?.id ?? ''}`}
+            href={`/myprofile`}
             className='flex items-center bg-gray-100 rounded-full py-2 px-4 mb-4'
+            onClick={() => setMobileMenuOpen(false)}
           >
             <div className='relative w-10 h-10 mr-3'>
               <Image
@@ -114,7 +119,7 @@ export function MobileMenu() {
               {user?.username || 'Non connecté'}
             </span>
             <span className='text-gray-800 font-medium flex-1'>
-              {user?.isOnline ? 'En ligne' : 'Hors ligne'}
+              {isUserConnected ? 'En ligne' : 'Hors ligne'}
             </span>
             <ChevronRight className='h-5 w-5 text-gray-400' />
           </Link>
@@ -141,7 +146,11 @@ export function MobileMenu() {
           </div>
 
           {/* Pass standard */}
-          <Link href='/pass' className='flex items-center bg-gray-100 rounded-full py-3 px-4 mb-8'>
+          <Link 
+            href='/pass' 
+            className='flex items-center bg-gray-100 rounded-full py-3 px-4 mb-8'
+            onClick={() => setMobileMenuOpen(false)}
+          >
             <div className='relative w-6 h-6 mr-3'>
               <Image src='/placeholder.svg?height=24&width=24' alt='Pass' width={24} height={24} />
             </div>
@@ -150,11 +159,11 @@ export function MobileMenu() {
 
           {/* Menu items */}
           <div className='flex flex-col space-y-6'>
-            <MenuItem href='/boutique' icon={<ShoppingBag />} label='Boutique' hasNotification />
-            <MenuItem href='/inventaire' icon={<Package />} label='Inventaire' />
-            <MenuItem href='/actualites' icon={<Mail />} label='Actualités' hasNotification />
-            <MenuItem href='/cadeaux' icon={<Gift />} label='Cadeaux' hasNotification />
-            <MenuItem href='/astuces' icon={<HelpCircle />} label='Astuces' />
+            <MenuItem href='/boutique' icon={<ShoppingBag />} label='Boutique' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
+            <MenuItem href='/inventaire' icon={<Package />} label='Inventaire' onNavigate={() => setMobileMenuOpen(false)} />
+            <MenuItem href='/actualites' icon={<Mail />} label='Actualités' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
+            <MenuItem href='/cadeaux' icon={<Gift />} label='Cadeaux' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
+            <MenuItem href='/astuces' icon={<HelpCircle />} label='Astuces' onNavigate={() => setMobileMenuOpen(false)} />
             <MenuItem onClick={handleLogout} icon={<Settings />} label='Se Déconnecter' />
           </div>
         </div>
@@ -169,9 +178,10 @@ interface MenuItemProps {
   icon: React.ReactNode
   label: string
   hasNotification?: boolean
+  onNavigate?: () => void
 }
 
-function MenuItem({ href, onClick, icon, label, hasNotification = false }: MenuItemProps) {
+function MenuItem({ href, onClick, icon, label, hasNotification = false, onNavigate }: MenuItemProps) {
   const content = (
     <>
       <div className='relative w-8 h-8 mr-3 text-gray-500'>
@@ -196,7 +206,7 @@ function MenuItem({ href, onClick, icon, label, hasNotification = false }: MenuI
   }
 
   return (
-    <Link href={href || '/'} className='flex items-center text-gray-600 hover:text-gray-900'>
+    <Link href={href || '/'} className='flex items-center text-gray-600 hover:text-gray-900' onClick={onNavigate}>
       {content}
     </Link>
   )

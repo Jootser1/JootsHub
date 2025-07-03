@@ -1,7 +1,7 @@
 import { Logger, Module, forwardRef } from '@nestjs/common';
 import { UserGateway } from './user.gateway';
 import { ChatGateway } from './chat.gateway';
-import { PrismaService } from '../../prisma/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
 import { RedisModule } from '../redis/redis.module';
 import { RedisService } from '../redis/redis.service';
 import { HeartbeatService } from './services/heartbeat.service';
@@ -11,6 +11,7 @@ import { MessagesService } from '../messages/messages.service';
 import { UsersService } from '../users/users.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { IcebreakerService } from 'src/icebreakers/icebreaker.service';
+import { AppLogger } from 'src/logger/logger.service';
 @Module({
   imports: [RedisModule],
   providers: [
@@ -20,6 +21,7 @@ import { IcebreakerService } from 'src/icebreakers/icebreaker.service';
     PrismaService,
     RedisService,
     HeartbeatService,
+    AppLogger,
     UserContactsService,
     UsersService,
     QuestionService,

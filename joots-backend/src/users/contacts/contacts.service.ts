@@ -1,14 +1,15 @@
 // src/services/user-contacts.service.ts
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../../prisma/prisma.service';
-import { Logger } from '@nestjs/common';
+import { PrismaService } from '../../prisma/prisma.service';
+import { AppLogger } from '../../logger/logger.service';
 import { RedisService } from '../../redis/redis.service';
 
 @Injectable()
 export class UserContactsService {
+  private readonly logger = new AppLogger();
+
   constructor(
     private prisma: PrismaService,
-    private logger: Logger,
     private redis: RedisService
   ) {}
 
@@ -18,22 +19,21 @@ export class UserContactsService {
   async getUserContacts(userId: string): Promise<
     {
       contact: {
-        id: string;
+        user_id: string;
         username: string;
         avatar: string | null;
-        isOnline: boolean;
       };
     }[]
   > {
     const contacts = await this.prisma.userContact.findMany({
-      where: { userId },
+      where: { user_id: userId },
       include: {
         contact: {
           select: {
-            id: true,
+            user_id: true,
             username: true,
             avatar: true,
-            isOnline: true,
+            last_seen: true,
           },
         },
       },
@@ -45,11 +45,10 @@ export class UserContactsService {
 
     return contacts.map((contact) => ({
       contact: {
-        id: contact.contact.id,
+        user_id: contact.contact.user_id,
         username: contact.contact.username,
-        avatar: contact.contact.avatar,
-        isOnline: contact.contact.isOnline,
-      },
+        avatar: contact.contact.avatar
+            },
     }));
   }
 
@@ -57,9 +56,9 @@ export class UserContactsService {
     try {
       // Récupére la liste des contacts de l'utilisateur et la liste de ceux en ligne
       const contacts = await this.prisma.userContact.findMany({
-        where: { userId: userId },
+        where: { user_id: userId },
         select: {
-          contactId: true,
+          contact_id: true,
         },
       });
 
@@ -67,7 +66,7 @@ export class UserContactsService {
         return;
       }
 
-      const contactsIds = contacts.map((contact) => contact.contactId);
+      const contactsIds = contacts.map((contact) => contact.contact_id);
       return contactsIds;
     } catch (error) {
       this.logger.error(
@@ -80,9 +79,9 @@ export class UserContactsService {
   async isUserContact(userId: string, contactId: string): Promise<boolean> {
     const contact = await this.prisma.userContact.findUnique({
       where: {
-        userId_contactId: {
-          userId,
-          contactId,
+        user_id_contact_id: {
+          user_id: userId,
+          contact_id: contactId,
         },
       },
     });
@@ -116,7 +115,7 @@ export class UserContactsService {
   async addUserContactinBDD(userId: string, contactId: string): Promise<void> {
     // Vérifier que l'utilisateur à ajouter existe
     const contactUser = await this.prisma.user.findUnique({
-      where: { id: contactId },
+      where: { user_id: contactId },
     });
 
     if (!contactUser) {
@@ -137,8 +136,8 @@ export class UserContactsService {
     // Créer la relation de contact
     await this.prisma.userContact.create({
       data: {
-        userId,
-        contactId,
+        user_id: userId,
+        contact_id: contactId,
       },
     });
   }
@@ -146,9 +145,9 @@ export class UserContactsService {
   async removeUserContact(userId: string, contactId: string): Promise<void> {
     await this.prisma.userContact.delete({
       where: {
-        userId_contactId: {
-          userId,
-          contactId,
+        user_id_contact_id: {
+          user_id: userId,
+          contact_id: contactId,
         },
       },
     });

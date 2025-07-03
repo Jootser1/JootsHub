@@ -1,14 +1,14 @@
 interface StatusProps {
-  isOnline: boolean
+  is_online: boolean
   className?: string
 }
 
-export function ConversationStatus({ isOnline, className = '' }: StatusProps) {
+export function ConversationStatus({ is_online, className = '' }: StatusProps) {
   return (
     <div
-      className={`w-2.5 h-2.5  ${isOnline ? 'rounded-full bg-green-500' : ' squared-full bg-transparent'} ${className}`}
+      className={`w-2.5 h-2.5  ${is_online ? 'rounded-full bg-green-500' : ' squared-full bg-transparent'} ${className}`}
       role='status'
-      aria-label={isOnline ? 'En ligne' : 'Hors ligne'}
+      aria-label={is_online ? 'En ligne' : 'Hors ligne'}
     />
   )
 }

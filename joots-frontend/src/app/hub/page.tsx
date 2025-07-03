@@ -61,9 +61,43 @@ export default function LandingPage() {
   }
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen overflow-x-hidden">
       {/* Mobile Hero Section */}
       <HeroSection />
+=======
+    <AppLayout>
+      <div className='flex-1 flex flex-col p-4 relative'>
+        {/* Version mobile : affichage en colonne */}
+        <div className='md:hidden h-full overflow-y-auto'>
+          <div className='h-full flex flex-col justify-between py-8'>
+            {apps.map((app, index) => (
+              <div
+                key={app.id}
+                className={`w-[85%] transform ${index % 2 === 0 ? '-rotate-3' : 'rotate-3'} hover:rotate-0 transition-all duration-300 flex-1 flex items-center justify-center`}
+              >
+                <div
+                  className='bg-white rounded-3xl shadow-2xl p-6 cursor-pointer hover:scale-105 active:scale-95 transition-all duration-300 relative w-full'
+                  onClick={() => app.enabled && router.push(app.path)}
+                  style={{
+                    background: `linear-gradient(135deg, ${app.color}15 0%, white 100%)`,
+                    border: `2px solid ${app.color}30`,
+                  }}
+                >
+                  <div className='flex flex-col items-center'>
+                    <div
+                      className='w-20 h-20 rounded-2xl mb-4 flex items-center justify-center shadow-lg'
+                      style={{ backgroundColor: `${app.color}20` }}
+                    >
+                      <Image
+                        src={app.logo}
+                        alt={app.title}
+                        width={64}
+                        height={64}
+                        className='w-16 h-16 object-contain'
+                      />
+                    </div>
+>>>>>>> evolution/new-bdd-schema
 
       {/* Icebreaker Feature - Mobile optimized */}
       <FeatureCard
@@ -102,11 +136,29 @@ export default function LandingPage() {
         isReversed={true}
       />
 
+<<<<<<< HEAD
       {/* Mobile Navigation Section */}
       <MobileNavigationSection
         onNavigateToIcebreaker={handleNavigateToIcebreaker}
         onNavigateToSocioscopy={handleNavigateToSocioscopy}
       />
+=======
+                    <div className='aspect-video bg-white rounded-xl flex items-center justify-center overflow-hidden'>
+                      <div
+                        className='text-4xl md:text-5xl font-bold transform transition-all duration-300 hover:scale-110'
+                        style={{ color: app.color }}
+                      >
+                        <Image
+                          src={app.logo}
+                          alt={app.title}
+                          width={64}
+                          height={64}
+                          className='w-16'
+                          style={{ height: "auto" }}
+                        />
+                      </div>
+                    </div>
+>>>>>>> evolution/new-bdd-schema
 
       {/* Mobile Stats Section */}
       <StatsSection />

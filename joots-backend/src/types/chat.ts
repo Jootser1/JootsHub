@@ -1,51 +1,6 @@
-import { User } from './user';
-
-export type MessageStatus = 'sent' | 'delivered' | 'read';
-export type ConnectionStatus = 'connected' | 'disconnected' | 'connecting';
-export type MessageType = 'text' | 'icebreaker';
-
-export interface Message {
-  id: string;
-  content: string;
-  senderId: string;
-  receiverId: string;
-  timestamp: Date;
-  status: MessageStatus;
-  type: MessageType;
-}
-
-export interface ConversationParticipant {
-  conversationId: string;
-  userId: string;
-  user: User;
-  isIcebreakerReady: boolean;
-  hasGivenAnswer: boolean;
-}
-
-export interface Conversation {
-  id: string;
-  createdAt: Date;
-  updatedAt: Date;
-  participants: ConversationParticipant[];
-  messages: Message[];
-  lastMessage?: Message;
-  unreadCount: number;
-  icebreakerStatus: {
-    currentQuestion?: string;
-  };
-}
-
-export type ProgressionResult = {
-  xpPerQuestion : number;
-  reachedXP : number;
-  reachedLevel: number;
-  remainingXpAfterLevelUp: number;
-  requiredXpForCurrentLevel: number;
-  maxXpForNextLevel: number;
-  nextLevel: number;
-  reward?: string;
-  photoRevealPercent?: number | null;
-};
+import { Message, MessageStatus } from '@shared/message.types';
+import { Conversation } from '@shared/conversation.types';
+import { ConversationParticipant } from '@shared/conversation.types';
 
 export interface ChatState {
   messages: Record<string, Message[]>;

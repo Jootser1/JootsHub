@@ -1,35 +1,23 @@
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
 import { AxiosError } from 'axios'
+import { RandomChatResponse } from '@shared/conversation.types'
 
-export interface RandomChatResponse {
-  conversationId: string
-  randomUser: {
-    id: string
-    username: string
-  }
-}
+
 
 export const conversationService = {
   async startRandomChat(): Promise<RandomChatResponse> {
     try {
       // 1. Trouver un utilisateur aléatoire
-      const response = await axiosInstance.get('/users/random/available')
-      const randomUser = response.data
-
-      // 2. Créer une conversation avec cet utilisateur
-      const conversationResponse = await axiosInstance.post('/conversations', {
-        receiverId: randomUser.id,
-      })
-      const conversation = conversationResponse.data
-
-      logger.info(`[ChatService] Nouvelle conversation créée avec ${randomUser.username}`)
+      const conversation = await axiosInstance.post('/conversations/random-chat')
+ 
+      logger.info(`[ChatService] Nouvelle conversation créée avec ${conversation.data.randomUser.username}`)
 
       return {
-        conversationId: conversation.id,
+        conversation_id: conversation.data.conversation_id,
         randomUser: {
-          id: randomUser.id,
-          username: randomUser.username,
+          user_id: conversation.data.randomUser.user_id,
+          username: conversation.data.randomUser.username,
         },
       }
     } catch (error) {

@@ -1,8 +1,4 @@
-export interface IcebreakerResponse {
-  questionGroupId: string
-  optionId: string
-  answeredAt: string
-}
+import { IcebreakerResponse } from "@shared/icebreaker-event.types";
 
 export interface IcebreakerActions {
   setIcebreakerQuestion: (conversationId: string, question: string) => void

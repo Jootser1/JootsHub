@@ -4,96 +4,239 @@ import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import { Button } from '@/components/ui/Button'
 import { cn } from '@/lib/utils'
+import categoryTranslations from '@config/category_translations.json'
+import { CurrentPollWithRelations, PollType } from '@shared/poll.types'
+import { useChatStore } from '@/features/chat/stores/chat-store'
+import { useUserStore } from '@/features/user/stores/user-store'
+import { MultipleChoiceForm, StepLabeledForm, YesNoIdkForm, OpenForm, ContinuousForm } from './forms'
+import { Category, CategoryTranslation } from '@shared/poll.types'
 
-interface Option {
-  id: string
-  label: string
-}
 
-interface Question {
-  id: string
-  questions: Array<{
-    question: string
-  }>
-  options: Option[]
-  category?: {
-    name: string
-  }
-  categories?: {
-    logo?: string
-  }
-}
+
+
+
+const findCategoryTranslation = (categoryId: number): CategoryTranslation | undefined => {
+  return categoryTranslations.find((c) => c.id === categoryId);
+};
+
+const getCategoryDisplayName = (category: Category): string => {
+  const translation = findCategoryTranslation(category.category_id);
+  return translation ? translation.fr : category.name;
+};
 
 interface IcebreakerPopupProps {
-  question: Question
+  poll: CurrentPollWithRelations
+  locale: string
   isVisible: boolean
-  onAnswer: (questionId: string, optionId: string) => void
+  onAnswer: (pollId: string, response: {
+    user_id: string;
+    poll_id: string;
+    conversation_id: string;
+    locale: string;
+    poll_type: PollType;
+    option_id?: string;
+    opentext?: string;
+    numeric?: number;
+  }) => void
   onClose: () => void
 }
 
-export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: IcebreakerPopupProps) {
+export function IcebreakerPopup({poll, locale, isVisible, onAnswer, onClose }: IcebreakerPopupProps) {
   const [isRendered, setIsRendered] = useState(false)
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
+  const [openTextAnswer, setOpenTextAnswer] = useState<string | null>(null)
+  const [numericAnswer, setNumericAnswer] = useState<number | null>(null)
+  const conversationId = useChatStore.getState().activeConversationId
+  const user = useUserStore(state => state.user)
+  
+  if (!conversationId || !user) {
+    return null
+  }
 
   useEffect(() => {
     if (isVisible) {
       setIsRendered(true)
-      // Réinitialiser la sélection à chaque nouvelle question
       setSelectedOptionId(null)
+      setOpenTextAnswer(null)
+      setNumericAnswer(null)
     } else {
       const timer = setTimeout(() => {
         setIsRendered(false)
-      }, 700) // Durée de l'animation
+      }, 700)
       return () => clearTimeout(timer)
     }
   }, [isVisible])
 
-  const handleOptionClick = (optionId: string) => {
+  const handleOptionSelect = (optionId: string) => {
     setSelectedOptionId(optionId)
+    setOpenTextAnswer(null)
+    setNumericAnswer(null)
   }
 
-  const handleValidate = () => {
-    if (question && selectedOptionId) {
-      onAnswer(question.id, selectedOptionId)
+  const handleOpenTextAnswer = (text: string) => {
+    setOpenTextAnswer(text)
+    setSelectedOptionId(null)
+    setNumericAnswer(null)
+  }
+
+  const handleNumericAnswer = (value: number) => {
+    setNumericAnswer(value)
+    setSelectedOptionId(null)
+    setOpenTextAnswer(null)
+  }
+
+  const handleSubmit = (directOpenText?: string) => {
+    if (!poll.poll_id) return;
+
+    const response = {
+      user_id: user.user_id,
+      poll_id: poll.poll_id,
+      conversation_id: conversationId,
+      locale: 'fr',
+      poll_type: poll.type,
+      option_id: undefined as string | undefined,
+      opentext: undefined as string | undefined,
+      numeric: undefined as number | undefined
+    };
+
+    switch (poll.type) {
+      case PollType.MULTIPLE_CHOICE:
+      case PollType.STEP_LABELED:
+      case PollType.YES_NO_IDK:
+        if (selectedOptionId) {
+          response.option_id = selectedOptionId;
+        }
+        break;
+      case PollType.OPEN:
+        // Priorité au paramètre direct, sinon utiliser le state
+        if (directOpenText) {
+          response.opentext = directOpenText;
+        } else if (openTextAnswer) {
+          response.opentext = openTextAnswer;
+        }
+        break;
+      case PollType.CONTINUOUS:
+        if (numericAnswer !== null) {
+          response.numeric = numericAnswer;
+        }
+        break;
+    }
+
+    onAnswer(poll.poll_id, response);
+  }
+
+  const renderPollForm = () => {
+    const question = poll.poll_translations[0].translation
+
+    switch (poll.type) {
+      case PollType.MULTIPLE_CHOICE:
+        return (
+          <MultipleChoiceForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.STEP_LABELED:
+        return (
+          <StepLabeledForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.YES_NO_IDK:
+        return (
+          <YesNoIdkForm
+            question={question}
+            options={poll.options}
+            selectedOptionId={selectedOptionId}
+            onOptionSelect={handleOptionSelect}
+            onSubmit={handleSubmit}
+            locale={locale}
+          />
+        )
+      case PollType.OPEN:
+        return (
+          <OpenForm
+            question={question}
+            onAnswer={handleOpenTextAnswer}
+            onSubmit={handleSubmit}
+          />
+        )
+      case PollType.CONTINUOUS:
+        return (
+          <ContinuousForm
+            question={question}
+            onAnswer={handleNumericAnswer}
+            onSubmit={handleSubmit}
+            poll={poll}
+          />
+        )
+      default:
+        return <p className="text-gray-600">Type de sondage non supporté</p>
     }
   }
-
+  
   if (!isRendered) return null
-
+  
   return (
     <div
       className={cn(
-        'fixed left-0 right-0 top-0 z-50 mx-auto max-w-md transform bg-white shadow-lg',
+        'fixed left-0 right-0 top-0 z-50 mx-auto max-w-md transform bg-white rounded-b-2xl shadow-lg',
         'transition-all duration-700 ease-in-out',
         isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
       )}
       style={{
         boxShadow: isVisible
-          ? '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
+          ? '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
           : 'none',
       }}
     >
-      <div className='p-4'>
-        <div className='mb-4 flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            {question?.category && (
-              <div className='flex h-8 w-8 items-center justify-center rounded-full bg-blue-100'>
-                <Image
-                  src={question.categories?.logo || '/placeholder.svg'}
-                  alt={question.category.name}
-                  width={20}
-                  height={20}
-                  className='h-5 w-5'
-                />
+      <div className='p-6'>
+        <div className='mb-6 flex items-center justify-between'>
+          <div className='flex items-center gap-3'>
+            <div className='flex items-center gap-3'>
+              <div className='flex items-center gap-2'>
+                {poll.categories.map((cat: Category) => {
+                  const translation = findCategoryTranslation(cat.category_id);
+                  if (!translation) return null;
+
+                  return (
+                    <div
+                      key={cat.category_id}
+                      className='flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 hover:bg-blue-100 transition-colors duration-200'
+                    >
+                      <div className="relative group w-fit">
+                        <Image
+                          src={`/categories/${translation.icon}.svg`}
+                          alt={translation.fr}
+                          width={24}
+                          height={24}
+                          className="transition-transform duration-200 group-hover:scale-110"
+                        />
+                        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 bg-gray-800 text-white text-sm rounded-lg px-3 py-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                          {translation.fr}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            )}
-            <span className='text-sm font-medium text-gray-500'>
-              {question?.category?.name || 'Question'}
-            </span>
+              <span className='text-sm font-medium text-gray-600'>
+                {poll.categories.map(getCategoryDisplayName).filter(Boolean).join(', ') || 'Question'}
+              </span>
+            </div>
           </div>
           <button
             onClick={onClose}
-            className='rounded-full p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600'
+            className='rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors duration-200'
           >
             <svg
               xmlns='http://www.w3.org/2000/svg'
@@ -109,58 +252,12 @@ export function IcebreakerPopup({ question, isVisible, onAnswer, onClose }: Iceb
             </svg>
           </button>
         </div>
-
-        <div className='mb-4'>
-          <h3 className='text-lg font-semibold'>
-            {question?.questions && question.questions.length > 0
-              ? question.questions[0].question
-              : 'Chargement de la question...'}
-          </h3>
-        </div>
-
-        <div className='max-h-[60vh] overflow-y-auto'>
-          <div
-            className={cn(
-              'grid gap-2',
-              Array.isArray(question?.options) && question.options.length > 4
-                ? 'grid-cols-2'
-                : 'grid-cols-1'
-            )}
-          >
-            {question?.options &&
-              question.options.length > 0 &&
-              question?.options.map((option: Option, index: number) => (
-                <Button
-                  key={option.id}
-                  variant={selectedOptionId === option.id ? 'default' : 'outline'}
-                  className={cn(
-                    'justify-start text-left transition-all',
-                    isVisible ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0',
-                    selectedOptionId === option.id ? 'bg-blue-500 text-white hover:bg-blue-600' : ''
-                  )}
-                  style={{
-                    transitionDelay: `${index * 50}ms`,
-                    transitionDuration: '500ms',
-                  }}
-                  onClick={() => handleOptionClick(option.id)}
-                >
-                  {option.label}
-                </Button>
-              ))}
-          </div>
-        </div>
-
-        {/* Bouton Valider */}
-        <div className='mt-4 flex justify-center'>
-          <Button
-            className='w-full max-w-xs bg-green-500 hover:bg-green-600 text-white transition-all'
-            disabled={!selectedOptionId}
-            onClick={handleValidate}
-          >
-            Valider
-          </Button>
+        
+        <div className='max-h-[60vh] overflow-y-auto pr-2'>
+          {renderPollForm()}
         </div>
       </div>
     </div>
   )
 }
+  

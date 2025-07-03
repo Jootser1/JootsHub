@@ -27,28 +27,16 @@ export class UsersController {
     const count = await this.usersService.getUsersCount();
     return { totalUsers: count };
   }
+ 
 
-  @Get('online')
+  @Get('profile/:id/:conversationId')
   @UseGuards(JwtAuthGuard)
-  async getOnlineUsers() {
-    return await this.usersService.getOnlineUsers();
-  }
-
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  async getUser(@Param('id') id: string) {
-    const user = await this.usersService.findById(id);
-    if (!user.auth) {
-      throw new NotFoundException("Données d'authentification non trouvées");
-    }
-    return {
-      id: user.id,
-      email: user.auth.email,
-      username: user.username,
-      avatar: user.avatar || null,
-      isAvailableForChat: user.isAvailableForChat || false,
-      isOnline: user.isOnline || false,
-    };
+  async getUserProfileForConversation(
+    @Param('id') userId: string,
+    @Param('conversationId') conversationId: string,
+    @CurrentUser() currentUser: any
+  ) {
+    return this.usersService.getUserProfileForConversation(userId, conversationId, currentUser.userid);
   }
 
   @Patch(':id/chat-preference')
@@ -63,15 +51,24 @@ export class UsersController {
   @Get('random/available')
   @UseGuards(JwtAuthGuard)
   async getRandomAvailableUser(@CurrentUser() user: any) {
-    return this.usersService.getRandomAvailableUser(user.id);
+
+    return this.usersService.getRandomAvailableUser(user.user_id);
   }
 
-  @Patch(':id/status')
+
+  @Get(':id')
   @UseGuards(JwtAuthGuard)
-  async updateUserStatus(
-    @Param('id') id: string,
-    @Body('isOnline') isOnline: boolean
-  ) {
-    return this.usersService.updateUserStatusinBDD(id, isOnline);
+  async getUser(@Param('id') id: string) {
+    const user = await this.usersService.findById(id);
+    if (!user.auth) {
+      throw new NotFoundException("Données d'authentification non trouvées");
+    }
+    return {
+      id: user.user_id,
+      email: user.auth.email,
+      username: user.username,
+      avatar: user.avatar || null,
+      last_seen: user.last_seen,
+    };
   }
 }

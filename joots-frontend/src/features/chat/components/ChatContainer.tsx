@@ -1,52 +1,64 @@
 import { useState, useEffect, useRef } from 'react'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { ConversationWithXpAndLevel } from '@shared/conversation.types'
 import { ChatHeader } from './ChatHeader'
 import { ChatMessages } from './ChatMessages'
 import { ChatInput } from './ChatInput'
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
+import { getOtherParticipantUser } from '@/features/conversations/utils/conversation-utils'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '../stores/chat-store'
+import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPopup'
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
-import { ProgressionResult } from '../chat.types'
+import { xp_and_level } from '@shared/conversation.types'
+import { CurrentPollWithRelations, PollType } from '@shared/poll.types'
 
 
 
 interface ChatContainerProps {
-  conversation: Conversation
-  xpAndLevel?: ProgressionResult | null
+  conversation: ConversationWithXpAndLevel
+  xpAndLevel?: xp_and_level | null 
 }
 
 export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) {
-  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentQuestionGroup } =
+
+  const { activeConversationId, getParticipant, getOtherParticipant, getCurrentPoll } =
     useChatStore()
-  const currentQuestionGroup = activeConversationId
-    ? getCurrentQuestionGroup(activeConversationId)
+  const currentPoll = activeConversationId
+    ? getCurrentPoll(activeConversationId)
     : null
+  // currentPoll est maintenant directement un objet CurrentPollWithRelations
+  const parsedPoll = currentPoll
   const user = useUserStore(state => state.user)
+  const isUserOnline = useContactStore(state => state.isUserOnline)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const [showQuestion, setShowQuestion] = useState(false)
   const isCurrentUserReady =
-    activeConversationId && user?.id
-      ? getParticipant(activeConversationId, user.id)?.isIcebreakerReady
+    activeConversationId && user?.user_id
+      ? getParticipant(activeConversationId, user.user_id)?.is_icebreaker_ready
       : false
   const isOtherParticipantReady =
-    activeConversationId && user?.id
-      ? getOtherParticipant(activeConversationId, user.id)?.isIcebreakerReady
+    activeConversationId && user?.user_id
+      ? getOtherParticipant(activeConversationId, user.user_id)?.is_icebreaker_ready
       : false
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }
 
-  const handleAnswerQuestion = (questionGroupId: string, optionId: string) => {
-    if (!user?.id || !activeConversationId) return
+  const handleAnswerQuestion = (pollId: string, optionId: string | undefined, opentext: string | undefined, numeric: number | undefined) => {
+    if (!user?.user_id || !activeConversationId) return
     IcebreakerService.submitIcebreakerResponse(
-      user.id,
-      questionGroupId,
-      optionId,
-      activeConversationId
+      {
+        user_id: user.user_id,
+        poll_id: pollId,
+        option_id: optionId ?? undefined,
+        conversation_id: activeConversationId,
+        locale: conversation.locale,
+        poll_type: parsedPoll?.type as PollType,
+        opentext: opentext ?? undefined,
+        numeric: numeric ?? undefined,
+      }
     )
     setShowQuestion(false)
   }
@@ -67,13 +79,24 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
 
   // Show the question if the current user and the other participant are ready
   useEffect(() => {
-    if (currentQuestionGroup && isCurrentUserReady && isOtherParticipantReady) {
+    
+    if (currentPoll && isCurrentUserReady && isOtherParticipantReady) {
       setShowQuestion(true)
     }
-  }, [isCurrentUserReady, isOtherParticipantReady, currentQuestionGroup])
+  }, [isCurrentUserReady, isOtherParticipantReady, currentPoll])
 
-  if (!activeConversationId || !user?.id) return null
-  const otherUser = getOtherParticipantInConversation(conversation, user.id)
+  if (!activeConversationId || !user?.user_id) {
+    console.log('ChatContainer early return:', { activeConversationId, userId: user?.user_id })
+    return null
+  }
+
+  const conversationInStore = useChatStore.getState().getConversation(activeConversationId)
+  if (!conversationInStore) {
+    console.log('ChatContainer: Conversation not found in store:', activeConversationId)
+    return null
+  }
+
+  const otherUser = getOtherParticipantUser(conversationInStore, user.user_id)
 
   if (!otherUser) {
     return <div className='flex items-center justify-center h-full'>Utilisateur non trouvé</div>
@@ -81,24 +104,23 @@ export function ChatContainer({ conversation, xpAndLevel }: ChatContainerProps) 
 
   return (
     <>
-      {currentQuestionGroup && (
+      {currentPoll && (
         <IcebreakerPopup
-          question={JSON.parse(currentQuestionGroup)}
+          poll={parsedPoll as CurrentPollWithRelations}
+          locale={conversation.locale}
           isVisible={showQuestion}
-          onAnswer={handleAnswerQuestion}
+          onAnswer={(pollId, response) => handleAnswerQuestion(pollId, response.option_id, response.opentext, response.numeric)}
           onClose={handleCloseQuestion}
         />
       )}
       <div className='relative flex flex-col h-full bg-gray-50'>
         <ChatHeader
           otherUser={otherUser}
-          isOnline={otherUser.isOnline}
           conversationId={activeConversationId}
-          xpAndLevel={xpAndLevel || conversation.xpAndLevel}
+          xpAndLevel={xpAndLevel || conversation.xp_and_level}
         />
         <div className='flex-1 overflow-y-auto'>
           <ChatMessages
-            messages={conversation?.messages || []}
             conversationId={activeConversationId}
           />
         </div>

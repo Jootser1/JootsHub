@@ -12,11 +12,19 @@ export async function GET(request: NextRequest) {
     }
 
     const id = request.nextUrl.searchParams.get('id')
+    const conversationId = request.nextUrl.searchParams.get('conversationId')
 
     if (!id) {
       return NextResponse.json({ error: 'ID manquant' }, { status: 400 })
     }
 
+    // Si conversationId est fourni, récupérer le profil filtré
+    if (conversationId) {
+      const response = await axiosInstance.get(`/users/profile/${id}/${conversationId}`)
+      return NextResponse.json(response.data)
+    }
+
+    // Sinon, récupérer les informations de base de l'utilisateur
     const response = await axiosInstance.get(`/users/${id}`)
     return NextResponse.json(response.data)
   } catch (error: unknown) {

@@ -1,6 +1,5 @@
 generator client {
   provider = "prisma-client-js"
-  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -9,218 +8,274 @@ datasource db {
 }
 
 model Auth {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  password     String
-  accessToken  String?
-  refreshToken String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  userId       String   @unique
-  user         User     @relation(fields: [userId], references: [id])
+  auth_id       String   @id @default(cuid())
+  email         String   @unique
+  password      String
+  access_token  String?
+  refresh_token String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+  user_id       String   @unique
+  user          User     @relation(fields: [user_id], references: [user_id])
 }
 
 model User {
-  id                     String                    @id @default(cuid())
-  createdAt              DateTime                  @default(now())
-  username               String                    @unique
-  userNumber             Int                       @unique @default(autoincrement())
-  avatar                 String?
-  isOnline               Boolean                   @default(false)
-  updatedAt              DateTime                  @default(now()) @updatedAt
-  role                   UserRole                  @default(USER)
-  auth                   Auth?
-  conversations          ConversationParticipant[]
-  sentMessages           Message[]                 @relation("SentMessages")
-  questionGroups         QuestionGroup[]
-  answers                UserAnswer[]
-  contactOf              UserContact[]             @relation("ContactOf")
-  contacts               UserContact[]             @relation("UserContacts")
-  UserAttribute          UserAttribute[]
-  UserSettings           UserSettings?
-  UserQuestionPreference UserQuestionPreference[]
+  user_id                   String                    @id @default(cuid())
+  created_at                DateTime                  @default(now())
+  username                  String                    @unique
+  user_number               Int                       @unique @default(autoincrement())
+  avatar                    String?
+  updated_at                DateTime                  @default(now()) @updatedAt
+  last_seen                 DateTime                  @default(now())
+  role                      UserRole                  @default(USER)
+  auth                      Auth?
+  conversations             ConversationParticipant[]
+  sent_messages             Message[]                 @relation("SentMessages")
+  created_polls             Poll[]
+  answers                   PollAnswer[]
+  contact_of                UserContact[]             @relation("ContactOf")
+  contacts                  UserContact[]             @relation("UserContacts")
+  user_attributes           UserAttribute[]
+  user_settings             UserSettings?
+  user_category_preferences UserCategoryPreference[]
 }
 
 model UserAttribute {
-  id            String       @id @default(cuid())
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  userId        String
-  user          User         @relation(fields: [userId], references: [id])
-  key           AttributeKey
-  value         String
-  levelRevealed Int
+  user_attribute_id String       @id @default(cuid())
+  created_at        DateTime     @default(now())
+  updated_at        DateTime     @updatedAt
+  user_id           String
+  user              User         @relation(fields: [user_id], references: [user_id])
+  key               AttributeKey
+  value             String
+  level_revealed    Int
 
-  @@unique([userId, key])
-  @@index([userId])
+  @@unique([user_id, key])
+  @@index([user_id])
 }
 
 model UserSettings {
-  id                            String                   @id @default(cuid())
-  userId                        String                   @unique
-  user                          User                     @relation(fields: [userId], references: [id])
-  Applanguage                   String                   @default("fr_FR")
-  questionPreferences           UserQuestionPreference[]
-  acceptedLanguages             String[]                 @default(["fr_FR"])
-  isAvailableForChat            Boolean                  @default(true)
-  allowInvitationsFromStrangers Boolean                  @default(true)
+  user_settings_id      String                   @id @default(cuid())
+  user_id               String                   @unique
+  user                  User                     @relation(fields: [user_id], references: [user_id])
+  app_language          String                   @default("fr_FR")
+  category_preferences  UserCategoryPreference[]
+  accepted_languages    String[]                 @default(["fr_FR"])
+  is_available_for_chat Boolean                  @default(true)
+  updated_at            DateTime                 @default(now())
 }
 
 model UserContact {
-  userId    String
-  contactId String
-  createdAt DateTime @default(now())
-  contact   User     @relation("ContactOf", fields: [contactId], references: [id], onDelete: Cascade)
-  user      User     @relation("UserContacts", fields: [userId], references: [id], onDelete: Cascade)
+  user_id    String
+  contact_id String
+  created_at DateTime @default(now())
+  contact    User     @relation("ContactOf", fields: [contact_id], references: [user_id], onDelete: Cascade)
+  user       User     @relation("UserContacts", fields: [user_id], references: [user_id], onDelete: Cascade)
 
-  @@id([userId, contactId])
-  @@index([userId])
-  @@index([contactId])
+  @@id([user_id, contact_id])
+  @@index([user_id])
+  @@index([contact_id])
 }
 
 model Conversation {
-  id           String                    @id @default(uuid())
-  createdAt    DateTime                  @default(now())
-  updatedAt    DateTime                  @updatedAt
-  locale       LocaleCode                @default(fr_FR)
-  xpPoint      Int                       @default(0)
-  difficulty   Difficulty                @default(INTERMEDIATE)
-  participants ConversationParticipant[]
-  messages     Message[]
-  UserAnswer   UserAnswer[]
+  conversation_id String                    @id @default(uuid())
+  created_at      DateTime                  @default(now())
+  updated_at      DateTime                  @updatedAt
+  locale          LocaleCode                @default(fr_FR)
+  xp_point        Int                       @default(0)
+  difficulty      Difficulty                @default(INTERMEDIATE)
+  participants    ConversationParticipant[]
+  messages        Message[]
+  sourceOf        PollAnswerSource[]
+  current_poll_id String?
+  current_poll    Poll?                     @relation(fields: [current_poll_id], references: [poll_id])
 }
 
 model ConversationParticipant {
-  conversationId    String
-  userId            String
-  createdAt         DateTime     @default(now())
-  hasGivenAnswer    Boolean      @default(false)
-  isIcebreakerReady Boolean      @default(false)
-  updatedAt         DateTime     @updatedAt
-  conversation      Conversation @relation(fields: [conversationId], references: [id])
-  user              User         @relation(fields: [userId], references: [id])
+  conversation_id     String
+  user_id             String
+  has_given_answer    Boolean      @default(false)
+  is_icebreaker_ready Boolean      @default(false)
+  conversation        Conversation @relation(fields: [conversation_id], references: [conversation_id])
+  user                User         @relation(fields: [user_id], references: [user_id])
 
-  @@id([conversationId, userId])
-  @@unique([conversationId, userId])
+  @@id([conversation_id, user_id])
+  @@unique([conversation_id, user_id])
 }
 
 model Message {
-  id             String       @id @default(uuid())
-  senderId       String?
-  content        String
-  createdAt      DateTime     @default(now())
-  conversationId String
-  isRead         Boolean      @default(false)
-  editedAt       DateTime?
-  isDeleted      Boolean      @default(false)
-  messageType    MessageType  @default(TEXT)
-  userAAnswer    String?
-  userAId        String?
-  userBAnswer    String?
-  userBId        String?
-  conversation   Conversation @relation(fields: [conversationId], references: [id])
-  sender         User?        @relation("SentMessages", fields: [senderId], references: [id])
+  message_id      String       @id @default(uuid())
+  sender_id       String
+  content         String
+  created_at      DateTime     @default(now())
+  conversation_id String
+  status          MessageStatus
+  conversation    Conversation @relation(fields: [conversation_id], references: [conversation_id])
+  sender          User        @relation("SentMessages", fields: [sender_id], references: [user_id])
 
-  @@index([conversationId])
-  @@index([senderId])
-  @@index([messageType])
+  @@index([conversation_id])
+  @@index([sender_id])
 }
 
-model QuestionGroup {
-  id          String                  @id @default(uuid())
-  type        Int
-  createdAt   DateTime                @default(now())
-  isModerated Boolean                 @default(false)
-  moderatedAt DateTime?
-  pinned      Boolean                 @default(false)
-  enabled     Boolean                 @default(true)
-  authorId    String
-  questions   Question[]
-  author      User                    @relation(fields: [authorId], references: [id])
-  categories  QuestionGroupCategory[]
-  options     QuestionOption[]
-  answers     UserAnswer[]
+enum PollType {
+  OPEN
+  MULTIPLE_CHOICE
+  CONTINUOUS
+  STEP_SCALE
+  STEP_LABELED
+  YES_NO_IDK
 }
 
-model Question {
-  id       String        @id @default(uuid())
-  groupId  String
-  question String
-  locale   LocaleCode    @default(fr_FR)
-  group    QuestionGroup @relation(fields: [groupId], references: [id])
-
-  @@unique([groupId, locale])
-}
-
-model QuestionOption {
-  id      String        @id @default(uuid())
-  groupId String
-  label   String
-  order   Int
-  locale  LocaleCode    @default(fr_FR)
-  group   QuestionGroup @relation(fields: [groupId], references: [id])
-  answers UserAnswer[]
-
-  @@unique([groupId, locale, order])
+model Poll {
+  poll_id           String               @id @default(cuid())
+  type              PollType
+  created_at        DateTime             @default(now())
+  updated_at        DateTime             @updatedAt
+  is_moderated      Boolean              @default(false)
+  is_pinned         Boolean              @default(false)
+  is_enabled        Boolean              @default(true)
+  author_id         String
+  author            User                 @relation(fields: [author_id], references: [user_id])
+  poll_translations PollTranslation[]
+  categories        PollCategory[]
+  options           PollOption[]
+  answers           PollAnswer[]
+  scale_constraint  PollScaleConstraint?
+  Conversation      Conversation[]
 }
 
 model Category {
-  id              Int                      @id
-  translations    CategoryTranslation[]
-  groupLinks      QuestionGroupCategory[]
-  userPreferences UserQuestionPreference[]
+  category_id      Int                      @id
+  name             String                   @unique
+  polls            PollCategory[]
+  user_preferences UserCategoryPreference[]
 }
 
-model CategoryTranslation {
-  categoryId Int
-  label      String
-  locale     LocaleCode @default(fr_FR)
-  category   Category   @relation(fields: [categoryId], references: [id])
+model PollCategory {
+  poll_id     String
+  category_id Int
+  poll        Poll     @relation(fields: [poll_id], references: [poll_id], onDelete: Cascade)
+  category    Category @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
 
-  @@id([categoryId, locale])
+  @@id([poll_id, category_id])
+  @@index([poll_id])
+  @@index([category_id])
 }
 
-model QuestionGroupCategory {
-  questionGroupId String
-  categoryId      Int
-  category        Category      @relation(fields: [categoryId], references: [id])
-  questionGroup   QuestionGroup @relation(fields: [questionGroupId], references: [id])
+model PollTranslation {
+  poll_translation_id String     @id @default(uuid())
+  translation         String
+  locale              LocaleCode @default(fr_FR)
+  poll_id             String
+  poll                Poll       @relation(fields: [poll_id], references: [poll_id])
 
-  @@id([questionGroupId, categoryId])
+  @@unique([poll_id, locale])
 }
 
-model UserQuestionPreference {
-  userId         String
-  categoryId     Int
-  Opinion        Opinion       @default(NEUTRAL)
-  updatedAt      DateTime      @updatedAt
-  category       Category      @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  user           User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  UserSettings   UserSettings? @relation(fields: [userSettingsId], references: [id])
-  userSettingsId String?
-
-  @@id([userId, categoryId])
-  @@index([categoryId])
+model PollOption {
+  poll_option_id String                  @id @default(cuid())
+  poll_id        String
+  order          Int
+  poll           Poll                    @relation(fields: [poll_id], references: [poll_id])
+  translations   PollOptionTranslation[]
+  answers        PollAnswer[]
+  histories      PollAnswerHistory[]
 }
 
-model UserAnswer {
-  id               String         @id @default(uuid())
-  userId           String
-  questionGroupId  String
-  questionOptionId String
-  conversationId   String?
-  answeredAt       DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  note             String?
-  isFlagged        Boolean        @default(false)
-  conversation     Conversation?  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  questionGroup    QuestionGroup  @relation(fields: [questionGroupId], references: [id], onDelete: Cascade)
-  questionOption   QuestionOption @relation(fields: [questionOptionId], references: [id], onDelete: Cascade)
-  user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+model PollOptionTranslation {
+  id                     String @id @default(cuid())
+  option_id              String
+  locale                 String
+  translated_option_text String
 
-  @@index([userId])
-  @@index([questionGroupId])
-  @@index([conversationId])
+  option PollOption @relation(fields: [option_id], references: [poll_option_id])
+
+  @@unique([option_id, locale])
+}
+
+model PollScaleConstraint {
+  poll_id    String  @id @default(uuid())
+  is_labeled Boolean @default(false)
+  min_value  Int
+  max_value  Int
+  step_value Int?
+  min_label  String?
+  max_label  String?
+  mid_label  String?
+
+  poll Poll @relation(fields: [poll_id], references: [poll_id])
+}
+
+model PollAnswer {
+  poll_answer_id String   @id @default(cuid())
+  poll_id        String
+  user_id        String?
+  source_id      String?  @unique
+  poll_option_id String?
+  opentext       String?
+  numeric        Float?
+  answered_at    DateTime @default(now())
+  comment        String?
+  is_flagged     Boolean  @default(false)
+
+  poll      Poll                @relation(fields: [poll_id], references: [poll_id])
+  option    PollOption?         @relation(fields: [poll_option_id], references: [poll_option_id])
+  source    PollAnswerSource?   @relation(fields: [source_id], references: [source_id])
+  user      User?               @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  histories PollAnswerHistory[]
+
+  @@unique([poll_id, user_id])
+  @@index([user_id])
+  @@index([poll_id])
+}
+
+enum AnswerSourceType {
+  SOCIOSCOPY
+  CONVERSATION
+}
+
+model PollAnswerSource {
+  source_id       String           @id @default(cuid())
+  source_type     AnswerSourceType
+  locale          LocaleCode
+  conversation_id String?
+
+  answer       PollAnswer?
+  conversation Conversation?       @relation(fields: [conversation_id], references: [conversation_id])
+  history      PollAnswerHistory[]
+}
+
+model UserCategoryPreference {
+  user_id          String
+  category_id      Int
+  opinion          Opinion       @default(NEUTRAL)
+  created_at       DateTime      @default(now())
+  updated_at       DateTime      @updatedAt
+  category         Category      @relation(fields: [category_id], references: [category_id], onDelete: Cascade)
+  user             User          @relation(fields: [user_id], references: [user_id], onDelete: Cascade)
+  user_settings    UserSettings? @relation(fields: [user_settings_id], references: [user_settings_id])
+  user_settings_id String?
+
+  @@id([user_id, category_id])
+  @@index([category_id])
+  @@index([user_id])
+}
+
+model PollAnswerHistory {
+  history_id     String   @id @default(uuid())
+  poll_answer_id String
+  poll_option_id String
+  answered_at    DateTime @default(now())
+  note           String?
+  is_flagged     Boolean  @default(false)
+  source_id      String
+
+  history_source PollAnswerSource @relation(fields: [source_id], references: [source_id])
+  poll_option    PollOption       @relation(fields: [poll_option_id], references: [poll_option_id], onDelete: Cascade)
+  poll_answer    PollAnswer       @relation(fields: [poll_answer_id], references: [poll_answer_id], onDelete: Cascade)
+
+  @@index([poll_answer_id])
+  @@index([poll_option_id])
 }
 
 enum UserRole {
@@ -231,11 +286,19 @@ enum UserRole {
 enum LocaleCode {
   fr_FR
   en_US
+  es_ES
 }
 
 enum MessageType {
   TEXT
   ANSWER
+}
+
+enum MessageStatus {
+  SENT
+  DELETED
+  DELIVERED
+  READ
 }
 
 enum Difficulty {

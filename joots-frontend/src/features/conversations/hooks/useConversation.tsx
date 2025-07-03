@@ -2,11 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSession } from 'next-auth/react'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { Conversation } from '@shared/conversation.types'
+import { useChatStore } from '@/features/chat/stores/chat-store'
 
 export function useConversation() {
-  const { data: session } = useSession()
-  const [conversations, setConversations] = useState<Conversation[]>([])
+  
+  const { data: session, status } = useSession()
+  const { conversations, loadAllConversations, initializeConversation } = useChatStore()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
   const conversationCache = useRef<Record<string, Conversation>>({})
@@ -14,9 +16,9 @@ export function useConversation() {
 
   const fetchConversations = async () => {
     try {
-      const response = await axiosInstance.get('/conversations')
-      setConversations(response.data)
+      await loadAllConversations()
     } catch (error) {
+      console.error('Error fetching conversations:', error)
       logger.error(
         'Error fetching conversations:',
         error instanceof Error ? error : new Error(String(error))
@@ -30,7 +32,7 @@ export function useConversation() {
       logger.debug('Creating new conversation with:', receiverId)
       const response = await axiosInstance.post('/conversations', { receiverId })
       logger.debug('New conversation created:', response.data)
-      setConversations(prev => [...prev, response.data])
+      initializeConversation(response.data)
       return response.data
     } catch (error) {
       logger.error(
@@ -87,14 +89,17 @@ export function useConversation() {
   }, [])
 
   useEffect(() => {
+    console.log('Session status:', status)
+    console.log('Session data:', session)
     if (session?.user?.id) {
+      console.log('User ID:', session.user.id)
       fetchConversations()
     }
     setLoading(false)
-  }, [session?.user?.id])
+  }, [session?.user?.id, status])
 
   return {
-    conversations,
+    conversations: Object.values(conversations),
     loading,
     error,
     fetchConversations,

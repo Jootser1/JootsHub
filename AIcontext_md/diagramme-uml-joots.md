@@ -255,7 +255,6 @@ classDiagram
         +findUserById(id: string) User
         +findUserByEmail(email: string) User
         +updateUser(id: string, data: UpdateUserDto) User
-        +updateUserStatusinBDD(userId: string, isOnline: boolean)
         +addUserInRedisOnlineUsers(client: Socket, userId: string)
         +removeUserInRedisOnlineUsers(client: Socket, userId: string)
         +setupUserRooms(client: Socket, userId: string)

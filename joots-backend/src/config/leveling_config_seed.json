@@ -2,274 +2,274 @@
   {
     "level": 1,
     "difficulty": "EASY",
-    "xpRequired": 0,
+    "xp_required": 0,
     "reward": "FIRST_ICEBREAKER",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 2,
     "difficulty": "EASY",
-    "xpRequired": 20,
+    "xp_required": 20,
     "reward": "ONE_MORE_CONV",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 3,
     "difficulty": "EASY",
-    "xpRequired": 60,
+    "xp_required": 60,
     "reward": "CITY",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 4,
     "difficulty": "EASY",
-    "xpRequired": 100,
+    "xp_required": 100,
     "reward": "GENDER",
-    "photoRevealPercent": 10
+    "photo_reveal_percent": 10
   },
   {
     "level": 5,
     "difficulty": "EASY",
-    "xpRequired": 160,
+    "xp_required": 160,
     "reward": "PASSIONS",
-    "photoRevealPercent": 20
+    "photo_reveal_percent": 20
   },
   {
     "level": 6,
     "difficulty": "EASY",
-    "xpRequired": 220,
+    "xp_required": 220,
     "reward": "QUALITY",
-    "photoRevealPercent": 30
+    "photo_reveal_percent": 30
   },
   {
     "level": 7,
     "difficulty": "EASY",
-    "xpRequired": 300,
+    "xp_required": 300,
     "reward": "ORIGIN",
-    "photoRevealPercent": 40
+    "photo_reveal_percent": 40
   },
   {
     "level": 8,
     "difficulty": "EASY",
-    "xpRequired": 380,
+    "xp_required": 380,
     "reward": "VOICE",
-    "photoRevealPercent": 50
+    "photo_reveal_percent": 50
   },
   {
     "level": 9,
     "difficulty": "EASY",
-    "xpRequired": 480,
+    "xp_required": 480,
     "reward": "AGE",
-    "photoRevealPercent": 60
+    "photo_reveal_percent": 60
   },
   {
     "level": 10,
     "difficulty": "EASY",
-    "xpRequired": 580,
+    "xp_required": 580,
     "reward": "JOB",
-    "photoRevealPercent": 70
+    "photo_reveal_percent": 70
   },
   {
     "level": 11,
     "difficulty": "EASY",
-    "xpRequired": 700,
+    "xp_required": 700,
     "reward": "FLAW",
-    "photoRevealPercent": 80
+    "photo_reveal_percent": 80
   },
   {
     "level": 12,
     "difficulty": "EASY",
-    "xpRequired": 840,
+    "xp_required": 840,
     "reward": "ORIENTATION",
-    "photoRevealPercent": 90
+    "photo_reveal_percent": 90
   },
   {
     "level": 13,
     "difficulty": "EASY",
-    "xpRequired": 1000,
+    "xp_required": 1000,
     "reward": "BIO",
-    "photoRevealPercent": 100
+    "photo_reveal_percent": 100
   },
   {
     "level": 1,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 0,
+    "xp_required": 0,
     "reward": "FIRST_ICEBREAKER",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 2,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 20,
+    "xp_required": 20,
     "reward": "ONE_MORE_CONV",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 3,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 50,
+    "xp_required": 50,
     "reward": "CITY",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 4,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 90,
+    "xp_required": 90,
     "reward": "GENDER",
-    "photoRevealPercent": 10
+    "photo_reveal_percent": 10
   },
   {
     "level": 5,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 140,
+    "xp_required": 140,
     "reward": "PASSIONS",
-    "photoRevealPercent": 20
+    "photo_reveal_percent": 20
   },
   {
     "level": 6,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 200,
+    "xp_required": 200,
     "reward": "QUALITY",
-    "photoRevealPercent": 30
+    "photo_reveal_percent": 30
   },
   {
     "level": 7,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 280,
+    "xp_required": 280,
     "reward": "ORIGIN",
-    "photoRevealPercent": 40
+    "photo_reveal_percent": 40
   },
   {
     "level": 8,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 370,
+    "xp_required": 370,
     "reward": "VOICE",
-    "photoRevealPercent": 50
+    "photo_reveal_percent": 50
   },
   {
     "level": 9,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 470,
+    "xp_required": 470,
     "reward": "AGE",
-    "photoRevealPercent": 60
+    "photo_reveal_percent": 60
   },
   {
     "level": 10,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 580,
+    "xp_required": 580,
     "reward": "JOB",
-    "photoRevealPercent": 70
+    "photo_reveal_percent": 70
   },
   {
     "level": 11,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 700,
+    "xp_required": 700,
     "reward": "FLAW",
-    "photoRevealPercent": 80
+    "photo_reveal_percent": 80
   },
   {
     "level": 12,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 840,
+    "xp_required": 840,
     "reward": "ORIENTATION",
-    "photoRevealPercent": 90
+    "photo_reveal_percent": 90
   },
   {
     "level": 13,
     "difficulty": "INTERMEDIATE",
-    "xpRequired": 1000,
+    "xp_required": 1000,
     "reward": "BIO",
-    "photoRevealPercent": 100
+    "photo_reveal_percent": 100
   },
   {
     "level": 1,
     "difficulty": "HARDCORE",
-    "xpRequired": 0,
+    "xp_required": 0,
     "reward": "ONE_MORE_CONV",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 2,
     "difficulty": "HARDCORE",
-    "xpRequired": 20,
+    "xp_required": 20,
     "reward": "ONE_MORE_CONV",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 3,
     "difficulty": "HARDCORE",
-    "xpRequired": 50,
+    "xp_required": 50,
     "reward": "CITY",
-    "photoRevealPercent": null
+    "photo_reveal_percent": null
   },
   {
     "level": 4,
     "difficulty": "HARDCORE",
-    "xpRequired": 90,
+    "xp_required": 90,
     "reward": "GENDER",
-    "photoRevealPercent": 10
+    "photo_reveal_percent": 10
   },
   {
     "level": 5,
     "difficulty": "HARDCORE",
-    "xpRequired": 140,
+    "xp_required": 140,
     "reward": "PASSIONS",
-    "photoRevealPercent": 20
+    "photo_reveal_percent": 20
   },
   {
     "level": 6,
     "difficulty": "HARDCORE",
-    "xpRequired": 200,
+    "xp_required": 200,
     "reward": "QUALITY",
-    "photoRevealPercent": 30
+    "photo_reveal_percent": 30
   },
   {
     "level": 7,
     "difficulty": "HARDCORE",
-    "xpRequired": 280,
+    "xp_required": 280,
     "reward": "ORIGIN",
-    "photoRevealPercent": 40
+    "photo_reveal_percent": 40
   },
   {
     "level": 8,
     "difficulty": "HARDCORE",
-    "xpRequired": 370,
+    "xp_required": 370,
     "reward": "VOICE",
-    "photoRevealPercent": 50
+    "photo_reveal_percent": 50
   },
   {
     "level": 9,
     "difficulty": "HARDCORE",
-    "xpRequired": 470,
+    "xp_required": 470,
     "reward": "AGE",
-    "photoRevealPercent": 60
+    "photo_reveal_percent": 60
   },
   {
     "level": 10,
     "difficulty": "HARDCORE",
-    "xpRequired": 580,
+    "xp_required": 580,
     "reward": "JOB",
-    "photoRevealPercent": 70
+    "photo_reveal_percent": 70
   },
   {
     "level": 11,
     "difficulty": "HARDCORE",
-    "xpRequired": 700,
+    "xp_required": 700,
     "reward": "FLAW",
-    "photoRevealPercent": 80
+    "photo_reveal_percent": 80
   },
   {
     "level": 12,
     "difficulty": "HARDCORE",
-    "xpRequired": 840,
+    "xp_required": 840,
     "reward": "ORIENTATION",
-    "photoRevealPercent": 90
+    "photo_reveal_percent": 90
   },
   {
     "level": 13,
     "difficulty": "HARDCORE",
-    "xpRequired": 1000,
+    "xp_required": 1000,
     "reward": "BIO",
-    "photoRevealPercent": 100
+    "photo_reveal_percent": 100
   }
 ]

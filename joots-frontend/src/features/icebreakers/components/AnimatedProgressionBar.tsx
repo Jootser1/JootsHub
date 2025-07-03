@@ -3,12 +3,12 @@
 import Image from 'next/image'
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useChatStore } from '@/features/chat/stores/chat-store'
-import { ProgressionResult } from '@/features/chat/chat.types'
+import { xp_and_level } from '@shared/conversation.types'
 
 interface AnimatedLevelProgressProps {
   conversationId: string
   icon?: React.ReactNode
-  initialXpAndLevel?: ProgressionResult
+  initialXpAndLevel?: xp_and_level
 }
 
 // État simplifié pour l'affichage
@@ -25,38 +25,45 @@ interface LevelUpState {
   reward: string | undefined
 }
 
-const DEFAULT_XP_DATA: ProgressionResult = {
-  xpPerQuestion: 0,
-  reachedLevel: 1,
-  reachedXP: 0,
-  remainingXpAfterLevelUp: 0,
-  requiredXpForCurrentLevel: 0,
-  requiredXpForNextLevel: 100,
-  maxXpForNextLevel: 100,
-  nextLevel: 2,
-  reward: undefined,
-  photoRevealPercent: undefined
-};
+const DEFAULT_XP_DATA: xp_and_level = {
+  difficulty: 'easy',
+  xp_per_question: 0,
+  reached_level: 1,
+  reached_xp: 0,
+  remaining_xp_after_level_up: 0,
+  required_xp_for_current_level: 0,
+  required_xp_for_next_level: 100,
+  max_xp_for_next_level: 100,
+  next_level: 2,
+  reward: '',
+  photo_reveal_percent: null
+}
 
 export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel }: AnimatedLevelProgressProps) {
-  // Récupérer les données de la conversation
+  // Récupérer les données de la conversation - utiliser getState() pour avoir les données immédiatement
   const conversation = useChatStore(state => state.conversations[conversationId])
-  const xpData = conversation?.xpAndLevel || initialXpAndLevel
+  
+  // Récupérer les données directement du store pour l'initialisation
+  const getConversationData = () => {
+    const state = useChatStore.getState()
+    return state.conversations[conversationId]?.xp_and_level || initialXpAndLevel || DEFAULT_XP_DATA
+  }
+  
+  const xpData = conversation?.xp_and_level || initialXpAndLevel || DEFAULT_XP_DATA
 
-  
-  // Early return si pas de données
-  if (!xpData) return null
-  
   // Ref pour stocker les données XP de l'état *avant* l'animation actuelle
-  const prevXpDataRef = useRef<ProgressionResult>(xpData || DEFAULT_XP_DATA)
+  const prevXpDataRef = useRef<xp_and_level>(getConversationData())
   // État pour suivre la phase d'animation du level up
   const [animatingLevelUpPhase, setAnimatingLevelUpPhase] = useState<null | 'phase1' | 'phase3'>(null)
   
-  // État d'affichage simplifié
-  const [displayState, setDisplayState] = useState<DisplayState>({
-    level: xpData.reachedLevel,
-    totalXp: xpData.reachedXP,
-    isAnimating: false,
+  // État d'affichage simplifié - utiliser getState() pour l'initialisation
+  const [displayState, setDisplayState] = useState<DisplayState>(() => {
+    const initialData = getConversationData()
+    return {
+      level: initialData.reached_level,
+      totalXp: initialData.reached_xp,
+      isAnimating: false,
+    }
   })
   
   // État pour la popup de level up
@@ -65,14 +72,15 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     level: 0, 
     reward: undefined
   })
-  
+
   // Calculer le pourcentage de progression
   const progressPercentage = useMemo(() => {
+    
     const dataForProgress = animatingLevelUpPhase === 'phase1' && prevXpDataRef.current
       ? prevXpDataRef.current
       : xpData
-    const xpInCurrentLevel = displayState.totalXp - dataForProgress.requiredXpForCurrentLevel
-    const xpNeededForLevel = dataForProgress.maxXpForNextLevel - dataForProgress.requiredXpForCurrentLevel
+    const xpInCurrentLevel = displayState.totalXp - dataForProgress.required_xp_for_current_level
+    const xpNeededForLevel = dataForProgress.max_xp_for_next_level - dataForProgress.required_xp_for_current_level
     
     if (xpNeededForLevel <= 0) return 100
     
@@ -108,39 +116,39 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
   
   // Afficher la popup de level up
   const showLevelUpPopup = useCallback((level: number) => {
-    setLevelUpInfo({ show: true, level, reward: xpData.reward })
+    setLevelUpInfo({ show: true, level, reward: xpData?.reward })
     setTimeout(() => {
       setLevelUpInfo({ show: false, level: 0, reward: undefined })
     }, 3000)
-  }, [])
+  }, [xpData?.reward])
   
   // Animation de level up en 3 phases
   const animateLevelUp = useCallback((
     fromXp: number,
     toXp: number,
-    oldXpData: ProgressionResult,
-    newXpData: ProgressionResult
+    oldXpData: xp_and_level,
+    newXpData: xp_and_level
   ) => {
     setDisplayState(prev => ({ ...prev, isAnimating: true }))
     setAnimatingLevelUpPhase('phase1')
     // Phase 1: Remplir la barre de l'ancien niveau jusqu'à 100%
-    animateValue(fromXp, oldXpData.maxXpForNextLevel, 1000,
+    animateValue(fromXp, oldXpData.max_xp_for_next_level, 1000,
       (xp) => setDisplayState(prev => ({ ...prev, totalXp: xp })),
       () => {
         // Phase 2: Changer de niveau et vider la barre
         setDisplayState(prev => ({ 
           ...prev, 
-          level: newXpData.reachedLevel,
-          totalXp: newXpData.requiredXpForCurrentLevel
+          level: newXpData.reached_level,
+          totalXp: newXpData.required_xp_for_current_level
         }))
         
-        showLevelUpPopup(newXpData.reachedLevel)
+        showLevelUpPopup(newXpData.reached_level)
         setAnimatingLevelUpPhase('phase3')
         
         // Phase 3: Animer l'XP restant dans le nouveau niveau après un délai
         
         setTimeout(() => {
-          animateValue(newXpData.requiredXpForCurrentLevel, toXp, 1000,
+          animateValue(newXpData.required_xp_for_current_level, toXp, 1000,
             (xp) => setDisplayState(prev => ({ ...prev, totalXp: xp })),
             () => {
               setDisplayState(prev => ({ ...prev, isAnimating: false }))
@@ -157,7 +165,7 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
   
   
   // Animation XP simple
-  const animateXp = useCallback((fromXp: number, toXp: number, newXpData: ProgressionResult) => {
+  const animateXp = useCallback((fromXp: number, toXp: number, newXpData: xp_and_level) => {
     setDisplayState(prev => ({ ...prev, isAnimating: true }))
     
     animateValue(fromXp, toXp, 1500,
@@ -173,16 +181,16 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
   useEffect(() => {
     if (!xpData || displayState.isAnimating || animatingLevelUpPhase) return
     
-    const hasLeveledUp = xpData.reachedLevel > displayState.level
-    const hasXpChanged = xpData.reachedXP !== displayState.totalXp
+    const hasLeveledUp = xpData.reached_level > displayState.level
+    const hasXpChanged = xpData.reached_xp !== displayState.totalXp
     
     if (hasLeveledUp) {
       // IMPORTANT: On mémorise l'ancien état AVANT de lancer l'animation
       // prevXpDataRef.current contient encore les données de l'ancien niveau
-      animateLevelUp(displayState.totalXp, xpData.reachedXP, prevXpDataRef.current, xpData)
+      animateLevelUp(displayState.totalXp, xpData.reached_xp, prevXpDataRef.current, xpData)
       // NE PAS mettre à jour prevXpDataRef ici, c'est fait dans animateLevelUp
     } else if (hasXpChanged) {
-      animateXp(displayState.totalXp, xpData.reachedXP, xpData)
+      animateXp(displayState.totalXp, xpData.reached_xp, xpData)
       // NE PAS mettre à jour prevXpDataRef ici, c'est fait dans animateXp
     } else {
       // Seulement si aucune animation n'est déclenchée, on met à jour la ref
@@ -195,11 +203,11 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     if (!displayState.isAnimating && !animatingLevelUpPhase && xpData) {
       // Seulement mettre à jour si on n'est pas en train d'animer
       // et si les données ont vraiment changé
-      if (prevXpDataRef.current.reachedXP !== xpData.reachedXP || 
-          prevXpDataRef.current.reachedLevel !== xpData.reachedLevel) {
+      if (prevXpDataRef.current.reached_xp !== xpData.reached_xp || 
+          prevXpDataRef.current.reached_level !== xpData.reached_level) {
         // Mais seulement si ce n'est pas un changement qui va déclencher une animation
-        const wouldTriggerLevelUp = xpData.reachedLevel > displayState.level
-        const wouldTriggerXpChange = xpData.reachedXP !== displayState.totalXp
+        const wouldTriggerLevelUp = xpData.reached_level > displayState.level
+        const wouldTriggerXpChange = xpData.reached_xp !== displayState.totalXp
         
         if (!wouldTriggerLevelUp && !wouldTriggerXpChange) {
           prevXpDataRef.current = xpData
@@ -208,9 +216,7 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     }
   }, [xpData, displayState.isAnimating, displayState.level, displayState.totalXp, animatingLevelUpPhase])
   
-  
-  
-  
+  // Plus besoin d'early return car xpData a toujours une valeur par défaut maintenant
   
   return (
     <div className='flex flex-col justify-between rounded-3xl max-w-md relative'>
@@ -244,8 +250,8 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     <div className='flex justify-end pr-2'>
     <p className='text-sm text-gray-600 text-right'>
     {Math.round(displayState.totalXp)} / {animatingLevelUpPhase === 'phase1' && prevXpDataRef.current
-      ? prevXpDataRef.current.maxXpForNextLevel
-      : xpData.maxXpForNextLevel}
+      ? prevXpDataRef.current.max_xp_for_next_level
+      : xpData?.max_xp_for_next_level}
     </p>
     </div>
     

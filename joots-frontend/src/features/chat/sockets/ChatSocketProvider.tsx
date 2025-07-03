@@ -6,6 +6,7 @@ import { logger } from '@/utils/logger'
 import { socketManager } from '@/lib/sockets/socket-manager'
 import axiosInstance from '@/app/api/axios-instance'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { json } from 'stream/consumers'
 
 interface ChatSocketProviderProps {
   children: ReactNode
@@ -25,12 +26,13 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
   // ✅ Optimisation : Récupération des conversations avec cache et debouncing
   const fetchUserConversations = useCallback(async () => {
     try {
-      // Vérifier le cache d'abord
+      // Check cache first
       if (conversationsCache.current.length > 0) {
         logger.debug('ChatSocketProvider: Utilisation du cache des conversations')
         return conversationsCache.current
       }
 
+      // Check if conversationsIds are already in the store
       let conversationIds = useChatStore.getState().conversationsIds
       if (conversationIds.length > 0) {
         conversationsCache.current = conversationIds
@@ -41,22 +43,52 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), 5000)
 
+      // if still not fetched, fetch conversations,update the store and add to cache
       try {
         const response = await axiosInstance.get('/conversations', {
           signal: controller.signal
         })
         clearTimeout(timeoutId)
 
-        conversationIds = response.data.map((conv: { id: string }) => conv.id)
-        const chatStore = useChatStore.getState()
-        chatStore.setConversationsIds(conversationIds)
+        const conversations = response.data.map((conv: { 
+          conversation_id: string, 
+          participants: string[], 
+          last_message?: { 
+            message_id: string, 
+            content: string, 
+            created_at: string, 
+            sender_id: string, 
+            is_read: boolean 
+          } 
+        }) => ({
+          conversation_id: conv.conversation_id,
+          participants: conv.participants,
+          lastMessage: conv.last_message ? {
+            id: conv.last_message.message_id,
+            content: conv.last_message.content,
+            createdAt: conv.last_message.created_at,
+            senderId: conv.last_message.sender_id,
+            isRead: conv.last_message.is_read
+          } : null
+        }))
+        const conversationIds = conversations.map((conv: { conversation_id: string }) => conv.conversation_id)
+        useChatStore.getState().setConversationsIds(conversationIds)
+
         
-        // Mettre en cache
+        // Add ConversationIds into cache
         conversationsCache.current = conversationIds
         
+        logger.info('[ChatSocketProvider] Conversations Ids stored in store', { count: conversationIds.length })
         return conversationIds
       } catch (error) {
         clearTimeout(timeoutId)
+        logger.error('ChatSocketProvider: Erreur détaillée lors du chargement des conversations:', {
+          error: error instanceof Error ? {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          } : error
+        })
         throw error
       }
     } catch (error) {
@@ -105,8 +137,6 @@ export function ChatSocketProvider({ children }: ChatSocketProviderProps) {
           logger.error('ChatSocketProvider: Impossible de connecter le chat - socket utilisateur non disponible')
           return false
         }
-
-        logger.debug('ChatSocketProvider: Socket utilisateur prêt, connexion du chat...')
 
         // ✅ Optimisation : Récupération des conversations en parallèle
         const [conversationIds] = await Promise.all([

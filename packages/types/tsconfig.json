@@ -1,0 +1,19 @@
+{
+    "compilerOptions": {
+      "composite": true,
+      "declaration": true,
+      "declarationMap": false,
+      "emitDeclarationOnly": false,
+      "outDir": "dist",
+      "rootDir": ".",
+      "strict": true,
+      "moduleResolution": "node",
+      "target": "ES2020",
+      "module": "CommonJS",
+      "esModuleInterop": true,
+      "forceConsistentCasingInFileNames": true,
+      "skipLibCheck": true,
+      "preserveConstEnums": true
+    },
+    "include": ["*.ts"]
+  }

@@ -1,99 +1,27 @@
-import { Conversation, ConversationParticipant } from '@/features/conversations/conversation.types'
-import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types'
-import { Question } from '@/features/questions/question.types'
+import { Conversation, ConversationParticipant, xp_and_level } from '@shared/conversation.types'
+import { CurrentPollWithRelations, Question } from '@shared/poll.types'
+import { Message, MessageStatus, ChatStoreMessage } from '@shared/message.types'
+import { IcebreakerResponse } from '@shared/icebreaker-event.types'
 
-export type MessageStatus = 'sent' | 'delivered' | 'read'
-export type MessageType = 'TEXT' | 'ANSWER'
-
-export interface Message {
-  id: string
-  content: string
-  senderId: string
-  receiverId: string
-  createdAt: Date
-  status: MessageStatus
-  messageType: MessageType
-  userAId?: string
-  userAAnswer?: string
-  userBId?: string
-  userBAnswer?: string
+// Type étendu pour le frontend avec current_poll comme objet au lieu de string
+export interface ConversationWithCurrentPollObject extends Omit<Conversation, 'current_poll'> {
+  current_poll?: CurrentPollWithRelations | null
+  xp_and_level?: xp_and_level | null
 }
 
 export interface ChatState {
-  conversations: Record<string, Conversation>
+  conversations: Record<string, ConversationWithCurrentPollObject>
   activeConversationId: string | null
-  currentQuestionGroup: string | null
+  currentPoll: string | null
   error: string | null
   userId?: string
   token?: string
   conversationsIds: string[]
   icebreakerQuestions: Record<string, Question>
+  isChatSocketConnected: boolean
 }
 
-// Types exportés pour être utilisés dans chatEventHandlers.ts
-export interface NewMessageEvent {
-  id: string
-  content: string
-  sender?: { id: string }
-  senderId?: string
-  recipientId?: string
-  type?: string
-  createdAt?: string
-  timestamp?: string
-  conversationId: string
-}
 
-export interface TypingEvent {
-  conversationId: string
-  userId: string
-  isTyping: boolean
-}
-
-export interface MessageReadEvent {
-  conversationId: string
-  messageId: string
-}
-
-export interface IcebreakerStatusEvent {
-  conversationId: string
-  userId: string
-  isIcebreakerReady: boolean
-  timestamp?: string
-}
-
-export interface IcebreakerQuestionGroupEvent {
-  conversationId: string
-  questionGroup: string
-}
-
-export interface IcebreakerResponsesEvent {
-  id?: string
-  conversationId: string
-  questionLabel: string
-  response1: string
-  user1: string
-  response2: string
-  user2: string
-  xpAndLevel?: ProgressionResult
-}
-
-export interface ProgressionResult {
-  xpPerQuestion : number;
-  reachedXP : number;
-  reachedLevel: number;
-  remainingXpAfterLevelUp: number;
-  requiredXpForCurrentLevel: number;
-  requiredXpForNextLevel: number;
-  maxXpForNextLevel: number;
-  nextLevel: number;
-  reward?: string;
-  photoRevealPercent?: number | null;
-}
-
-export interface XpLevelUpdateEvent {
-  conversationId: string
-  xpAndLevel: ProgressionResult
-}
 
 export type ChatActions = {
   // Connection context
@@ -102,8 +30,8 @@ export type ChatActions = {
 
   // Conversation lifecycle
   loadAllConversations: () => Promise<void>
-  updateConversation: (conversationId: string, updates: Partial<Conversation>) => void
-  initializeConversation: (conversation: Conversation) => void
+  updateConversation: (conversationId: string, updates: Partial<ConversationWithCurrentPollObject>) => void
+  initializeConversation: (conversation: ConversationWithCurrentPollObject) => void
 
   // Message lifecycle
   addMessage: (conversationId: string, message: Message) => void
@@ -114,7 +42,7 @@ export type ChatActions = {
   updateParticipantField: (
     conversationId: string,
     participantId: string,
-    field: 'isIcebreakerReady' | 'hasGivenAnswer' | 'isTyping',
+    field: 'is_icebreaker_ready' | 'has_given_answer' | 'is_typing',
     value: boolean
   ) => void
 
@@ -122,13 +50,13 @@ export type ChatActions = {
   resetIcebreakerStatus: (conversationId: string) => void
 
   // XP and Level progression
-  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => void
+  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: xp_and_level) => void
 
   // Helpers
-  getMessagesFromConversation: (conversationId: string) => Message[]
-  getConversation: (conversationId: string) => Conversation | undefined
-  getCurrentQuestionGroup: (conversationId: string) => string | null
-  setCurrentQuestionGroup: (conversationId: string, questionGroup: string) => void
+  getMessagesFromConversation: (conversationId: string) => ChatStoreMessage[]
+  getConversation: (conversationId: string) => ConversationWithCurrentPollObject | undefined
+  getCurrentPoll: (conversationId: string) => CurrentPollWithRelations | null
+  setCurrentPoll: (conversationId: string, poll: CurrentPollWithRelations) => void
   getParticipant: (conversationId: string, userId: string) => ConversationParticipant | undefined
   getOtherParticipant: (
     conversationId: string,
@@ -146,7 +74,7 @@ export type ChatActions = {
   setParticipantResponse: (
     conversationId: string,
     participantId: string,
-    response: IcebreakerResponse
+    response: IcebreakerResponse | null
   ) => void
 
   // Conversation actions

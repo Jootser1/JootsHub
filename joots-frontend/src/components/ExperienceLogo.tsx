@@ -27,11 +27,11 @@ export function ExperienceLogo({ experience, size = 48 }: ExperienceLogoProps) {
   if (!user) return null
   if (!activeConversationId) return null
 
-  const currentUser = getParticipant(activeConversationId, user.id)
-  const otherParticipant = getOtherParticipant(activeConversationId, user.id)
+  const currentUser = getParticipant(activeConversationId, user.user_id)
+  const otherParticipant = getOtherParticipant(activeConversationId, user.user_id)
 
-  const isCurrentUserReady = currentUser?.isIcebreakerReady
-  const isOtherParticipantReady = otherParticipant?.isIcebreakerReady
+  const isCurrentUserReady = currentUser?.is_icebreaker_ready
+  const isOtherParticipantReady = otherParticipant?.is_icebreaker_ready
 
   let imageSrc = '/icebreaker_oo.png'
   if (isCurrentUserReady && isOtherParticipantReady) {

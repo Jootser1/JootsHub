@@ -1,4 +1,4 @@
-import { User } from '@/features/user/user.types'
+import { User } from '@shared/user.types'
 
 export interface ContactStore {
   // Liste des utilisateurs avec qui on a une conversation

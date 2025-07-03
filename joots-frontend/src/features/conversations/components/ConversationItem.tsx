@@ -1,37 +1,52 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Conversation } from '@/features/conversations/conversation.types'
+import { Conversation } from '@shared/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { fr } from 'date-fns/locale'
-import { getOtherParticipantInConversation } from '@/features/conversations/utils/conversation-utils'
+import { getOtherParticipantUser } from '@/features/conversations/utils/conversation-utils'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ensureDate } from '@/utils/date-utils'
+import { logger } from '@/utils/logger'
 
 interface ConversationItemProps {
   conversation: Conversation
 }
 
 export function ConversationItem({ conversation }: ConversationItemProps) {
-  const currentUserId = useUserStore(state => state.user?.id)
+  logger.debug('ConversationItem - Received conversation', { conversation })
+  
+  const currentUserId = useUserStore(state => state.user?.user_id)
+  logger.debug('ConversationItem - Current user ID', { currentUserId })
+  
   const contactStore = useContactStore()
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
-  const otherUser = currentUserId
-    ? getOtherParticipantInConversation(conversation, currentUserId)
-    : undefined
-  if (!otherUser) return null
+  if (!currentUserId) {
+    logger.warn('ConversationItem - No current user ID, returning null')
+    return null
+  }
+  
+  const otherUser = getOtherParticipantUser(conversation, currentUserId)
+  logger.debug('ConversationItem - Other user', { otherUser })
+  
+  if (!otherUser) {
+    logger.warn('ConversationItem - No other user found, returning null')
+    return null
+  }
 
   // Récupérer le dernier message s'il existe
-  const lastMessage = conversation.messages[0]
+  const lastMessage = conversation.messages?.[0]
+  logger.debug('ConversationItem - Last message', { lastMessage })
 
   // Récupérer le statut en ligne depuis le contactStore
-  const isOnline = contactStore.isUserOnline(otherUser.id)
+  const isOnline = useContactStore(state => state.isUserOnline(otherUser.user_id))
+  logger.debug('ConversationItem - Is online', { isOnline })
 
   return (
     <Link
-      href={`/conversations/${conversation.id}`}
+      href={`/conversations/${conversation.conversation_id}`}
       className='block hover:bg-gray-50 transition-colors'
     >
       <div className='flex items-center p-4'>
@@ -56,7 +71,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
           </div>
           {/* Indicateur de statut en ligne */}
           <ConversationStatus
-            isOnline={isOnline}
+            is_online={isOnline}
             className='absolute -bottom-1 -right-1 border-2 border-white'
           />
         </div>
@@ -66,7 +81,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
             <h3 className='font-medium truncate'>{otherUser.username}</h3>
             {lastMessage && (
               <span className='text-xs text-gray-500 whitespace-nowrap ml-2'>
-                {formatDistanceToNow(ensureDate(lastMessage.createdAt), {
+                {formatDistanceToNow(ensureDate(lastMessage.created_at), {
                   addSuffix: true,
                   locale: fr,
                 })}

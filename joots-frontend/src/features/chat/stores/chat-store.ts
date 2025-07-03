@@ -1,18 +1,25 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { Message, ChatState, ChatStore, MessageStatus, ProgressionResult } from '@/features/chat/chat.types'
-import { Conversation } from '@/features/conversations/conversation.types'
-import { getUnreadCount } from '../../conversations/utils/conversation-utils'
+import { ChatState, ChatStore, ConversationWithCurrentPollObject } from '@/features/chat/chat.types'
+import { xp_and_level } from '@shared/conversation.types'
+import { CurrentPollWithRelations } from '@shared/poll.types'
+import { Conversation, ConversationParticipant } from '@shared/conversation.types'
+import { Message } from '@shared/message.types'
+import { MessageStatus } from '@shared/message.types'
+import { getUnreadCount, getOtherParticipant } from '../../conversations/utils/conversation-utils'
 import axiosInstance from '@/app/api/axios-instance'
 import { logger } from '@/utils/logger'
+import { IcebreakerResponse } from '@shared/icebreaker-event.types'
+import { ChatStoreMessage } from '@shared/message.types'
 
 const initialState: ChatState = {
   conversations: {},
   activeConversationId: null,
   error: null,
-  currentQuestionGroup: null,
+  currentPoll: null,
   conversationsIds: [],
   icebreakerQuestions: {},
+  isChatSocketConnected: false,
 }
 
 export const useChatStore = create<ChatStore>()(
@@ -34,14 +41,20 @@ export const useChatStore = create<ChatStore>()(
         // Conversations
         loadAllConversations: async () => {
           try {
-            logger.info('Début du chargement des conversations')
             const response = await axiosInstance.get('/conversations')
-            set(state => {
-              const newConversations = { ...state.conversations }
+            
+            set((state: ChatStore) => {
+              // load conversations and remove obsolete ones in the chat store
+              const newConversations: Record<string, ConversationWithCurrentPollObject> = {}
 
-              response.data.forEach((conversation: Conversation) => {
-                newConversations[conversation.id] = {
+              response.data.forEach((conversation: ConversationWithCurrentPollObject) => {
+                const formattedParticipants = conversation.participants.map(p => ({
+                  ...p,
+                  user_id: (p as any).user_id ?? p.user?.user_id
+                }))
+                newConversations[conversation.conversation_id] = {
                   ...conversation,
+                  participants: formattedParticipants,
                   messages: conversation.messages || [],
                 };
               })
@@ -50,9 +63,7 @@ export const useChatStore = create<ChatStore>()(
                 conversations: newConversations,
               }
             })
-            logger.info(
-              `${response.data.length} conversation(s) récupérées depuis la bdd et syncstore`
-            )
+            logger.info(`[Chat Store] Filled with ${response.data.length} actual conversations with Participants and Last Message`)
           } catch (error) {
             logger.error(
               'Erreur lors du chargement des conversations vers le ChatStore',
@@ -61,7 +72,7 @@ export const useChatStore = create<ChatStore>()(
           }
         },
 
-        updateConversation: (conversationId: string, updates: Partial<Conversation>) =>
+        updateConversation: (conversationId: string, updates: Partial<ConversationWithCurrentPollObject>) =>
           set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
@@ -76,16 +87,22 @@ export const useChatStore = create<ChatStore>()(
             }
           }),
 
-        initializeConversation: (conversation: Conversation) =>
-          set(state => ({
-            conversations: {
-              ...state.conversations,
-              [conversation.id]: {
-                ...conversation,
-                messages: conversation.messages || [],
+        initializeConversation: (conversation: ConversationWithCurrentPollObject) =>
+          set(state => {
+            const existingConversation = state.conversations[conversation.conversation_id];
+            if (existingConversation) {
+              return state; // Ne pas réinitialiser si la conversation existe déjà
+            }
+            return {
+              conversations: {
+                ...state.conversations,
+                [conversation.conversation_id]: {
+                  ...conversation,
+                  messages: conversation.messages || [],
+                },
               },
-            },
-          })),
+            };
+          }),
 
         // Messages
         addMessage: (conversationId: string, message: Message) =>
@@ -115,7 +132,7 @@ export const useChatStore = create<ChatStore>()(
                   ...conversation,
                   messages: [...existingMessages, message], // Ajouter le message ici
                   lastMessage: message,
-                  unreadCount: getUnreadCount(conversation, message.senderId),
+                  unreadCount: getUnreadCount(conversation, message.sender_id),
                 },
               },
             };
@@ -126,8 +143,8 @@ export const useChatStore = create<ChatStore>()(
             const conversation = state.conversations[conversationId];
             if (!conversation || !conversation.messages) return state;
 
-            const updatedMessages = conversation.messages.map(msg =>
-              msg.id === messageId ? { ...msg, status } : msg
+            const updatedMessages = conversation.messages.map((msg: Message) =>
+              msg.message_id === messageId ? { ...msg, status } : msg
             );
             return {
               conversations: {
@@ -145,9 +162,9 @@ export const useChatStore = create<ChatStore>()(
             const conversation = state.conversations[conversationId];
             if (!conversation || !conversation.messages) return state;
 
-            const updatedMessages = conversation.messages.map(msg => ({
+            const updatedMessages = conversation.messages.map((msg: Message) => ({
               ...msg,
-              status: msg.status === 'sent' ? ('read' as MessageStatus) : msg.status,
+              status: msg.status === 'SENT' ? ('READ' as MessageStatus) : msg.status,
             }));
             return {
               conversations: {
@@ -161,15 +178,21 @@ export const useChatStore = create<ChatStore>()(
             };
           }),
 
-        getMessagesFromConversation: (conversationId: string) =>
-          get().conversations[conversationId]?.messages || [],
+        getMessagesFromConversation: (conversationId: string) => {
+          const rawMessages = get().conversations[conversationId]?.messages || []
+          // Assure une sortie conforme à ChatStoreMessage
+          return rawMessages.map((msg: any) => ({
+            message_type: msg.message_type ?? 'MESSAGE',
+            ...msg,
+          })) as unknown as ChatStoreMessage[]
+        },
 
         getConversation: (conversationId: string) => get().conversations[conversationId],
 
-        getCurrentQuestionGroup: (conversationId: string) =>
-          get().conversations[conversationId]?.currentQuestionGroup || null,
+        getCurrentPoll: (conversationId: string) =>
+          get().conversations[conversationId]?.current_poll || null,
 
-        setCurrentQuestionGroup: (conversationId: string, questionGroup: string) =>
+        setCurrentPoll: (conversationId: string, poll: CurrentPollWithRelations) =>
           set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
@@ -178,7 +201,7 @@ export const useChatStore = create<ChatStore>()(
                 ...state.conversations,
                 [conversationId]: {
                   ...conversation,
-                  currentQuestionGroup: questionGroup,
+                  current_poll: poll,
                 },
               },
             }
@@ -188,7 +211,7 @@ export const useChatStore = create<ChatStore>()(
         updateParticipantField: (
           conversationId: string,
           participantId: string,
-          field: 'isIcebreakerReady' | 'hasGivenAnswer' | 'isTyping',
+          field: 'is_icebreaker_ready' | 'has_given_answer' | 'is_typing',
           value: boolean
         ) =>
           set(state => {
@@ -196,8 +219,8 @@ export const useChatStore = create<ChatStore>()(
             if (!conversation) return state
 
             const updatedParticipants =
-              conversation.participants?.map(p =>
-                p.userId === participantId ? { ...p, [field]: value } : p
+              conversation.participants?.map((p: ConversationParticipant) =>
+                p.user_id === participantId ? { ...p, [field]: value } : p
               ) ?? []
 
             return {
@@ -214,19 +237,25 @@ export const useChatStore = create<ChatStore>()(
         setParticipantResponse: (
           conversationId: string,
           participantId: string,
-          response: {
-            questionGroupId: string
-            optionId: string
-            answeredAt: string
-          } | null
+          response: IcebreakerResponse | null
         ) =>
-          set((state: ChatState) => {
+          set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
 
+            const transformedResponse = response
+              ? {
+                  poll_id: response.pollId,
+                  option_id: response.optionId,
+                  answered_at: response.answeredAt,
+                }
+              : null
+
             const updatedParticipants =
-              conversation.participants?.map(p =>
-                p.userId === participantId ? { ...p, response, hasGivenAnswer: !!response } : p
+              conversation.participants?.map((p: ConversationParticipant) =>
+                p.user_id === participantId
+                  ? { ...p, response: transformedResponse, has_given_answer: !!response }
+                  : p
               ) ?? []
 
             return {
@@ -241,17 +270,17 @@ export const useChatStore = create<ChatStore>()(
           }),
 
         resetIcebreakerStatus: (conversationId: string) =>
-          set((state: ChatState) => {
+          set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
 
             const participants = conversation.participants
             if (!participants || participants.length < 2) return state
 
-            const updatedParticipants = participants.map(p => ({
+            const updatedParticipants = participants.map((p: ConversationParticipant) => ({
               ...p,
-              isIcebreakerReady: false,
-              hasGivenAnswer: false,
+              is_icebreaker_ready: false,
+              has_given_answer: false,
               response: null,
             }))
 
@@ -261,7 +290,7 @@ export const useChatStore = create<ChatStore>()(
                 [conversationId]: {
                   ...conversation,
                   participants: updatedParticipants,
-                  currentQuestionGroup: undefined,
+                  current_poll: null,
                 },
               },
             }
@@ -269,34 +298,40 @@ export const useChatStore = create<ChatStore>()(
 
         getParticipant: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId === userId)
+          return conversation?.participants.find((p: ConversationParticipant) => p.user_id === userId)
         },
 
         getOtherParticipant: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId !== userId)
+          return getOtherParticipant(conversation, userId)
         },
 
         getOtherParticipantId: (conversationId: string, userId: string) => {
-          const conversation = get().conversations[conversationId]
-          return conversation?.participants.find(p => p.userId !== userId)?.userId
+          const state = get();
+          const conversation = state.conversations ? state.conversations[conversationId] : undefined;
+          return conversation ? getOtherParticipant(conversation, userId)?.user_id : undefined;
         },
 
         getOtherParticipantIcebreakerStatus: (conversationId: string, userId: string) => {
           const conversation = get().conversations[conversationId]
           if (!conversation) return undefined
-          const other = conversation.participants.find(p => p.userId !== userId)
-          return other?.isIcebreakerReady
+          const other = conversation.participants.find((p: ConversationParticipant) => p.user_id !== userId)
+          return other?.is_icebreaker_ready
         },
 
         getParticipantResponse: (conversationId: string, participantId: string) => {
           const conversation = get().conversations[conversationId]
-          const participant = conversation?.participants.find(p => p.userId === participantId)
-          return participant?.response || null
+          const participant = conversation?.participants.find((p: ConversationParticipant) => p.user_id === participantId)
+          const resp = participant?.response || null
+          if (!resp) return null
+          return {
+            pollId: (resp as any).poll_id,
+            optionId: (resp as any).option_id,
+            answeredAt: (resp as any).answered_at,
+          } as IcebreakerResponse
         },
 
-
-        updateConversationXpAndLevel: (conversationId: string, xpAndLevel: ProgressionResult) => {
+        updateConversationXpAndLevel: (conversationId: string, xpAndLevel: xp_and_level) => {
           set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state
@@ -314,6 +349,7 @@ export const useChatStore = create<ChatStore>()(
             }
           })
         },
+
       }),
       {
         name: 'chat-storage',

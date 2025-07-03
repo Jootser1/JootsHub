@@ -18,11 +18,16 @@
     "strictBindCallApply": false,
     "noFallthroughCasesInSwitch": false,
     "paths": {
-      "@prisma/client": ["./node_modules/.prisma/client"]
-    },
+      "@shared": ["../packages/types/dist/index.d.ts"],
+      "@shared/*": ["../packages/types/dist/*"],
+      "@config/*": ["../packages/config/*"]
+    },    
     "resolveJsonModule": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   },
-  "include": ["src"],                      // Inclut src et tous ses sous-dossiers
-  "exclude": ["node_modules", "dist", "prisma"] // ✅ exclut prisma/ du build
+  "include": ["src", "generated"],                      
+  "exclude": ["node_modules", "dist"],
+  "references": [
+    { "path": "../packages/types" }
+  ]
 }

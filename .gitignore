@@ -18,8 +18,14 @@
 /joots-frontend/node_modules
 /joots-frontend/coverage
 
+#packages
+/packages/types/dist
+
 # Node.js dependencies
 .npm/
+
+#compiled
+*.d.ts
 
 # Logs
 logs/
@@ -71,6 +77,8 @@ backend-clean.zip
 !.yarn/plugins
 !.yarn/releases
 !.yarn/versions
+/Fixes/*
+/Archives/*
 
 # TypeScript
 *.tsbuildinfo

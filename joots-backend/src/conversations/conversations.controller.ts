@@ -23,25 +23,18 @@ interface AuthenticatedRequest extends Request {
 @UseGuards(JwtAuthGuard)
 export class ConversationsController {
   constructor(private readonly conversationsService: ConversationsService) {}
-
+  
   @Get()
   findAll(@Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.findAllConversationsForAUserId(
+    return this.conversationsService.findAllConversationsWithPollandXpForAUserId(
       req.user.sub
     );
   }
-
-  @Get('/messages/:id')
-  findMessages(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
-    if (!req.user?.sub) {
-      throw new UnauthorizedException('User not authenticated');
-    }
-    return this.conversationsService.findMessages(id, req.user.sub);
-  }
-
+  
+  
   @Post()
   create(
     @Body() body: { receiverId: string },
@@ -50,26 +43,38 @@ export class ConversationsController {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.create(req.user.sub, body.receiverId);
+    return this.conversationsService.createConversation(req.user.sub, body.receiverId);
   }
-
+  
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    return this.conversationsService.fetchConversationById(id);
+    return this.conversationsService.fetchOnlyConversationById(id, req.user.sub);
   }
-
+  
   @Get('level/:id')
   async getConversationLevel(@Param('id') id: string, @Req() req: AuthenticatedRequest) {
     if (!req.user?.sub) {
       throw new UnauthorizedException('User not authenticated');
     }
-    const conversation = await this.conversationsService.fetchConversationById(id);
+    const conversation = await this.conversationsService.fetchConversationByIdWithXpAndLevel(id);
     if (!conversation) {
       throw new NotFoundException('Conversation non trouvée');
     }
-    return this.conversationsService.getConversationLevel(conversation.xpPoint, conversation.difficulty);
+    return this.conversationsService.getConversationLevel(conversation.xp_and_level.reached_xp, conversation.xp_and_level.difficulty);
+  }
+  
+  
+  @Post('random-chat')
+  async startRandomChat(@Req() req: AuthenticatedRequest) {
+    if (!req.user?.sub) {
+      throw new UnauthorizedException('User not authenticated');
+    }
+
+    const conversation = await this.conversationsService.startRandomConversation(req.user.sub);
+    return conversation
   }
 }
+  

@@ -1,5 +1,5 @@
-import { Message } from '@/features/chat/chat.types'
-import { IcebreakerResponse } from '@/features/icebreakers/icebreaker.types'
+import { Message } from '@shared/message.types'
+import { IcebreakerResponse } from '@shared/icebreaker-event.types'
 // Events envoyés au serveur
 export interface ClientToServerEvents {
   joinConversation: (conversationId: string) => void
@@ -7,7 +7,7 @@ export interface ClientToServerEvents {
   sendMessage: (data: { conversationId: string; content: string; userId: string }) => void
   messageReceived: (data: { messageId: string; conversationId: string }) => void
   messageRead: (data: { messageId: string; conversationId: string }) => void
-  typing: (data: { conversationId: string; userId: string; isTyping: boolean }) => void
+  typing: (data: { conversation_id: string; user_id: string; is_typing: boolean }) => void
   icebreakerReady: (conversationId: string) => void
   icebreakerResponse: (data: { conversationId: string; response: IcebreakerResponse }) => void
 }
@@ -18,11 +18,11 @@ export interface ServerToClientEvents {
   disconnect: () => void
   error: (error: { message: string }) => void
   newMessage: (message: Message) => void
-  messageStatus: (data: { messageId: string; status: 'delivered' | 'read' }) => void
-  participantOnline: (data: { participantId: string; isOnline: boolean }) => void
-  typing: (data: { conversationId: string; userId: string; isTyping: boolean }) => void
-  icebreakerQuestion: (data: { conversationId: string; question: string }) => void
-  icebreakerParticipantReady: (data: { conversationId: string; participantId: string }) => void
+  messageStatus: (data: { message_id: string; status: 'delivered' | 'read' }) => void
+  participantOnline: (data: { participant_id: string; is_online: boolean }) => void
+  typing: (data: { conversation_id: string; user_id: string; is_typing: boolean }) => void
+  icebreakerQuestion: (data: { conversation_id: string; question: string }) => void
+  icebreakerParticipantReady: (data: { conversation_id: string; participant_id: string }) => void
 }
 
 export interface SocketConfig {
@@ -41,28 +41,16 @@ export interface SocketConfig {
   }
 }
 
-export interface UserStatusChange {
-  userId: string
-  isOnline: boolean
-  timestamp?: string
-  username?: string
-  avatar?: string
-  eventType?: 'connection' | 'disconnection'
-  reason?: string
-  error?: boolean
-}
-
 export interface SocketMessage {
-  id: string
+  message_id: string
   content: string
-  senderId: string
-  receiverId: string
-  createdAt: string
-  isRead: boolean
+  sender_id: string
+  receiver_id: string
+  created_at: string
+  is_read: boolean
 }
 
-export interface TypingStatus {
-  conversationId: string
-  userId: string
-  isTyping: boolean
-}
+
+
+
+

@@ -1,7 +1,8 @@
 import { BaseSocketService } from '../../../lib/sockets/base-socket-service'
 import { logger } from '@/utils/logger'
 import { useUserStore } from '@/features/user/stores/user-store'
-import { createUserEventRegistry, UserStatusChangeData } from './user-event-registry'
+import { UserStatusChangeData } from '@shared/user.types'
+import { createUserEventRegistry } from './user-event-registry'
 
 type UserEventHandler = (data: UserStatusChangeData | Record<string, unknown>) => void
 
@@ -59,7 +60,7 @@ export class UserSocketService extends BaseSocketService {
       // Si c'est l'utilisateur actuel, mettre à jour son propre statut
       if (userId === this.userId) {
         userStore.setUserStatus(isOnline)
-        this.socket.emit('updateUserStatus', { isOnline })
+        this.socket.emit('updateUserStatus', { user_id: userId, is_online: isOnline })
       }
     } catch (error) {
       logger.error(
@@ -108,7 +109,7 @@ export class UserSocketService extends BaseSocketService {
     }
 
     try {
-      this.socket.emit('getContactsOnlineStatus', { contactIds })
+      this.socket.emit('getContactsOnlineStatus', { contact_ids: contactIds })
       logger.debug(`UserSocketService: Demande des statuts en ligne pour ${contactIds.length} contacts`)
     } catch (error) {
       logger.error(
@@ -122,10 +123,10 @@ export class UserSocketService extends BaseSocketService {
     return (
       typeof data === 'object' &&
       data !== null &&
-      'userId' in data &&
-      'isOnline' in data &&
-      typeof (data as UserStatusChangeData).userId === 'string' &&
-      typeof (data as UserStatusChangeData).isOnline === 'boolean'
+      'user_id' in data &&
+      'is_online' in data &&
+      typeof (data as UserStatusChangeData).user_id === 'string' &&
+      typeof (data as UserStatusChangeData).is_online === 'boolean'
     )
   }
 }

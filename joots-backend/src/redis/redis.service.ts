@@ -47,6 +47,10 @@ export class RedisService {
     return this.redis.hset(key, field, value);
   }
 
+  async hgetall(key: string): Promise<{ [key: string]: string }> {
+    return this.redis.hgetall(key);
+  }
+
   // Nouvelles méthodes pour la gestion du statut utilisateur
   async setUserOnline(userId: string, ttl: number = 300) {
     const batch = this.redis.multi();

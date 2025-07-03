@@ -3,7 +3,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
-import { PrismaModule } from '../prisma/prisma.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { LoggerModule } from './logger/logger.module';
 import { GatewaysModule } from './gateways/gateways.module';
 import { ConfigModule } from '@nestjs/config';
@@ -11,7 +11,7 @@ import { ConversationsModule } from './conversations/conversations.module';
 import { MessagesModule } from './messages/messages.module';
 import { QuestionModule } from './questions/question.module';
 import { IcebreakerModule } from './icebreakers/icebreaker.module';
-import { ProfileModule } from './profile/profile.module';
+import { MyProfileModule } from './myprofile/profile.module';
 
 @Module({
   imports: [
@@ -27,7 +27,7 @@ import { ProfileModule } from './profile/profile.module';
     MessagesModule,
     QuestionModule,
     IcebreakerModule,
-    ProfileModule,
+    MyProfileModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -1,0 +1,14 @@
+[
+  { "id": 1, "icon": "spirituality", "fr": "Spiritualité", "en": "Spirituality" },
+  { "id": 2, "icon": "politics", "fr": "News & Politique", "en": "News & Politics" },
+  { "id": 3, "icon": "sciences", "fr": "Technologie & Sciences", "en": "Technology & Science" },
+  { "id": 4, "icon": "sex", "fr": "Sexe", "en": "Sex" },
+  { "id": 5, "icon": "fun", "fr": "Fun", "en": "Fun" },
+  { "id": 6, "icon": "media", "fr": "Média et Célébrité", "en": "Media & Celebrity" },
+  { "id": 7, "icon": "social", "fr": "Relations Sociales", "en": "Social Relationships" },
+  { "id": 8, "icon": "dailylife", "fr": "Vie Quotidienne", "en": "Daily Life" },
+  { "id": 9, "icon": "innerself", "fr": "Introspection", "en": "Introspection" },
+  { "id": 10, "icon": "business", "fr": "Business", "en": "Business" },
+  { "id": 11, "icon": "culture", "fr": "Monde & Culture", "en": "World & Culture" },
+  { "id": 12, "icon": "sport", "fr": "Sport", "en": "Sport" }
+]

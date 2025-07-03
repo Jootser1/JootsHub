@@ -1,10 +1,9 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
-import { User } from '@/features/user/user.types'
+import { devtools, persist } from 'zustand/middleware'
+import { User } from '@shared/user.types'
 import { logger } from '@/utils/logger'
-import axiosInstance from '@/app/api/axios-instance'
-import { devtools } from 'zustand/middleware'
 import { getSession } from 'next-auth/react'
+import axiosInstance from '@/app/api/axios-instance'
 
 interface UserStore {
   // User state
@@ -20,6 +19,7 @@ interface UserStore {
   setUserStatus: (isOnline: boolean, source?: 'socket' | 'redis') => void
   updateChatAvailability: (isAvailable: boolean) => void
   syncUserData: () => Promise<void>
+
 }
 
 export const useUserStore = create<UserStore>()(
@@ -39,8 +39,7 @@ export const useUserStore = create<UserStore>()(
         setUserStatus: (isOnline, source = 'socket') => {
           set(state => {
             if (!state.user) return state
-
-            const newUser = { ...state.user, isOnline }
+            const newUser = { ...state.user, is_online: isOnline }
             return { user: newUser }
           })
         },
@@ -56,39 +55,48 @@ export const useUserStore = create<UserStore>()(
         syncUserData: async () => {
           try {
             const session = await getSession()
-            if (!session?.user?.id) return
+            logger.debug('syncUserData: Session récupérée', { session })
+            
+            if (!session?.user?.id) {
+              logger.warn('syncUserData: Pas d\'ID utilisateur dans la session')
+              return
+            }
 
             const response = await axiosInstance.get(`/users/${session.user.id}`)
 
             if (!response.data) {
-              logger.error('Données utilisateur invalides reçues du serveur')
+              logger.error('syncUserData: Données utilisateur invalides reçues du serveur')
               return
             }
 
             const userData = {
-              id: response.data.id,
+              user_id: session.user.id,
               username: response.data.username,
               avatar: response.data.avatar,
-              bio: response.data.bio || '',
-              isOnline: true,
-              isAvailableForChat: response.data.isAvailableForChat,
+              last_seen: response.data.last_seen,
             }
 
             set({ user: userData })
+            
           } catch (error) {
             logger.error(
-              'Erreur lors de la synchronisation des données utilisateur:',
+              'syncUserData: Erreur lors de la synchronisation des données utilisateur:',
               error instanceof Error ? error : new Error(String(error))
             )
           }
         },
+
+        // Socket state
+        resetSocketState: () => {
+          logger.debug('[UserStore] État socket réinitialisé')
+        }
       }),
       {
-        name: 'user-storage',
+        name: 'user-store',
         partialize: state => ({
           user: state.user,
-          mobileMenuOpen: state.mobileMenuOpen,
-        }),
+          mobileMenuOpen: state.mobileMenuOpen
+        })
       }
     )
   )

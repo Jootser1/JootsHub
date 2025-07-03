@@ -1,13 +1,13 @@
 import { handleTypingEvent,
    handleIcebreakerStatusUpdatedEvent,
     handleIcebreakerResponsesEvent,
-    handleIcebreakerQuestionGroupEvent,
+    handleIcebreakerPollEvent,
      handleNewMessageEvent } from './chat-event-handlers'
 
 export const chatEventRegistry = {
   newMessage: handleNewMessageEvent,
   typing: handleTypingEvent,
   icebreakerStatusUpdated: handleIcebreakerStatusUpdatedEvent,
-  icebreakerQuestionGroup: handleIcebreakerQuestionGroupEvent,
+  icebreakerPoll: handleIcebreakerPollEvent,
   icebreakerResponses: handleIcebreakerResponsesEvent,
 }

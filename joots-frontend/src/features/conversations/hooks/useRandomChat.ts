@@ -14,30 +14,43 @@ export function useRandomChat() {
   const startRandomChat = async () => {
     setIsLoading(true)
     try {
-      const { conversationId } = await conversationService.startRandomChat()
+      const { conversation_id } = await conversationService.startRandomChat()
 
       // Attendre que la conversation soit disponible
       let retries = 0
-      const maxRetries = 3
+      const maxRetries = 5
+      const retryDelay = 2000
 
       while (retries < maxRetries) {
         try {
-          await axiosInstance.get(`/conversations/${conversationId}`)
-          break
+          const response = await axiosInstance.get(`/conversations/${conversation_id}`)
+          if (response.data) {
+            // Charger les contacts après la création de la conversation
+            await loadContacts()
+
+            toast.success('Conversation créée ! Redirection vers le chat...')
+            
+            // Utiliser replace au lieu de push pour éviter les problèmes de navigation
+            router.replace(`/conversations/${conversation_id}`)
+            
+            // Vérifier que la redirection a bien été effectuée
+            setTimeout(() => {
+              if (window.location.pathname !== `/conversations/${conversation_id}`) {
+                logger.warn('Redirection échouée, tentative de redirection manuelle')
+                window.location.href = `/conversations/${conversation_id}`
+              }
+            }, 1000)
+            
+            break
+          }
         } catch (error) {
           retries++
           if (retries === maxRetries) {
             throw new Error("La conversation n'est pas encore disponible")
           }
-          await new Promise(resolve => setTimeout(resolve, 1000)) // Attendre 1 seconde
+          await new Promise(resolve => setTimeout(resolve, retryDelay))
         }
       }
-
-      // Charger les contacts après la création de la conversation
-      await loadContacts()
-
-      toast.success('Conversation créée ! Redirection vers le chat...')
-      router.push(`/conversations/${conversationId}`)
     } catch (error: unknown) {
       logger.error(
         '[useRandomChat] Erreur:',

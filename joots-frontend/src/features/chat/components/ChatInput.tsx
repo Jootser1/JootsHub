@@ -55,9 +55,9 @@ export function ChatInput({ conversationId }: ChatInputProps) {
       return
     }
 
-    if (user?.id) {
+    if (user?.user_id) {
       try {
-        const sendResult = sendChatMessage(conversationId, message.trim(), user.id)
+        const sendResult = sendChatMessage(conversationId, message.trim(), user.user_id)
 
         // Si le résultat est une promesse (cas de reconnexion)
         if (sendResult instanceof Promise) {
