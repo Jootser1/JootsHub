@@ -201,6 +201,8 @@
     "popup_title": "LEVEL UP!",
     "congratulations": "You have reached",
     "level_prefix": "Level",
+    "reward_text": "New information revealed!",
+    "reward_suffix": "Keep chatting to discover more!",
     "one_more_conv_as_reward_text": "gives you +1 on the number of conversations!",
     "city_as_reward_text": "lives in ",
     "gender_as_reward_text": "identifies as ",
