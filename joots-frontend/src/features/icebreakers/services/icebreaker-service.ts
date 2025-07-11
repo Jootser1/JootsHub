@@ -1,7 +1,7 @@
 import axiosInstance from '@/app/api/axios-instance'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '@/features/chat/stores/chat-store'
-import { postedResponse } from '@shared/icebreaker.types'
+import { PostedResponseEvent } from '@shared/icebreaker-event.types'
 
 export class IcebreakerService {
   static async fetchRandomPoll(activeConversationId: string) {
@@ -21,7 +21,7 @@ export class IcebreakerService {
     }
   }
 
-  static async submitIcebreakerResponse(response: postedResponse) {
+  static async submitIcebreakerResponse(response: PostedResponseEvent) {
     try {
       await axiosInstance.post('/icebreakers/response', response)
     } catch (error) {
