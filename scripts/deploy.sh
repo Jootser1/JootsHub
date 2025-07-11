@@ -215,13 +215,9 @@ update_nginx_config() {
         log_info "- server_name $APP_DOMAIN"
     fi
     
-    # Tester la configuration nginx
-    if docker run --rm -v $(pwd)/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro nginx:latest nginx -t; then
-        log_success "Configuration nginx valide"
-    else
-        log_error "Configuration nginx invalide"
-        exit 1
-    fi
+    # Note: Le test nginx est fait au démarrage des services
+    # car nginx a besoin que les upstreams soient disponibles
+    log_info "Test nginx différé au démarrage des services"
 }
 
 # Build et déploiement
@@ -240,17 +236,41 @@ deploy_application() {
     log_info "Construction des images Docker..."
     docker-compose -f docker-compose.prod.yml build --no-cache
     
-    # Démarrage des services
-    log_info "Démarrage des services..."
-    docker-compose -f docker-compose.prod.yml up -d
+    # Démarrage des services dans l'ordre
+    log_info "Démarrage des services en séquence..."
     
-    # Attendre que les services soient prêts
-    log_info "Attente du démarrage des services..."
-    sleep 30
+    # Démarrer d'abord les services de base
+    log_info "Démarrage de PostgreSQL et Redis..."
+    docker-compose -f docker-compose.prod.yml up -d postgres redis
+    sleep 10
+    
+    # Démarrer le backend
+    log_info "Démarrage du backend..."
+    docker-compose -f docker-compose.prod.yml up -d backend
+    sleep 15
+    
+    # Démarrer le frontend
+    log_info "Démarrage du frontend..."
+    docker-compose -f docker-compose.prod.yml up -d frontend
+    sleep 15
+    
+    # Enfin démarrer nginx
+    log_info "Démarrage de nginx (reverse proxy)..."
+    docker-compose -f docker-compose.prod.yml up -d nginx
+    sleep 10
     
     # Vérifier que les services sont actifs
     if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
         log_success "Services démarrés avec succès"
+        
+        # Vérifier spécifiquement nginx
+        if docker-compose -f docker-compose.prod.yml ps nginx | grep -q "Up"; then
+            log_success "Nginx démarré avec succès"
+        else
+            log_error "Problème avec nginx"
+            docker-compose -f docker-compose.prod.yml logs nginx
+            exit 1
+        fi
     else
         log_error "Erreur lors du démarrage des services"
         docker-compose -f docker-compose.prod.yml logs
