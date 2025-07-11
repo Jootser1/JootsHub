@@ -1,0 +1,110 @@
+# GITIGNORE pour Release
+#cursor
+.cursorrules
+.cursor/
+
+# AI context
+/AIcontext_md
+*.md
+!README.md
+
+#Confidential
+*.key
+*.crt
+nginx/ssl/*
+*.pem
+.env
+.env.*
+
+#nginx
+nginx/nginx.dev.conf
+
+#backend NestJS
+/joots-backend/dist
+/joots-backend/node_modules
+/joots-backend/logs
+/joots-backend/.dockerignore
+/joots-backend/test/*
+/joots-backend/tools/*
+/joots-backend/prisma/*.js
+/joots-backend/prisma/*.js.map
+/joots-backend/prisma/*.d.ts
+/joots-backend/Dockerfile.dev
+/joots-backend/README.md
+
+
+#frontend NextJS
+/joots-frontend/dist
+/joots-frontend/node_modules
+/joots-frontend/coverage
+/joots-frontend/README.md
+/joots-frontend/Dockerfile.dev
+/joots-frontend/.next
+/joots-frontend/public/avatars/*
+/joots-frontend/node_modules
+/joots-frontend/*.md
+
+#packages
+/packages/types/dist
+
+#setup
+setup.sh
+setup.bat
+start.sh
+
+# Node.js dependencies
+.npm/
+
+#compiled
+*.d.ts
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+
+# Next.js build
+.next/
+out/
+/build
+
+# Docker
+.dockerignore
+docker-compose.override.yml
+docker-compose.yml
+
+
+#archives
+/Archives/*
+/Fixes/*
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.tar.lzma
+*.tar.lz
+joots.zip
+frontend.zip
+backend.zip
+frontend-clean.zip
+backend-clean.zip
+
+# Misc
+.DS_Store
+*.pem
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+/Fixes/*
+/Archives/*
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
