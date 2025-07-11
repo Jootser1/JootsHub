@@ -33,7 +33,6 @@ WORKDIR /joots-frontend
 # Copier les types partagés compilés
 COPY --from=builder /packages/types/dist ./node_modules/@shared/types/dist
 
-COPY --from=builder /joots-frontend/dist ./dist
 COPY --from=builder /joots-frontend/package*.json ./
 COPY --from=builder /joots-frontend/node_modules ./node_modules
 COPY --from=builder /joots-frontend/.next ./.next
