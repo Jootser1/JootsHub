@@ -6,7 +6,7 @@ services:
     environment:
       - NODE_ENV=production
     env_file:
-      - ./joots-frontend/.env
+      - ./joots-frontend/.env.prod
     depends_on:
       - backend
     networks:
@@ -20,7 +20,7 @@ services:
     environment:
       - NODE_ENV=production
     env_file:
-      - ./joots-backend/.env
+      - ./joots-backend/.env.prod
     depends_on:
       - postgres
       - redis
