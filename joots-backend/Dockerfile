@@ -1,19 +1,28 @@
 # 🛠️ Étape 1 : Build
 FROM node:20-alpine AS builder
 
+# Étape 1 — Copier et compiler les types partagés
+WORKDIR /packages
+COPY ./packages .
+
+# Build des types partagés
+WORKDIR /packages/types
+RUN npm install --verbose && npm run build && ls -la dist/
+
+# Étape 2 — Installer les dépendances du backend
 WORKDIR /joots-backend
 
-# Installer les dépendances
+# Copier les fichiers de package en premier pour optimiser le cache Docker
 COPY joots-backend/package*.json ./
 RUN npm ci
 
-# Copier uniquement les dossiers utiles
+# Étape 3 : Copier le schéma et générer le client Prisma
+COPY ./joots-backend/prisma ./prisma
+RUN npx prisma generate --schema=./prisma/schema.prisma
+
+# Copier les fichiers de configuration et source
 COPY joots-backend/tsconfig*.json ./
 COPY joots-backend/src ./src
-COPY joots-backend/prisma ./prisma
-
-# Générer Prisma Client
-RUN npx prisma generate
 
 # Compiler le projet
 RUN npm run build
@@ -23,14 +32,16 @@ FROM node:20-alpine AS runner
 
 WORKDIR /joots-backend
 
-# Copier le build, les dépendances et le fichier package.json
+# Copier les types partagés compilés
+COPY --from=builder /packages/types/dist ./node_modules/@shared/types/dist
+
+# Copier le build, les dépendances et les fichiers nécessaires
 COPY --from=builder /joots-backend/dist ./dist
 COPY --from=builder /joots-backend/node_modules ./node_modules
 COPY --from=builder /joots-backend/package.json ./package.json
 COPY --from=builder /joots-backend/prisma ./prisma
 
-ENV NODE_ENV=production
-EXPOSE 4000
 
-CMD ["sh", "-c", "npx prisma migrate deploy && [ \"$SEED_DB\" = \"true\" ] && npx prisma db seed; node dist/src/main.js"]
+# Commande de démarrage avec gestion d'erreur améliorée
+CMD ["sh", "-c", "npx prisma migrate deploy && ([ \"$SEED_DB\" = \"true\" ] && npx prisma db seed || true) && node dist/main.js"]
 
