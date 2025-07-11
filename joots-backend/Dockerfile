@@ -4,13 +4,13 @@ FROM node:20-alpine AS builder
 WORKDIR /joots-backend
 
 # Installer les dépendances
-COPY package*.json ./
+COPY joots-backend/package*.json ./
 RUN npm ci
 
 # Copier uniquement les dossiers utiles
-COPY tsconfig*.json ./
-COPY src ./src
-COPY prisma ./prisma
+COPY joots-backend/tsconfig*.json ./
+COPY joots-backend/src ./src
+COPY joots-backend/prisma ./prisma
 
 # Générer Prisma Client
 RUN npx prisma generate
