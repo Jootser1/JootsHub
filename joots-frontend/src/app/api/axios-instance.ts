@@ -1,6 +1,13 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { getSession } from 'next-auth/react'
 
+// Étendre le type Session de NextAuth pour inclure accessToken
+declare module 'next-auth' {
+  interface Session {
+    accessToken?: string
+  }
+}
+
 interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
   _retry?: boolean
 }
