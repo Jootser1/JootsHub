@@ -72,14 +72,19 @@ check_prerequisites() {
 setup_environment() {
     log_info "Configuration de l'environnement $ENVIRONMENT..."
     
+    # Définir les variables de base de données
+    POSTGRES_USER=joots_user
+    POSTGRES_PASSWORD=$(openssl rand -base64 32)
+    POSTGRES_DB=joots_db
+    
     # Créer les fichiers .env si ils n'existent pas
     if [ ! -f ".env" ]; then
         log_info "Création du fichier .env principal"
         cat > .env << EOF
 # Configuration PostgreSQL
-POSTGRES_USER=joots_user
-POSTGRES_PASSWORD=$(openssl rand -base64 32)
-POSTGRES_DB=joots_db
+POSTGRES_USER=$POSTGRES_USER
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_DB=$POSTGRES_DB
 
 # Configuration générale
 DOMAIN=$DOMAIN
@@ -87,6 +92,10 @@ LANDING_DOMAIN=$LANDING_DOMAIN
 APP_DOMAIN=$APP_DOMAIN
 ENVIRONMENT=$ENVIRONMENT
 EOF
+    else
+        # Charger les variables existantes du fichier .env
+        log_info "Chargement des variables existantes depuis .env"
+        source .env
     fi
     
     # Frontend .env.production
