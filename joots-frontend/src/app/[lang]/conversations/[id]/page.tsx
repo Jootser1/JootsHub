@@ -46,7 +46,6 @@ export default function ConversationPage({ params }: { params: Promise<{ id: str
       try {
         const conversation = await axiosInstance.get(`/conversations/${resolvedParams.id}`)
         const xpAndLevel = conversation.data.xpAndLevel
-        logger.debug('Conversation data received:', conversation.data)
         setConversation(conversation.data)
         setXpAndLevel(xpAndLevel)
         // Ajout de la conversation entière au chatStore, une seule fois

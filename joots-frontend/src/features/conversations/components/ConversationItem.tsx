@@ -3,12 +3,14 @@ import Image from 'next/image'
 import { Conversation } from '@shared/conversation.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
+import { getDateFnsLocale } from '@/utils/date-locale'
 import { getOtherParticipantUser } from '@/features/conversations/utils/conversation-utils'
 import { useContactStore } from '@/features/contacts/stores/contact-store'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { ensureDate } from '@/utils/date-utils'
 import { logger } from '@/utils/logger'
+import { useLocalizedPath } from '@/hooks/useTranslations'
+import { useTranslations } from '@/contexts/TranslationContext'
 
 interface ConversationItemProps {
   conversation: Conversation
@@ -21,6 +23,8 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
   logger.debug('ConversationItem - Current user ID', { currentUserId })
   
   const contactStore = useContactStore()
+  const getLocalizedPath = useLocalizedPath()
+  const { locale } = useTranslations()
 
   // Déterminer l'autre utilisateur (celui avec qui on parle)
   if (!currentUserId) {
@@ -28,7 +32,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
     return null
   }
   
-  const otherUser = getOtherParticipantUser(conversation, currentUserId)
+  const otherUser = getOtherParticipantUser(conversation as Parameters<typeof getOtherParticipantUser>[0], currentUserId)
   logger.debug('ConversationItem - Other user', { otherUser })
   
   if (!otherUser) {
@@ -46,7 +50,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
 
   return (
     <Link
-      href={`/conversations/${conversation.conversation_id}`}
+      href={getLocalizedPath(`/conversations/${conversation.conversation_id}`)}
       className='block hover:bg-gray-50 transition-colors'
     >
       <div className='flex items-center p-4'>
@@ -83,7 +87,7 @@ export function ConversationItem({ conversation }: ConversationItemProps) {
               <span className='text-xs text-gray-500 whitespace-nowrap ml-2'>
                 {formatDistanceToNow(ensureDate(lastMessage.created_at), {
                   addSuffix: true,
-                  locale: fr,
+                  locale: getDateFnsLocale(locale),
                 })}
               </span>
             )}

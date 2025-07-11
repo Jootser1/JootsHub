@@ -1,0 +1,193 @@
+{
+  "common": {
+    "welcome": "Bienvenue",
+    "login": "Connexion",
+    "logout": "Déconnexion",
+    "settings": "Paramètres",
+    "profile": "Profil",
+    "conversations": "Conversations",
+    "save": "Enregistrer",
+    "send": "Envoyer",
+    "hub": "Hub",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "close": "Fermer",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "not_defined": "Non défini",
+    "not_connected": "Non connecté",
+    "choose": "-- Choisir --",
+    "level": "Niveau"
+  },
+  "auth": {
+    "signin": "Se connecter",
+    "signup": "S'inscrire",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "forgot_password": "Mot de passe oublié ?",
+    "remember_me": "Se souvenir de moi"
+  },
+  "navigation": {
+    "home": "Accueil",
+    "dashboard": "Tableau de bord",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "previous_app": "Application précédente",
+    "next_app": "Application suivante"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "chat_preferences": "Préférences de chat",
+    "accept_strangers": "Accepter les invitations d'inconnus",
+    "accept_strangers_desc": "Permettre aux utilisateurs que vous ne connaissez pas de vous envoyer des messages",
+    "account": "Compte",
+    "username": "Nom d'utilisateur",
+    "client_id": "ID de clientèle",
+    "notifications": "Notifications",
+    "push_notifications": "Notifications push",
+    "push_notifications_desc": "Recevoir des notifications pour les nouveaux messages",
+    "error_updating_preference": "Erreur lors de la mise à jour de la préférence",
+    "language": "Langue",
+    "language_desc": "Choisissez votre langue préférée pour l'interface",
+    "languages": {
+      "fr-FR": "Français",
+      "en-US": "English",
+      "es-ES": "Español"
+    }
+  },
+  "hub": {
+    "apps": {
+      "icebreaker": {
+        "title": "Icebreaker",
+        "description": "Un inconnu, des questions, une conversation sans préjugés. Chaque discussion est une rencontre, chaque rencontre une surprise !"
+      },
+      "socioscopy": {
+        "title": "Socioscopy",
+        "description": "Découvrez ce que les autres pensent vraiment, challengez vos certitudes et ouvrez le débat"
+      },
+      "revelio": {
+        "title": "Revelio",
+        "description": "Vous croyez bien connaître vos proches ? Défiez-les et voyez si vous aviez raison !"
+      }
+    },
+    "start": "Commencer",
+    "coming_soon": "Bientôt disponible",
+    "aria": {
+      "previous_app": "Application précédente",
+      "next_app": "Application suivante",
+      "go_to_app": "Aller à l'application"
+    }
+  },
+  "icebreaker": {
+    "title": "Briser la glace",
+    "new_adventure": "Nouvelle Aventure Humaine",
+    "new_short": "Nouveau",
+    "friends": "Amis",
+    "rediscover_friend": "Redécouvrir un ami",
+    "filters": "Filtres",
+    "new_contact_criteria": "Nouveau contact par critères",
+    "search": "Rechercher",
+    "searching": "Recherche en cours..."
+  },
+  "chat": {
+    "write_message": "Écrivez votre message...",
+    "reconnecting": "Reconnexion en cours...",
+    "conversation_not_found": "Conversation non trouvée",
+    "user_not_connected": "Utilisateur non connecté",
+    "user_not_found": "Utilisateur non trouvé",
+    "error_loading_conversation": "Erreur lors du chargement de la conversation",
+    "typing": "En train d'écrire...",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "error_loading_conversations": "Une erreur est survenue lors du chargement des conversations",
+    "no_conversations": "Aucune conversation",
+    "start_new_conversation": "Commencez une nouvelle conversation !",
+    "disconnected": "Déconnecté",
+    "unable_to_send": "Impossible d'envoyer le message : connexion au chat non établie. Veuillez réessayer",
+    "send_error": "Erreur lors de l'envoi du message"
+  },
+  "profile": {
+    "city_placeholder": "Paris",
+    "passion_placeholder": "Passion",
+    "origin_placeholder": "Ex : Française",
+    "job_placeholder": "Ex : Enseignant",
+    "quality_placeholder": "Ex : Empathie",
+    "flaw_placeholder": "Ex : Impatience",
+    "bio_placeholder": "Quelques mots sur vous...",
+    "copy_id": "Copier l'ID"
+  },
+  "poc": {
+    "title": "Preuve de concept",
+    "description": "Cette section contient des fonctionnalités expérimentales et en développement.",
+    "global_progress": "Progrès global",
+    "anonymous": "Anonyme",
+    "threshold": "Seuil",
+    "revealed": "Révélé",
+    "alternative_approaches": "Approches Alternatives",
+    "show_tests": "Afficher les tests",
+    "hide_tests": "Masquer les tests"
+  },
+  "menu": {
+    "client_id": "ID de clientèle",
+    "copy_id": "Copier l'ID",
+    "standard_pass": "Pass standard",
+    "notifications": "Notifications",
+    "badges": "Badges",
+    "tips": "Astuces",
+    "shop": "Boutique",
+    "disconnect": "Se Déconnecter"
+  },
+  "profile_form": {
+    "change_photo": "Changer la photo",
+    "age_range": "Tranche d'âge",
+    "gender": "Genre",
+    "male": "Homme",
+    "female": "Femme",
+    "non_binary": "Non-Binaire",
+    "city": "Ville",
+    "passions": "Passions",
+    "passion_placeholder": "Passion",
+    "cultural_origin": "Origine culturelle",
+    "job": "Métier",
+    "greatest_quality": "Plus grande qualité",
+    "biggest_flaw": "Plus gros défaut",
+    "sexual_orientation": "Orientation sexuelle",
+    "orientations": {
+      "heterosexual": "Hétérosexuel",
+      "homosexual": "Homosexuel",
+      "bisexual": "Bisexuel",
+      "asexual": "Asexuel",
+      "pansexual": "Pansexuel",
+      "other": "Autre",
+      "prefer_not_say": "Préférer ne pas dire"
+    },
+    "bio": "Bio",
+    "profile_updated": "Profil mis à jour !"
+  },
+  "conversation_modal": {
+    "title": "Profil de conversation",
+    "conversation_level": "Niveau de conversation",
+    "revealed_info": "Informations révélées",
+    "discovered_percent": "% découvert",
+    "to_discover": "à découvrir",
+    "to_unlock": "À découvrir",
+    "no_info_revealed": "Aucune information révélée pour le moment.",
+    "keep_chatting": "Continuez à discuter pour en savoir plus !",
+    "additional_info": "information(s) supplémentaire(s) à débloquer en progressant dans votre conversation.",
+    "failed_to_load": "Impossible de charger le profil",
+    "attributes": {
+      "CITY": "Ville",
+      "AGE": "Âge",
+      "GENDER": "Genre",
+      "JOB": "Métier",
+      "ORIGIN": "Origine",
+      "ORIENTATION": "Orientation",
+      "PASSIONS": "Passions",
+      "QUALITY": "Qualité",
+      "FLAW": "Défaut",
+      "BIO": "Bio"
+    }
+  }
+} 

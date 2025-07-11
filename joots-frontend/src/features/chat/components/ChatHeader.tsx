@@ -6,6 +6,7 @@ import { xp_and_level } from '@shared/conversation.types'
 import { ConversationProfileModal } from '@/features/user/components/ConversationProfileModal'
 import { useState } from 'react'
 import Image from 'next/image'
+import { useTranslations } from '@/contexts/TranslationContext'
 
 interface ChatHeaderProps {
   otherUser: User
@@ -16,6 +17,7 @@ interface ChatHeaderProps {
 
 export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeaderProps) {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false)
+  const { dictionary } = useTranslations()
   
   // Écoute réactive du statut 'isTyping' depuis le store
   const isTyping = useChatStore(state => {
@@ -61,7 +63,7 @@ export function ChatHeader({ otherUser, conversationId, xpAndLevel }: ChatHeader
           <div>
             <h2 className='text-lg font-semibold'>{otherUser.username}</h2>
             <p className='text-sm text-gray-500'>
-              {isTyping ? "En train d'écrire..." : isOnline ? 'En ligne' : 'Hors ligne'}
+              {isTyping ? dictionary.chat.typing : isOnline ? dictionary.chat.online : dictionary.chat.offline}
             </p>
           </div>
         </div>

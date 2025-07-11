@@ -332,7 +332,6 @@ export const useChatStore = create<ChatStore>()(
         },
 
         updateConversationXpAndLevel: (conversationId: string, xpAndLevel: xp_and_level) => {
-          logger.info(`Mise à jour des XP et niveau pour la conversation ${conversationId} avec les valeurs ${JSON.stringify(xpAndLevel)}`)
           set(state => {
             const conversation = state.conversations[conversationId]
             if (!conversation) return state

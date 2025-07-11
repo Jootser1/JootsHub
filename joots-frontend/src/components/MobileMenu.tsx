@@ -5,21 +5,21 @@ import {
   ShoppingBag,
   Package,
   Mail,
-  Gift,
+  Award,
   HelpCircle,
   Settings,
   ChevronRight,
   Copy,
-  MessageSquare,
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useUserStore } from '@/features/user/stores/user-store'
+import { useLocalizedPath } from '@/hooks/useTranslations'
 import { signOut } from 'next-auth/react'
-import { Switch } from '@/components/ui/Switch'
-import { Label } from '@/components/ui/Label'
-import axiosInstance from '@/app/api/axios-instance'
+import { useTranslations } from '@/contexts/TranslationContext'
+import { useSettingsNavigation } from '@/hooks/useSettingsNavigation'
+
 import { useSocketManager } from '@/hooks/useSocketManager'
 import { logger } from '@/utils/logger'
 import { useSocketStore } from '@/features/socket/stores/socket-store'
@@ -29,6 +29,9 @@ export function MobileMenu() {
   const { mobileMenuOpen, setMobileMenuOpen, user, logout } = useUserStore()
   const socketManager = useSocketManager()
   const { isUserConnected } = useSocketStore()
+  const getLocalizedPath = useLocalizedPath()
+  const { dictionary } = useTranslations()
+  const { navigateToSettings } = useSettingsNavigation()
 
   
 
@@ -42,7 +45,7 @@ export function MobileMenu() {
 
       await signOut({ redirect: false })
       logout()
-      router.push('/login')
+      router.push(getLocalizedPath('/login'))
     } catch (error) {
       console.error('Erreur lors de la déconnexion:', error)
     }
@@ -51,21 +54,6 @@ export function MobileMenu() {
   const copyClientId = () => {
     navigator.clipboard.writeText(user?.user_id || '')
     // Vous pourriez ajouter une notification de succès ici
-  }
-
-  const handleChatPreferenceChange = async (checked: boolean) => {
-    try {
-      await axiosInstance.patch(`/users/${user?.user_id}/chat-preference`, {
-        isAvailableForChat: checked,
-      })
-
-      // Mettre à jour le store avec la nouvelle préférence
-      useUserStore.setState(state => ({
-        user: state.user ? { ...state.user, isAvailableForChat: checked } : null,
-      }))
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour de la préférence:', error)
-    }
   }
 
   return (
@@ -87,13 +75,13 @@ export function MobileMenu() {
         <div className='flex flex-col h-full p-6 pt-8'>
           {/* ID de clientèle */}
           <div className='mb-6'>
-            <div className='text-gray-500 text-sm mb-2'>ID de clientèle</div>
+            <div className='text-gray-500 text-sm mb-2'>{dictionary.menu.client_id}</div>
             <div className='flex items-center bg-gray-100 rounded-full py-2 px-4'>
-              <span className='text-gray-700 flex-1'>{user?.user_id || 'Non connecté'}</span>
+              <span className='text-gray-700 flex-1'>{user?.user_id || dictionary.common.not_connected}</span>
               <button
                 onClick={copyClientId}
                 className='text-gray-400 hover:text-gray-600'
-                aria-label="Copier l'ID"
+                aria-label={dictionary.menu.copy_id}
               >
                 <Copy className='h-5 w-5' />
               </button>
@@ -102,7 +90,7 @@ export function MobileMenu() {
 
           {/* Profil utilisateur */}
           <Link
-            href={`/myprofile`}
+            href={getLocalizedPath('/myprofile')}
             className='flex items-center bg-gray-100 rounded-full py-2 px-4 mb-4'
             onClick={() => setMobileMenuOpen(false)}
           >
@@ -116,55 +104,54 @@ export function MobileMenu() {
               />
             </div>
             <span className='text-gray-800 font-medium flex-1'>
-              {user?.username || 'Non connecté'}
+              {user?.username || dictionary.common.not_connected}
             </span>
             <span className='text-gray-800 font-medium flex-1'>
-              {isUserConnected ? 'En ligne' : 'Hors ligne'}
+              {isUserConnected ? dictionary.common.online : dictionary.common.offline}
             </span>
             <ChevronRight className='h-5 w-5 text-gray-400' />
           </Link>
 
-          {/* Préférence de chat */}
-          <div className='mb-8 p-4 bg-gray-100 rounded-2xl'>
-            <div className='flex items-center justify-between'>
-              <div className='flex items-center'>
-                <MessageSquare className='h-5 w-5 text-gray-500 mr-2' />
-                <span className='text-gray-700 font-medium'>
-                  Accepter les invitations d&apos;inconnus
-                </span>
-              </div>
-              <Switch
-                checked={user?.isAvailableForChat ?? true}
-                onCheckedChange={handleChatPreferenceChange}
-                className='data-[state=checked]:bg-[#E59C45] data-[state=unchecked]:bg-input'
-              />
-            </div>
-          </div>
-          <div className='flex items-center space-x-2'>
-            <Switch id='airplane-mode' />
-            <Label htmlFor='airplane-mode'>Airplane Mode</Label>
-          </div>
+
 
           {/* Pass standard */}
           <Link 
-            href='/pass' 
+            href={getLocalizedPath('/pass')} 
             className='flex items-center bg-gray-100 rounded-full py-3 px-4 mb-8'
             onClick={() => setMobileMenuOpen(false)}
           >
             <div className='relative w-6 h-6 mr-3'>
               <Image src='/placeholder.svg?height=24&width=24' alt='Pass' width={24} height={24} />
             </div>
-            <span className='text-gray-600'>Pass standard</span>
+            <span className='text-gray-600'>{dictionary.menu.standard_pass}</span>
           </Link>
 
           {/* Menu items */}
           <div className='flex flex-col space-y-6'>
-            <MenuItem href='/boutique' icon={<ShoppingBag />} label='Boutique' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
-            <MenuItem href='/inventaire' icon={<Package />} label='Inventaire' onNavigate={() => setMobileMenuOpen(false)} />
-            <MenuItem href='/actualites' icon={<Mail />} label='Actualités' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
-            <MenuItem href='/cadeaux' icon={<Gift />} label='Cadeaux' hasNotification onNavigate={() => setMobileMenuOpen(false)} />
-            <MenuItem href='/astuces' icon={<HelpCircle />} label='Astuces' onNavigate={() => setMobileMenuOpen(false)} />
-            <MenuItem onClick={handleLogout} icon={<Settings />} label='Se Déconnecter' />
+          <MenuItem href={getLocalizedPath('/actualites')} icon={<Mail />} label={dictionary.menu.notifications} hasNotification onNavigate={() => setMobileMenuOpen(false)} />
+          <MenuItem href={getLocalizedPath('/badges')} icon={<Award />} label={dictionary.menu.badges} hasNotification onNavigate={() => setMobileMenuOpen(false)} />
+          <MenuItem href={getLocalizedPath('/astuces')} icon={<HelpCircle />} label={dictionary.menu.tips} onNavigate={() => setMobileMenuOpen(false)} />
+          <MenuItem href={getLocalizedPath('/boutique')} icon={<ShoppingBag />} label={dictionary.menu.shop} hasNotification onNavigate={() => setMobileMenuOpen(false)} />        
+            
+            <MenuItem onClick={() => { 
+              setMobileMenuOpen(false)
+              navigateToSettings()
+            }} icon={<Settings />} label={dictionary.common.settings} />
+          </div>
+          
+          {/* Déconnexion */}
+          <div className='mt-8 pt-6 border-t border-gray-200'>
+            <button
+              onClick={handleLogout}
+              className='flex items-center text-red-600 hover:text-red-700 w-full'
+            >
+              <div className='w-8 h-8 mr-3 text-red-600'>
+                <svg className='w-6 h-6' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
+                </svg>
+              </div>
+              <span className='text-lg'>{dictionary.menu.disconnect}</span>
+            </button>
           </div>
         </div>
       </div>

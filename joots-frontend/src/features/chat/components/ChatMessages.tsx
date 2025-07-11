@@ -2,10 +2,11 @@ import { useEffect, useRef } from 'react'
 import { Message, ChatStoreMessage } from '@shared/message.types'
 
 import { formatDistanceToNow } from 'date-fns'
-import { fr } from 'date-fns/locale'
 import { ensureDate } from '@/utils/date-utils'
+import { getDateFnsLocale } from '@/utils/date-locale'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useChatStore } from '@/features/chat/stores/chat-store'
+import { useTranslations } from '@/contexts/TranslationContext'
 import { logger } from '@/utils/logger'
 
 interface ChatMessagesProps {
@@ -15,6 +16,7 @@ interface ChatMessagesProps {
 export function ChatMessages({ conversationId }: ChatMessagesProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const { user } = useUserStore()
+  const { dictionary: t, locale } = useTranslations()
 
   // N'utiliser qu'une seule source de messages
   const storeMessages = useChatStore.getState().getMessagesFromConversation(conversationId || '')
@@ -29,7 +31,7 @@ export function ChatMessages({ conversationId }: ChatMessagesProps) {
   }, [storeMessages])
 
   if (!user?.user_id) {
-    return <div className='flex items-center justify-center h-full text-gray-500'>Déconnecté</div>
+    return <div className='flex items-center justify-center h-full text-gray-500'>{t.chat.disconnected}</div>
   }
 
   return (
@@ -39,7 +41,7 @@ export function ChatMessages({ conversationId }: ChatMessagesProps) {
         const isCurrentUser = message.sender_id === user.user_id
         const timeAgo = formatDistanceToNow(ensureDate(message.created_at), {
           addSuffix: true,
-          locale: fr,
+          locale: getDateFnsLocale(locale),
         })
         let currentUserAnswer, otherUserAnswer
 

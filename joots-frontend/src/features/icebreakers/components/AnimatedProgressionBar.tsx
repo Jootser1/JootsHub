@@ -216,7 +216,6 @@ export function AnimatedLevelProgress({ conversationId, icon, initialXpAndLevel 
     }
   }, [xpData, displayState.isAnimating, displayState.level, displayState.totalXp, animatingLevelUpPhase])
   
-  // Plus besoin d'early return car xpData a toujours une valeur par défaut maintenant
   
   return (
     <div className='flex flex-col justify-between rounded-3xl max-w-md relative'>

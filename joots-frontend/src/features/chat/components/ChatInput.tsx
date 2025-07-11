@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useUserStore } from '@/features/user/stores/user-store'
 import { useSocketManager } from '@/hooks/useSocketManager'
+import { useTranslations } from '@/contexts/TranslationContext'
 interface ChatInputProps {
   conversationId: string
 }
@@ -12,6 +13,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { user } = useUserStore()
   const { isChatConnected, sendChatMessage, sendTypingStatus } = useSocketManager()
+  const { dictionary: t } = useTranslations()
 
   useEffect(() => {
     return () => {
@@ -85,7 +87,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
           setTimeout(() => setSendAttempted(false), 3000)
         }
       } catch (error) {
-        console.error("Erreur lors de l'envoi du message:", error)
+        console.error(t.chat.send_error, error)
         setSendAttempted(true)
         setTimeout(() => setSendAttempted(false), 3000)
       }
@@ -96,8 +98,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
     <form onSubmit={handleSubmit} className='p-4 border-t border-gray-200'>
       {sendAttempted && !isChatConnected && (
         <div className='mb-2 p-2 bg-red-100 text-red-700 rounded text-sm'>
-          Impossible d&apos;envoyer le message : connexion au chat non établie. Veuillez réessayer
-          dans quelques instants.
+          {t.chat.unable_to_send}
         </div>
       )}
 
@@ -107,7 +108,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
             type='text'
             value={message}
             onChange={handleInputChange}
-            placeholder={isChatConnected ? 'Écrivez votre message...' : 'Reconnexion en cours...'}
+            placeholder={isChatConnected ? t.chat.write_message : t.chat.reconnecting}
             className={`w-full rounded-lg border ${!isChatConnected ? 'border-orange-300 bg-orange-50' : 'border-gray-300'} px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500`}
           />
           {!isChatConnected && (
@@ -121,7 +122,7 @@ export function ChatInput({ conversationId }: ChatInputProps) {
           disabled={!message.trim() || !isChatConnected}
           className='bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
         >
-          Envoyer
+          {t.common.send}
         </button>
       </div>
     </form>

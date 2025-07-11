@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLocalizedPath } from '@/hooks/useTranslations'
 import { BottomBar } from './BottomBar'
 import { MobileMenu } from './MobileMenu'
 import { GlobalUserSocketProvider } from '@/features/user/sockets/GlobalUserSocketProvider'
@@ -11,10 +12,11 @@ import { ChatSocketProvider } from '@/features/chat/sockets/ChatSocketProvider'
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const { data: session, status } = useSession()
+  const getLocalizedPath = useLocalizedPath()
 
   useEffect(() => {
     if (status === 'unauthenticated') {
-      router.push('/login')
+      router.push(getLocalizedPath('/login'))
       return
     }
   }, [status, session?.user?.id, router])

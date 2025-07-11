@@ -1,0 +1,193 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "login": "Login",
+    "logout": "Logout",
+    "settings": "Settings",
+    "profile": "Profile",
+    "conversations": "Conversations",
+    "save": "Save",
+    "send": "Send",
+    "hub": "Hub",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "close": "Close",
+    "online": "Online",
+    "offline": "Offline",
+    "not_defined": "Not defined",
+    "not_connected": "Not connected",
+    "choose": "-- Choose --",
+    "level": "Level"
+  },
+  "auth": {
+    "signin": "Sign In",
+    "signup": "Sign Up",
+    "email": "Email",
+    "password": "Password",
+    "forgot_password": "Forgot password?",
+    "remember_me": "Remember me"
+  },
+  "navigation": {
+    "home": "Home",
+    "dashboard": "Dashboard",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "previous_app": "Previous app",
+    "next_app": "Next app"
+  },
+  "settings": {
+    "title": "Settings",
+    "chat_preferences": "Chat preferences",
+    "accept_strangers": "Accept invitations from strangers",
+    "accept_strangers_desc": "Allow users you don't know to send you messages",
+    "account": "Account",
+    "username": "Username",
+    "client_id": "Client ID",
+    "notifications": "Notifications",
+    "push_notifications": "Push notifications",
+    "push_notifications_desc": "Receive notifications for new messages",
+    "error_updating_preference": "Error updating preference",
+    "language": "Language",
+    "language_desc": "Choose your preferred language for the interface",
+    "languages": {
+      "fr-FR": "Français",
+      "en-US": "English",
+      "es-ES": "Español"
+    }
+  },
+  "hub": {
+    "apps": {
+      "icebreaker": {
+        "title": "Icebreaker",
+        "description": "A stranger, questions, a conversation without prejudice. Every discussion is an encounter, every encounter a surprise!"
+      },
+      "socioscopy": {
+        "title": "Socioscopy",
+        "description": "Discover what others really think, challenge your certainties and open the debate"
+      },
+      "revelio": {
+        "title": "Revelio",
+        "description": "Think you know your loved ones well? Challenge them and see if you were right!"
+      }
+    },
+    "start": "Start",
+    "coming_soon": "Coming Soon",
+    "aria": {
+      "previous_app": "Previous app",
+      "next_app": "Next app",
+      "go_to_app": "Go to app"
+    }
+  },
+  "icebreaker": {
+    "title": "Icebreaker",
+    "new_adventure": "New Human Adventure",
+    "new_short": "New",
+    "friends": "Friends",
+    "rediscover_friend": "Rediscover a friend",
+    "filters": "Filters",
+    "new_contact_criteria": "New Contact by criteria",
+    "search": "Search",
+    "searching": "Searching..."
+  },
+  "chat": {
+    "write_message": "Type your message...",
+    "reconnecting": "Reconnecting...",
+    "conversation_not_found": "Conversation not found",
+    "user_not_connected": "User not connected",
+    "user_not_found": "User not found",
+    "error_loading_conversation": "Error loading conversation",
+    "typing": "Typing...",
+    "online": "Online",
+    "offline": "Offline",
+    "error_loading_conversations": "An error occurred while loading conversations",
+    "no_conversations": "No conversations",
+    "start_new_conversation": "Start a new conversation!",
+    "disconnected": "Disconnected",
+    "unable_to_send": "Unable to send message: chat connection not established. Please try again",
+    "send_error": "Error sending message"
+  },
+  "profile": {
+    "city_placeholder": "Paris",
+    "passion_placeholder": "Passion",
+    "origin_placeholder": "E.g.: French",
+    "job_placeholder": "E.g.: Teacher",
+    "quality_placeholder": "E.g.: Empathy",
+    "flaw_placeholder": "E.g.: Impatience",
+    "bio_placeholder": "A few words about you...",
+    "copy_id": "Copy ID"
+  },
+  "poc": {
+    "title": "Proof of concept",
+    "description": "This section contains experimental and development features.",
+    "global_progress": "Global progress",
+    "anonymous": "Anonymous",
+    "threshold": "Threshold",
+    "revealed": "Revealed",
+    "alternative_approaches": "Alternative approaches",
+    "show_tests": "Show tests",
+    "hide_tests": "Hide tests"
+  },
+  "menu": {
+    "client_id": "Client ID",
+    "copy_id": "Copy ID",
+    "standard_pass": "Standard Pass",
+    "notifications": "Notifications",
+    "badges": "Badges",
+    "tips": "Tips",
+    "shop": "Shop",
+    "disconnect": "Disconnect"
+  },
+  "profile_form": {
+    "change_photo": "Change photo",
+    "age_range": "Age range",
+    "gender": "Gender",
+    "male": "Male",
+    "female": "Female",
+    "non_binary": "Non-Binary",
+    "city": "City",
+    "passions": "Passions",
+    "passion_placeholder": "Passion",
+    "cultural_origin": "Cultural origin",
+    "job": "Job",
+    "greatest_quality": "Greatest quality",
+    "biggest_flaw": "Biggest flaw",
+    "sexual_orientation": "Sexual orientation",
+    "orientations": {
+      "heterosexual": "Heterosexual",
+      "homosexual": "Homosexual",
+      "bisexual": "Bisexual",
+      "asexual": "Asexual",
+      "pansexual": "Pansexual",
+      "other": "Other",
+      "prefer_not_say": "Prefer not to say"
+    },
+    "bio": "Bio",
+    "profile_updated": "Profile updated!"
+  },
+  "conversation_modal": {
+    "title": "Conversation profile",
+    "conversation_level": "Conversation level",
+    "revealed_info": "Revealed information",
+    "discovered_percent": "% discovered",
+    "to_discover": "to discover",
+    "to_unlock": "To discover",
+    "no_info_revealed": "No information revealed yet.",
+    "keep_chatting": "Keep chatting to learn more!",
+    "additional_info": "additional information(s) to unlock by progressing in your conversation.",
+    "failed_to_load": "Failed to load profile",
+    "attributes": {
+      "CITY": "City",
+      "AGE": "Age",
+      "GENDER": "Gender",
+      "JOB": "Job",
+      "ORIGIN": "Origin",
+      "ORIENTATION": "Orientation",
+      "PASSIONS": "Passions",
+      "QUALITY": "Quality",
+      "FLAW": "Flaw",
+      "BIO": "Bio"
+    }
+  }
+} 

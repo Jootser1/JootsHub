@@ -3,9 +3,11 @@ import { Home, User } from 'lucide-react'
 import { memo } from 'react'
 import { useUserStore } from '@/features/user/stores/user-store'
 import Link from 'next/link'
+import { useLocalizedPath } from '@/hooks/useTranslations'
 
 export const BottomBar = memo(function BottomBar() {
   const setMobileMenuOpen = useUserStore(state => state.setMobileMenuOpen)
+  const getLocalizedPath = useLocalizedPath()
 
   const handleUserClick = () => {
     setMobileMenuOpen(true)
@@ -14,7 +16,7 @@ export const BottomBar = memo(function BottomBar() {
   return (
     <div className='border-t-2 border-gray-300 flex p-3 w-full bg-white shadow-md'>
       <div className='flex-1 flex items-center justify-center'>
-        <Link href='/hub'>
+        <Link href={getLocalizedPath('/hub')}>
           <Button
             variant='ghost'
             size='icon'
