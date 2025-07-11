@@ -11,7 +11,7 @@ import { IcebreakerPopup } from '@/features/icebreakers/components/IcebreakerPop
 import { IcebreakerService } from '@/features/icebreakers/services/icebreaker-service'
 import { logger } from '@/utils/logger'
 import { xp_and_level } from '@shared/conversation.types'
-import { CurrentPollWithRelations, PollType } from '@shared/question.types'
+import { CurrentPollWithRelations, PollType } from '@shared/poll.types'
 
 
 

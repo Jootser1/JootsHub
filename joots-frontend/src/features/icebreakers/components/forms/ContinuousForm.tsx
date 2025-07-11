@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Question } from '@shared/question.types';
 import { Label } from '@/components/ui/Label';
 import { Button } from '@/components/ui/Button';
-import { CurrentPollWithRelations } from '@shared/question.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 
 interface ContinuousFormProps {
   question: string;

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { Question } from '@shared/question.types';
 import { Label } from '@/components/ui/Label';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';

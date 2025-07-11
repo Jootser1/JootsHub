@@ -2,7 +2,7 @@ import React from 'react'
 import { Button } from '@/components/ui/Button'
 import { Label } from '@/components/ui/Label'
 import { cn } from '@/lib/utils'
-import { CurrentPollWithRelations } from '@shared/question.types'
+import { CurrentPollWithRelations } from '@shared/poll.types'
 
 interface YesNoIdkFormProps {
   question: string

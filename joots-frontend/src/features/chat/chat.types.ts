@@ -1,5 +1,5 @@
 import { Conversation, ConversationParticipant, xp_and_level } from '@shared/conversation.types'
-import { CurrentPollWithRelations, Question } from '@shared/question.types'
+import { CurrentPollWithRelations, Question } from '@shared/poll.types'
 import { Message, MessageStatus, ChatStoreMessage } from '@shared/message.types'
 import { IcebreakerResponse } from '@shared/icebreaker-event.types'
 
