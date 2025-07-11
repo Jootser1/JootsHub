@@ -41,8 +41,43 @@ function getLocale(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
-  // Check if there is any supported locale in the pathname
   const { pathname } = request.nextUrl
+  const hostname = request.headers.get('host') || ''
+  
+  // Check if we're on the landing page domain (www.joots.com or joots.com)
+  const isLandingDomain = hostname.includes('www.joots.com') || hostname.includes('joots.com')
+  const isAppDomain = hostname.includes('app.joots.com')
+  
+  // Handle landing page domain
+  if (isLandingDomain && !isAppDomain) {
+    // If we're on the landing domain and not already on /landing, redirect to /landing
+    if (pathname !== '/landing' && !pathname.startsWith('/landing/')) {
+      request.nextUrl.pathname = '/landing'
+      return NextResponse.redirect(request.nextUrl)
+    }
+    
+    // Allow landing page to proceed without locale handling
+    return NextResponse.next()
+  }
+  
+  // Handle app domain with locale system
+  if (isAppDomain || (!isLandingDomain && process.env.NODE_ENV === 'development')) {
+    // Check if there is any supported locale in the pathname
+    const pathnameHasLocale = locales.some(
+      (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
+    )
+
+    if (pathnameHasLocale) return
+
+    // Redirect if there is no locale
+    const locale = getLocale(request)
+    request.nextUrl.pathname = `/${locale}${pathname}`
+    // e.g. incoming request is /login
+    // The new URL is now /fr/login
+    return NextResponse.redirect(request.nextUrl)
+  }
+  
+  // Default behavior - continue with existing logic for backward compatibility
   const pathnameHasLocale = locales.some(
     (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
   )
@@ -52,8 +87,6 @@ export function middleware(request: NextRequest) {
   // Redirect if there is no locale
   const locale = getLocale(request)
   request.nextUrl.pathname = `/${locale}${pathname}`
-  // e.g. incoming request is /login
-  // The new URL is now /fr/login
   return NextResponse.redirect(request.nextUrl)
 }
 

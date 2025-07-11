@@ -6,6 +6,7 @@
 # AI context
 /AIcontext_md
 *.md
+!README.md
 
 #Confidential
 *.key
@@ -14,6 +15,9 @@ nginx/ssl/*
 *.pem
 .env
 .env.*
+
+#nginx
+nginx/nginx.dev.conf
 
 #backend NestJS
 /joots-backend/dist

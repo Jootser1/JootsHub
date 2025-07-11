@@ -1,15 +1,19 @@
 #!/bin/bash
 
 # 🚀 Script de déploiement JootsHub sur le cloud
-# Usage: ./scripts/deploy.sh [production|staging]
+# Usage: ./scripts/deploy.sh [production|staging] [domain]
 
 set -e
 
 ENVIRONMENT=${1:-production}
 DOMAIN=${2:-"joots.com"}
+LANDING_DOMAIN="www.${DOMAIN}"
+APP_DOMAIN="app.${DOMAIN}"
 
 echo "🚀 Déploiement JootsHub - Environnement: $ENVIRONMENT"
-echo "🌐 Domaine: $DOMAIN"
+echo "🌐 Domaine principal: $DOMAIN"
+echo "🌐 Landing page: $LANDING_DOMAIN"
+echo "🌐 Application: $APP_DOMAIN"
 
 # Couleurs pour les logs
 RED='\033[0;31m'
@@ -79,6 +83,8 @@ POSTGRES_DB=joots_db
 
 # Configuration générale
 DOMAIN=$DOMAIN
+LANDING_DOMAIN=$LANDING_DOMAIN
+APP_DOMAIN=$APP_DOMAIN
 ENVIRONMENT=$ENVIRONMENT
 EOF
     fi
@@ -87,11 +93,18 @@ EOF
     if [ ! -f "joots-frontend/.env.prod" ]; then
         log_info "Création du fichier .env.prod pour le frontend"
         cat > joots-frontend/.env.prod << EOF
-# URLs Production
-NEXT_PUBLIC_API_URL=https://$DOMAIN/api
-NEXTAUTH_URL=https://$DOMAIN
-NEXT_PUBLIC_WS_URL=wss://$DOMAIN/socket.io
-NEXT_PUBLIC_SW_URL=https://$DOMAIN
+# URLs Production - Architecture multi-domaines
+NEXT_PUBLIC_API_URL=https://$APP_DOMAIN/api
+NEXT_PUBLIC_APP_URL=https://$APP_DOMAIN
+NEXT_PUBLIC_LANDING_URL=https://$LANDING_DOMAIN
+NEXTAUTH_URL=https://$APP_DOMAIN
+NEXT_PUBLIC_WS_URL=wss://$APP_DOMAIN/socket.io
+NEXT_PUBLIC_SW_URL=https://$APP_DOMAIN
+
+# Domaines
+NEXT_PUBLIC_DOMAIN=$DOMAIN
+NEXT_PUBLIC_LANDING_DOMAIN=$LANDING_DOMAIN
+NEXT_PUBLIC_APP_DOMAIN=$APP_DOMAIN
 
 # Clés de sécurité
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
@@ -118,6 +131,11 @@ SSL_KEY_PATH=/app/ssl/backend.key
 SSL_CERT_PATH=/app/ssl/backend.crt
 PORT=4000
 
+# Domaines
+FRONTEND_URL=https://$APP_DOMAIN
+LANDING_URL=https://$LANDING_DOMAIN
+ALLOWED_ORIGINS=https://$LANDING_DOMAIN,https://$APP_DOMAIN
+
 # Sécurité
 JWT_SECRET=$(openssl rand -base64 32)
 JWT_EXPIRES_IN=24h
@@ -133,7 +151,7 @@ EOF
 
 # Configuration SSL avec Let's Encrypt
 setup_ssl() {
-    log_info "Configuration SSL..."
+    log_info "Configuration SSL pour les domaines multiples..."
     
     if [ ! -d "nginx/ssl" ]; then
         mkdir -p nginx/ssl
@@ -158,21 +176,28 @@ setup_ssl() {
             fi
         fi
         
-        log_info "Génération des certificats SSL pour $DOMAIN..."
-        log_warning "Assurez-vous que votre domaine pointe vers ce serveur"
+        log_info "Génération des certificats SSL pour tous les domaines..."
+        log_warning "Assurez-vous que tous vos domaines pointent vers ce serveur"
+        log_info "Domaines à certifier: $DOMAIN, $LANDING_DOMAIN, $APP_DOMAIN"
         
         # Arrêter nginx temporairement
         sudo systemctl stop nginx 2>/dev/null || true
         
-        # Générer les certificats
-        sudo certbot certonly --standalone -d $DOMAIN -d www.$DOMAIN --email admin@$DOMAIN --agree-tos --non-interactive
+        # Générer les certificats pour tous les domaines
+        sudo certbot certonly --standalone \
+            -d $DOMAIN \
+            -d $LANDING_DOMAIN \
+            -d $APP_DOMAIN \
+            --email admin@$DOMAIN \
+            --agree-tos \
+            --non-interactive
         
-        # Copier les certificats
+        # Copier les certificats (utiliser le premier domaine comme référence)
         sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem nginx/ssl/
         sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem nginx/ssl/
         sudo chown $USER:$USER nginx/ssl/*
         
-        log_success "Certificats SSL configurés"
+        log_success "Certificats SSL configurés pour tous les domaines"
     else
         log_success "Certificats SSL déjà présents"
     fi
@@ -180,12 +205,23 @@ setup_ssl() {
 
 # Mise à jour de la configuration nginx
 update_nginx_config() {
-    log_info "Mise à jour de la configuration nginx..."
+    log_info "Vérification de la configuration nginx..."
     
-    # Remplacer le domaine dans la configuration
-    sed -i "s/votre-domaine.com/$DOMAIN/g" nginx/nginx.prod.conf
+    # Vérifier que la configuration contient les bons domaines
+    if ! grep -q "server_name $LANDING_DOMAIN" nginx/nginx.prod.conf; then
+        log_warning "Configuration nginx ne contient pas les bons domaines"
+        log_info "Assurez-vous que nginx/nginx.prod.conf contient:"
+        log_info "- server_name $LANDING_DOMAIN $DOMAIN"
+        log_info "- server_name $APP_DOMAIN"
+    fi
     
-    log_success "Configuration nginx mise à jour"
+    # Tester la configuration nginx
+    if docker run --rm -v $(pwd)/nginx/nginx.prod.conf:/etc/nginx/nginx.conf:ro nginx:latest nginx -t; then
+        log_success "Configuration nginx valide"
+    else
+        log_error "Configuration nginx invalide"
+        exit 1
+    fi
 }
 
 # Build et déploiement
@@ -224,13 +260,30 @@ deploy_application() {
 
 # Vérification du déploiement
 verify_deployment() {
-    log_info "Vérification du déploiement..."
+    log_info "Vérification du déploiement multi-domaines..."
     
-    # Test de connectivité
-    if curl -s --max-time 10 https://$DOMAIN/health > /dev/null; then
+    # Test de connectivité pour la landing page
+    log_info "Test de la landing page ($LANDING_DOMAIN)..."
+    if curl -s --max-time 10 https://$LANDING_DOMAIN > /dev/null; then
+        log_success "Landing page accessible via HTTPS"
+    else
+        log_warning "Landing page non accessible via HTTPS"
+    fi
+    
+    # Test de connectivité pour l'application
+    log_info "Test de l'application ($APP_DOMAIN)..."
+    if curl -s --max-time 10 https://$APP_DOMAIN/health > /dev/null; then
         log_success "Application accessible via HTTPS"
     else
         log_warning "Application non accessible via HTTPS"
+    fi
+    
+    # Test de redirection joots.com vers www.joots.com
+    log_info "Test de redirection ($DOMAIN → $LANDING_DOMAIN)..."
+    if curl -s --max-time 10 -I https://$DOMAIN | grep -q "301\|302"; then
+        log_success "Redirection fonctionnelle"
+    else
+        log_warning "Redirection non détectée"
     fi
     
     # Vérifier les services Docker
@@ -244,17 +297,34 @@ verify_deployment() {
 
 # Configuration du monitoring
 setup_monitoring() {
-    log_info "Configuration du monitoring..."
+    log_info "Configuration du monitoring multi-domaines..."
     
     # Créer le script de monitoring
-    cat > scripts/monitor.sh << 'EOF'
+    cat > scripts/monitor.sh << EOF
 #!/bin/bash
-# Script de monitoring simple
+# Script de monitoring multi-domaines
 
 while true; do
-    echo "=== $(date) ==="
+    echo "=== \$(date) ==="
     echo "Services Docker:"
     docker-compose -f docker-compose.prod.yml ps
+    
+    echo "Tests de connectivité:"
+    if curl -s --max-time 5 https://$LANDING_DOMAIN > /dev/null; then
+        echo "✅ Landing page ($LANDING_DOMAIN) - OK"
+    else
+        echo "❌ Landing page ($LANDING_DOMAIN) - ERREUR"
+    fi
+    
+    if curl -s --max-time 5 https://$APP_DOMAIN/health > /dev/null; then
+        echo "✅ Application ($APP_DOMAIN) - OK"
+    else
+        echo "❌ Application ($APP_DOMAIN) - ERREUR"
+    fi
+    
+    echo "Certificats SSL:"
+    echo "Expiration: \$(openssl x509 -in nginx/ssl/fullchain.pem -text -noout | grep "Not After" | cut -d: -f2-)"
+    
     echo "Utilisation mémoire:"
     free -h
     echo "Espace disque:"
@@ -268,12 +338,43 @@ EOF
     
     chmod +x scripts/monitor.sh
     
+    # Créer un script de renouvellement SSL
+    cat > scripts/renew-ssl.sh << EOF
+#!/bin/bash
+# Script de renouvellement SSL automatique
+
+log_info() {
+    echo "\$(date): \$1"
+}
+
+log_info "Vérification du renouvellement SSL..."
+sudo certbot renew --quiet
+
+if [ \$? -eq 0 ]; then
+    log_info "Certificats renouvelés avec succès"
+    # Copier les nouveaux certificats
+    sudo cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem nginx/ssl/
+    sudo cp /etc/letsencrypt/live/$DOMAIN/privkey.pem nginx/ssl/
+    sudo chown $USER:$USER nginx/ssl/*
+    
+    # Redémarrer nginx
+    docker-compose -f docker-compose.prod.yml restart nginx
+    log_info "Nginx redémarré"
+else
+    log_info "Aucun renouvellement nécessaire"
+fi
+EOF
+    
+    chmod +x scripts/renew-ssl.sh
+    
     log_success "Monitoring configuré"
+    log_info "Monitoring en temps réel: ./scripts/monitor.sh"
+    log_info "Renouvellement SSL: ./scripts/renew-ssl.sh"
 }
 
 # Fonction principale
 main() {
-    echo "🚀 Démarrage du déploiement JootsHub"
+    echo "🚀 Démarrage du déploiement JootsHub multi-domaines"
     
     check_prerequisites
     setup_environment
@@ -284,9 +385,14 @@ main() {
     setup_monitoring
     
     log_success "🎉 Déploiement terminé avec succès!"
-    log_info "🌐 Votre application est accessible sur: https://$DOMAIN"
+    log_info "🌐 Landing page: https://$LANDING_DOMAIN"
+    log_info "🌐 Application: https://$APP_DOMAIN"
     log_info "📊 Monitoring: ./scripts/monitor.sh"
     log_info "📋 Logs: docker-compose -f docker-compose.prod.yml logs -f"
+    log_info "🔄 Renouvellement SSL: ./scripts/renew-ssl.sh"
+    
+    log_info "💡 Conseil: Ajoutez cette ligne au crontab pour le renouvellement automatique SSL:"
+    log_info "0 2 * * * /chemin/vers/votre/projet/scripts/renew-ssl.sh >> /var/log/ssl-renewal.log 2>&1"
 }
 
 # Gestion des erreurs
