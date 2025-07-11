@@ -1,67 +1,77 @@
 services:
   frontend:
     build:
-      context: ./joots-frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+      context: .
+      dockerfile: ./joots-frontend/Dockerfile
     environment:
       - NODE_ENV=production
     env_file:
       - ./joots-frontend/.env
-    volumes:
-      - ./joots-frontend:/joots-frontend
-      - /joots-frontend/node_modules
     depends_on:
       - backend
     networks:
       - joots-network
+    restart: always
 
   backend:
     build:
-      context: ./joots-backend
-      dockerfile: Dockerfile
-    ports:
-      - "4000:4000"
+      context: .
+      dockerfile: ./joots-backend/Dockerfile
     environment:
       - NODE_ENV=production
-      - SEED_DB=false
     env_file:
-      - ./joots-backend/.env.docker.prod
-    volumes:
-      - ./joots-backend:/joots-backend
-      - /joots-backend/node_modules
+      - ./joots-backend/.env
     depends_on:
       - postgres
       - redis
     networks:
       - joots-network
+    restart: always
 
   postgres:
+    env_file:
+      - .env
     image: postgres:15
     restart: always
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "5432:5432"
+      POSTGRES_USER
+      POSTGRES_PASSWORD
+      POSTGRES_DB
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
       - joots-network
+    restart: always
 
   redis:
     image: redis:7
     restart: always
-    ports:
-      - "6379:6379"
+    volumes:
+      - redis_data:/data
     networks:
       - joots-network
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    volumes:
+      - ./nginx/nginx.prod.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - joots-network
+    restart: always
 
 networks:
   joots-network:
     driver: bridge
 
 volumes:
-  postgres_data: 
+  postgres_data:
+  redis_data:

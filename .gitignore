@@ -1,25 +1,51 @@
+# GITIGNORE pour Release
 #cursor
 .cursorrules
+.cursor/
 
 # AI context
 /AI_context_md
+
+#Confidential
+*.key
+*.crt
+nginx/ssl/*
+*.pem
+.env
+.env.*
 
 #backend NestJS
 /joots-backend/dist
 /joots-backend/node_modules
 /joots-backend/logs
 /joots-backend/.dockerignore
+/joots-backend/test/*
+/joots-backend/tools/*
 /joots-backend/prisma/*.js
 /joots-backend/prisma/*.js.map
 /joots-backend/prisma/*.d.ts
+/joots-backend/Dockerfile.dev
+/joots-backend/README.md
+
 
 #frontend NextJS
 /joots-frontend/dist
 /joots-frontend/node_modules
 /joots-frontend/coverage
+/joots-frontend/README.md
+/joots-frontend/Dockerfile.dev
+/joots-frontend/.next
+/joots-frontend/public/avatars/*
+/joots-frontend/node_modules
+/joots-frontend/*.md
 
 #packages
 /packages/types/dist
+
+#setup
+setup.sh
+setup.bat
+start.sh
 
 # Node.js dependencies
 .npm/
@@ -35,11 +61,6 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-#Avatars
-/joots-frontend/public/avatars
-
-
-
 
 # Next.js build
 .next/
@@ -47,20 +68,14 @@ out/
 /build
 
 # Docker
-
 .dockerignore
+docker-compose.override.yml
+docker-compose.yml
 
-# Environnement (⚠️ très important)
-.env
-.env.local
-.env.development.local
-.env.production
-questions_structured_iso.json
-.env.docker.dev
-.env.docker.dev
-.env.*
 
 #archives
+/Archives/*
+/Fixes/*
 *.zip
 *.tar
 *.tar.gz

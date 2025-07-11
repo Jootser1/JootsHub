@@ -124,7 +124,7 @@ if [ ! -f "joots-backend/.env" ]; then
 # Backend Environment Variables - HTTPS Development
 
 # Base de données
-DATABASE_URL=postgresql://jootser1:boom7boom@postgres:5432/joots?schema=public
+DATABASE_URL=postgresql://jootser1:temppassword@postgres:5432/joots?schema=public
 
 # Redis
 REDIS_URL=redis://redis:6379

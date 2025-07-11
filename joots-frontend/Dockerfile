@@ -1,12 +1,28 @@
 # 🛠️ Étape 1 : Build
 FROM node:20-alpine AS builder
 
+# Étape 1 — Copier et compiler les types partagés
+WORKDIR /packages
+COPY ./packages .
+
+# Etape Build the types
+WORKDIR /packages/types
+RUN npm install --verbose && npm run build
+
+
 WORKDIR /joots-frontend
 
-COPY package.json package-lock.json ./
-RUN npm ci
+# Copier les fichiers de config
+COPY package*.json ./
+COPY next.config.ts ./
+COPY tsconfig.json ./
 
-COPY . .
+# Copier les sources nécessaires
+COPY public ./public
+COPY src ./src
+
+# Build the frontend
+RUN npm ci
 RUN npm run build
 
 # 📦 Étape 2 : Image de prod minimale
@@ -19,7 +35,7 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-COPY --from=builder /joots-frontend/package.json ./
+COPY --from=builder /joots-frontend/package*.json ./
 COPY --from=builder /joots-frontend/node_modules ./node_modules
 COPY --from=builder /joots-frontend/.next ./.next
 COPY --from=builder /joots-frontend/public ./public
