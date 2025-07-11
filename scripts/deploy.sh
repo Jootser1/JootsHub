@@ -89,10 +89,10 @@ ENVIRONMENT=$ENVIRONMENT
 EOF
     fi
     
-    # Frontend .env.prod
-    if [ ! -f "joots-frontend/.env.prod" ]; then
-        log_info "Création du fichier .env.prod pour le frontend"
-        cat > joots-frontend/.env.prod << EOF
+    # Frontend .env.production
+    if [ ! -f "joots-frontend/.env.production" ]; then
+        log_info "Création du fichier .env.production pour le frontend"
+        cat > joots-frontend/.env.production << EOF
 # URLs Production - Architecture multi-domaines
 NEXT_PUBLIC_API_URL=https://$APP_DOMAIN/api
 NEXT_PUBLIC_APP_URL=https://$APP_DOMAIN
@@ -114,10 +114,10 @@ NODE_ENV=production
 EOF
     fi
     
-    # Backend .env.prod
-    if [ ! -f "joots-backend/.env.prod" ]; then
-        log_info "Création du fichier .env.prod pour le backend"
-        cat > joots-backend/.env.prod << EOF
+    # Backend .env.production
+    if [ ! -f "joots-backend/.env.production" ]; then
+        log_info "Création du fichier .env.production pour le backend"
+        cat > joots-backend/.env.production << EOF
 # Base de données
 DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
 

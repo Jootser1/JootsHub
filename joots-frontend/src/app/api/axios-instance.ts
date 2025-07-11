@@ -12,8 +12,6 @@ const axiosInstance = axios.create({
   },
 })
 
-console.log('NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL)
-
 // Intercepteur pour ajouter le token de session Next-Auth
 axiosInstance.interceptors.request.use(
   async config => {
