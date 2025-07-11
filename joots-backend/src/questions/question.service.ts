@@ -1,11 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CurrentPollWithRelations } from '@shared/question.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
-import { postedResponse } from '@shared/icebreaker.types';
+import { PostedResponseEvent } from '@shared/icebreaker-event.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
 import { LocaleCode } from '@shared/locale.types';
-import { PollType } from '@shared/question.types';
+import { PollType } from '@shared/poll.types';
 import { PollAnswer } from '@prisma/client';
 
 @Injectable()
@@ -147,7 +147,7 @@ export class QuestionService {
 
 
   // Méthode spécifique pour enregistrer la réponse en BDD
-  async saveUserAnswerInDB(response: postedResponse) {
+  async saveUserAnswerInDB(response: PostedResponseEvent) {
 
     return this.prisma.$transaction(async (prisma) => {
       let pollAnswer: PollAnswer;

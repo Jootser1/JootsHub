@@ -12,7 +12,7 @@ import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
 import { xp_and_level } from '@shared/conversation.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
-import { CurrentPollWithRelations } from '@shared/question.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
 
 

@@ -1,12 +1,12 @@
 import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { CurrentPollWithRelations } from '@shared/question.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';
 import { xp_and_level } from '@shared/conversation.types';
-import { postedResponse } from '@shared/icebreaker.types';
+import { PostedResponseEvent } from '@shared/icebreaker-event.types';
 import { LocaleCode } from '@shared/locale.types';
 
 @Injectable()
@@ -167,7 +167,7 @@ export class IcebreakerService {
   }
   
   async processIcebreakersPostResponse(
-    postedResponse: postedResponse
+    postedResponse: PostedResponseEvent
   ) {
     // Save User Responses in redis
     await this.saveCurrentUserResponseInRedis(
@@ -188,7 +188,7 @@ export class IcebreakerService {
     }
   }
   
-  private async saveCurrentUserResponseInRedis(postedResponse: postedResponse) {
+  private async saveCurrentUserResponseInRedis(postedResponse: PostedResponseEvent) {
     const redisKey = `icebreaker:${postedResponse.conversation_id}:responses:${postedResponse.user_id}`;
     await this.redis.set(
       redisKey,

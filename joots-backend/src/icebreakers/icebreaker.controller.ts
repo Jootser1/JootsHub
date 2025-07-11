@@ -2,8 +2,8 @@ import { IcebreakerService } from './icebreaker.service';
 import { Controller, UseGuards, Post, Body } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { QuestionService } from 'src/questions/question.service';
-import { postedResponse } from '@shared/icebreaker.types';
-import { PollType } from '@shared/question.types';
+import { PostedResponseEvent } from '@shared/icebreaker-event.types';
+import { PollType } from '@shared/poll.types';
 
 @Controller('icebreakers')
 export class IcebreakerController {
@@ -15,7 +15,7 @@ export class IcebreakerController {
   @Post('response')
   @UseGuards(JwtAuthGuard)
   async postResponseToQuestion(
-    @Body() postedResponse: postedResponse
+    @Body() postedResponse: PostedResponseEvent
   ) {
     const { poll_type, user_id, poll_id, option_id, opentext, numeric, conversation_id, locale } = postedResponse;
     console.log('postedResponse', postedResponse);
