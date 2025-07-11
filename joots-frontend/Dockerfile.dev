@@ -16,7 +16,7 @@ RUN npm install --legacy-peer-deps
 
 COPY . .
 # Étape 2 — Installer les dépendances du frontend
-COPY joots-frontend/package*.json ./
+COPY ./joots-frontend/package*.json ./
 RUN npm cache clean --force && npm install --verbose
 
 

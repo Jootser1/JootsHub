@@ -154,15 +154,13 @@
     "greatest_quality": "Mayor cualidad",
     "biggest_flaw": "Mayor defecto",
     "sexual_orientation": "Orientación sexual",
-    "orientations": {
-      "heterosexual": "Heterosexual",
-      "homosexual": "Homosexual",
-      "bisexual": "Bisexual",
-      "asexual": "Asexual",
-      "pansexual": "Pansexual",
-      "other": "Otro",
-      "prefer_not_say": "Prefiero no decir"
-    },
+    "heterosexual": "Heterosexual",
+    "homosexual": "Homosexual",
+    "bisexual": "Bisexual",
+    "asexual": "Asexual",
+    "pansexual": "Pansexual",
+    "other": "Otro",
+    "prefer_not_say": "Prefiero no decir",
     "bio": "Biografía",
     "profile_updated": "¡Perfil actualizado!"
   },
@@ -189,5 +187,24 @@
       "FLAW": "Defecto",
       "BIO": "Biografía"
     }
+  },
+  "level_up": {
+    "popup_title": "¡SUBIDA DE NIVEL!",
+    "congratulations": "Has alcanzado el",
+    "level_prefix": "Nivel",
+    "one_more_conv_as_reward_text": "te da +1 en el número de conversaciones!",
+    "city_as_reward_text": "vive en ",
+    "gender_as_reward_text": "se define como ",
+    "passions_as_reward_text": "tiene como principales pasiones:",
+    "quality_as_reward_text": "piensa que su mayor cualidad es:",
+    "age_as_reward_text": "está en el rango de edad: ",
+    "job_as_reward_text": "trabaja como: ",
+    "orientation_as_reward_text": "se considera ",
+    "flaw_as_reward_text": "piensa que su mayor defecto es:",
+    "bio_as_reward_text": "escribió sobre su vida:",
+    "origin_as_reward_text": "tiene como origen cultural:",
+    "voice_as_reward_text": " y ahora puedes enviar mensajes de voz!",
+    "keep_going": "¡Sigue así!",
+    "celebration_emoji": "🎉"
   }
 } 

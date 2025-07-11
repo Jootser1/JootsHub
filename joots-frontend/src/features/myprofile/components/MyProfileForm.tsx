@@ -206,8 +206,8 @@ export default function MyProfileForm() {
                   <input
                     type="radio"
                     name="genre"
-                    value={['Homme','Femme','Non-Binaire'][index]}
-                    checked={form.GENDER === ['Homme','Femme','Non-Binaire'][index]}
+                    value={['male','female','non_binary'][index]}
+                    checked={form.GENDER === ['male','female','non_binary'][index]}
                     onChange={e => handleChange('GENDER', e.target.value)}
                     className="accent-blue-600 w-4 h-4"
                   />
@@ -259,13 +259,13 @@ export default function MyProfileForm() {
             onChange={e => handleChange('ORIENTATION', e.target.value)}
           >
             <option value="">{dictionary.common.choose}</option>
-            <option value="Hétérosexuel">{dictionary.profile_form.orientations.heterosexual}</option>
-            <option value="Homosexuel">{dictionary.profile_form.orientations.homosexual}</option>
-            <option value="Bisexuel">{dictionary.profile_form.orientations.bisexual}</option>
-            <option value="Asexuel">{dictionary.profile_form.orientations.asexual}</option>
-            <option value="Pansexuel">{dictionary.profile_form.orientations.pansexual}</option>
-            <option value="Autre">{dictionary.profile_form.orientations.other}</option>
-            <option value="Préférer ne pas dire">{dictionary.profile_form.orientations.prefer_not_say}</option>
+            <option value="heterosexual">{dictionary.profile_form.heterosexual}</option>
+            <option value="homosexual">{dictionary.profile_form.homosexual}</option>
+            <option value="bisexual">{dictionary.profile_form.bisexual}</option>
+            <option value="asexual">{dictionary.profile_form.asexual}</option>
+            <option value="pansexual">{dictionary.profile_form.pansexual}</option>
+            <option value="other">{dictionary.profile_form.other}</option>
+            <option value="prefer_not_say">{dictionary.profile_form.prefer_not_say}</option>
           </select>
         </div>
         <div>
