@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { Conversation } from '@shared/conversation.types'
+import { ConversationWithCurrentPollObject } from '@/features/chat/chat.types'
 import { ConversationStatus } from '@/features/conversations/components/ConversationStatus'
 import { formatDistanceToNow } from 'date-fns'
 import { getDateFnsLocale } from '@/utils/date-locale'
@@ -13,7 +13,7 @@ import { useLocalizedPath } from '@/hooks/useTranslations'
 import { useTranslations } from '@/contexts/TranslationContext'
 
 interface ConversationItemProps {
-  conversation: Conversation
+  conversation: ConversationWithCurrentPollObject
 }
 
 export function ConversationItem({ conversation }: ConversationItemProps) {
