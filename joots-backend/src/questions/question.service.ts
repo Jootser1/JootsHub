@@ -82,9 +82,6 @@ export class QuestionService {
             ...answeredPollIdsUser2,
           ],
         },
-        type: {
-          in: [PollType.OPEN, PollType.CONTINUOUS],
-        },
         is_enabled: true,
       },
       orderBy: {

@@ -50,7 +50,7 @@ export type ChatActions = {
   resetIcebreakerStatus: (conversationId: string) => void
 
   // XP and Level progression
-  updateConversationXpAndLevel: (conversationId: string, xpAndLevel: xp_and_level) => void
+  updateConversationXpAndLevel: (conversationId: string, xp_and_level: xp_and_level) => void
 
   // Helpers
   getMessagesFromConversation: (conversationId: string) => ChatStoreMessage[]

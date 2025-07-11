@@ -1,0 +1,42 @@
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: ./joots-frontend/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./joots-frontend:/joots-frontend
+      - ./packages/types:/packages/types
+      - /joots-frontend/node_modules
+    environment:
+      - NODE_ENV=development
+    env_file:
+      - ./joots-frontend/.env
+    command: npm run dev
+
+  backend:
+    build:
+      context: .
+      dockerfile: ./joots-backend/Dockerfile.dev
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./joots-backend:/joots-backend
+      - ./packages/types:/packages/types
+      - /joots-backend/node_modules
+    environment:
+      - NODE_ENV=development
+      - SEED_DB=true
+    env_file:
+      - ./joots-backend/.env
+
+    command: npm run start:dev
+
+  redis:
+    ports:
+      - "6379:6379"
+
+  postgres:
+    ports:
+      - "5432:5432"

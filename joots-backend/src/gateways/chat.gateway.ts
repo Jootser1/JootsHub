@@ -386,7 +386,7 @@ export class ChatGateway extends BaseGateway {
       response1,
       user2,
       response2,
-      xpAndLevel,
+      xp_and_level: xpAndLevel,
       answeredAt: new Date().toISOString(),
     };
 
