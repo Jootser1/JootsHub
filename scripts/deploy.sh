@@ -5,15 +5,11 @@
 
 set -e
 
+# Variables par défaut (utilisées seulement pour le déploiement complet)
 ENVIRONMENT=${1:-production}
 DOMAIN=${2:-"joots.com"}
 LANDING_DOMAIN="www.${DOMAIN}"
 APP_DOMAIN="app.${DOMAIN}"
-
-echo "🚀 Déploiement JootsHub - Environnement: $ENVIRONMENT"
-echo "🌐 Domaine principal: $DOMAIN"
-echo "🌐 Landing page: $LANDING_DOMAIN"
-echo "🌐 Application: $APP_DOMAIN"
 
 # Couleurs pour les logs
 RED='\033[0;31m'
@@ -670,7 +666,7 @@ EOF
 
 # Fonction principale
 main() {
-    # Vérifier les options spéciales
+    # Vérifier les options spéciales EN PREMIER
     case "$1" in
         "check-credentials"|"diag")
             log_info "🔍 Mode diagnostic des credentials uniquement"
@@ -680,6 +676,12 @@ main() {
         "fix-credentials")
             log_info "🔧 Mode réparation des credentials uniquement"
             fix_credentials "$2"
+            exit $?
+            ;;
+        "fix-domains")
+            log_info "🔧 Mode correction des domaines uniquement"
+            chmod +x scripts/fix-domains.sh
+            ./scripts/fix-domains.sh "$2"
             exit $?
             ;;
         "restart-db")
@@ -696,27 +698,33 @@ main() {
             show_help
             exit 0
             ;;
+        *)
+            # Mode déploiement complet - afficher les informations ici
+            echo "🚀 Déploiement JootsHub - Environnement: $ENVIRONMENT"
+            echo "🌐 Domaine principal: $DOMAIN"
+            echo "🌐 Landing page: $LANDING_DOMAIN"
+            echo "🌐 Application: $APP_DOMAIN"
+            echo "🚀 Démarrage du déploiement JootsHub multi-domaines"
+            
+            check_prerequisites
+            setup_environment
+            setup_ssl
+            update_nginx_config
+            deploy_application
+            verify_deployment
+            setup_monitoring
+            
+            log_success "🎉 Déploiement terminé avec succès!"
+            log_info "🌐 Landing page: https://$LANDING_DOMAIN"
+            log_info "🌐 Application: https://$APP_DOMAIN"
+            log_info "📊 Monitoring: ./scripts/monitor.sh"
+            log_info "📋 Logs: docker-compose -f docker-compose.prod.yml logs -f"
+            log_info "🔄 Renouvellement SSL: ./scripts/renew-ssl.sh"
+            
+            log_info "💡 Conseil: Ajoutez cette ligne au crontab pour le renouvellement automatique SSL:"
+            log_info "0 2 * * * /chemin/vers/votre/projet/scripts/renew-ssl.sh >> /var/log/ssl-renewal.log 2>&1"
+            ;;
     esac
-    
-    echo "🚀 Démarrage du déploiement JootsHub multi-domaines"
-    
-    check_prerequisites
-    setup_environment
-    setup_ssl
-    update_nginx_config
-    deploy_application
-    verify_deployment
-    setup_monitoring
-    
-    log_success "🎉 Déploiement terminé avec succès!"
-    log_info "🌐 Landing page: https://$LANDING_DOMAIN"
-    log_info "🌐 Application: https://$APP_DOMAIN"
-    log_info "📊 Monitoring: ./scripts/monitor.sh"
-    log_info "📋 Logs: docker-compose -f docker-compose.prod.yml logs -f"
-    log_info "🔄 Renouvellement SSL: ./scripts/renew-ssl.sh"
-    
-    log_info "💡 Conseil: Ajoutez cette ligne au crontab pour le renouvellement automatique SSL:"
-    log_info "0 2 * * * /chemin/vers/votre/projet/scripts/renew-ssl.sh >> /var/log/ssl-renewal.log 2>&1"
 }
 
 # Fonction d'aide
@@ -730,6 +738,7 @@ show_help() {
     echo "  diag                 Alias pour check-credentials"
     echo "  fix-credentials      Réparer les credentials uniquement"
     echo "  fix-credentials --new-password  Générer un nouveau mot de passe"
+    echo "  fix-domains [domaine] Corriger les domaines dans les fichiers .env"
     echo "  restart-db           Redémarrer uniquement PostgreSQL et backend"
     echo "  quick-fix            Diagnostic + réparation + redémarrage automatique"
     echo "  quick-fix --new-password  Quick-fix avec nouveau mot de passe"
@@ -740,6 +749,7 @@ show_help() {
     echo "EXEMPLES:"
     echo "  ./scripts/deploy.sh diag                    # Vérifier les credentials"
     echo "  ./scripts/deploy.sh quick-fix               # Réparation rapide"
+    echo "  ./scripts/deploy.sh fix-domains joots.com   # Corriger les domaines"
     echo "  ./scripts/deploy.sh fix-credentials --new-password  # Nouveau mot de passe"
     echo "  ./scripts/deploy.sh production joots.com    # Déploiement complet"
 }
