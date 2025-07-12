@@ -65,17 +65,49 @@ diagnose_credentials() {
     BACKEND_DB_URL=$(grep "^DATABASE_URL=" joots-backend/.env.production | cut -d'=' -f2)
     log_info "Database URL backend: $BACKEND_DB_URL"
     
+    # Vérifier la cohérence des credentials
+    if [[ "$BACKEND_DB_URL" =~ $POSTGRES_USER ]] && [[ "$BACKEND_DB_URL" =~ $POSTGRES_DB ]]; then
+        log_success "Credentials cohérents entre .env et backend"
+    else
+        log_error "Incohérence entre .env et backend DATABASE_URL"
+        return 1
+    fi
+    
+    # Vérifier si le mot de passe contient des caractères problématiques
+    if [[ "$POSTGRES_PASSWORD" =~ ^[a-z0-9]+$ ]]; then
+        log_success "Mot de passe sûr pour URL (caractères alphanumériques seulement)"
+    else
+        log_warning "Mot de passe contient des caractères spéciaux (peut causer des problèmes d'encodage)"
+        log_info "Suggestion: Régénérer un mot de passe sûr avec --new-password"
+    fi
+    
     # Vérifier si PostgreSQL est démarré
     if docker-compose -f docker-compose.prod.yml ps postgres | grep -q "Up"; then
         log_success "PostgreSQL est démarré"
         
-        # Tester la connexion
+        # Tester la connexion PostgreSQL directe
         if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
             log_success "PostgreSQL répond aux pings"
             
             # Tester la connexion complète
             if docker-compose -f docker-compose.prod.yml exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1;" >/dev/null 2>&1; then
                 log_success "Connexion PostgreSQL complète fonctionnelle"
+                
+                # Tester la connexion Prisma (si le backend est démarré)
+                if docker-compose -f docker-compose.prod.yml ps backend | grep -q "Up"; then
+                    log_info "Test de connexion Prisma via backend..."
+                    # Vérifier les logs récents du backend pour des erreurs Prisma
+                    if docker-compose -f docker-compose.prod.yml logs backend --tail=50 | grep -i "prisma.*error\|authentication.*failed" >/dev/null 2>&1; then
+                        log_error "Erreurs Prisma détectées dans les logs backend"
+                        log_info "Problème probable: Encodage URL ou credentials Prisma"
+                        return 1
+                    else
+                        log_success "Aucune erreur Prisma récente détectée"
+                    fi
+                else
+                    log_warning "Backend non démarré - impossible de tester Prisma"
+                fi
+                
                 return 0
             else
                 log_error "Connexion PostgreSQL échoue - problème de credentials"
@@ -244,24 +276,33 @@ check_prerequisites() {
 
 # Fonction pour générer un mot de passe sûr (sans caractères spéciaux pour URL)
 generate_safe_password() {
-    # Générer un mot de passe avec seulement des caractères alphanumériques
-    openssl rand -base64 32 | tr -d "=+/" | cut -c1-25
+    # Générer un mot de passe avec seulement des caractères alphanumériques (lettres minuscules et chiffres)
+    # Pour éviter tout problème d'encodage dans l'URL PostgreSQL
+    openssl rand -hex 16 | tr '[:upper:]' '[:lower:]' | cut -c1-25
 }
 
 # Fonction pour encoder les caractères spéciaux dans l'URL
 url_encode() {
     local string="${1}"
-    local encoded=""
-    local length="${#string}"
-    
-    for (( i=0; i<$length; i++ )); do
-        local char="${string:$i:1}"
-        case $char in
-            [a-zA-Z0-9._-]) encoded="$encoded$char" ;;
-            *) encoded="$encoded$(printf '%%%02X' "'$char")" ;;
-        esac
-    done
-    echo "$encoded"
+    # Avec les nouveaux mots de passe hexadécimaux, on n'a normalement plus besoin d'encoder
+    # mais on garde cette fonction pour la compatibilité
+    if [[ "$string" =~ ^[a-z0-9]+$ ]]; then
+        # Si le mot de passe ne contient que des lettres minuscules et chiffres, pas d'encodage nécessaire
+        echo "$string"
+    else
+        # Sinon, encoder les caractères spéciaux
+        local encoded=""
+        local length="${#string}"
+        
+        for (( i=0; i<$length; i++ )); do
+            local char="${string:$i:1}"
+            case $char in
+                [a-zA-Z0-9._-]) encoded="$encoded$char" ;;
+                *) encoded="$encoded$(printf '%%%02X' "'$char")" ;;
+            esac
+        done
+        echo "$encoded"
+    fi
 }
 
 # Configuration des variables d'environnement
