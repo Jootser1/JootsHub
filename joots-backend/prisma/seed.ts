@@ -203,22 +203,13 @@ async function main() {
       continue;
     }
 
-    console.log(`\nSondage ${id}:`);
-    rows.forEach(row => {
-      console.log(`- ${row.locale}: ${row.fr_FR}`);
-    });
 
-    console.log(`Traductions pour le sondage ${id}:`, {
-      fr: frRow.fr_FR,
-      en: enRow.fr_FR,
-      es: esRow.fr_FR
-    });
+
 
     const type = frRow.type?.toUpperCase() as PollType;
     const categories = frRow.category?.split(',').map((c) => parseInt(c.trim(), 10)) || [];
 
     try {
-      console.log(`Création du sondage ${id} de type ${type}`);
       const createdPoll = await prisma.poll.create({
         data: {
           poll_id: uuidv4(),

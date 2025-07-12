@@ -34,7 +34,7 @@ export class ConversationsService {
       const conversationsIds = await this.findAllConversationsIdsForAUserId(userId);
       
       if (conversationsIds.length === 0) {
-        throw new NotFoundException('Aucune conversation trouvée');
+        return []; // Retourner un tableau vide au lieu de lancer une exception
       } 
       
       const conversations: any[] = [];

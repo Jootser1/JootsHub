@@ -19,28 +19,44 @@ const authOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
+        console.log('🔐 NEXTAUTH AUTHORIZE CALLED', { credentials: !!credentials })
+        logger.info('🔐 NextAuth authorize function called', { 
+          hasCredentials: !!credentials,
+          hasEmail: !!credentials?.email,
+          hasPassword: !!credentials?.password
+        })
+        
         if (!credentials?.email || !credentials?.password) {
           logger.warn("Tentative d'authentification sans credentials")
           throw new Error('Email et mot de passe requis')
         }
 
-        const apiUrl = process.env.API_INTERNAL_URL
-        if (!apiUrl) {
-          logger.error('API_INTERNAL_URL non défini')
-          throw new Error('Configuration serveur invalide')
-        }
 
         try {
-          logger.info('Tentative de connexion à', { apiUrl })
-          const res = await axios.post(`${apiUrl}/auth/login`, {
+          // Utiliser directement le backend en interne (container-to-container)
+          const backendUrl = process.env.API_INTERNAL_URL + '/api/auth/login'
+
+          const res = await axios.post(backendUrl, {
             email: credentials.email,
             password: credentials.password,
+          }, {
+            httpsAgent: new (require('https').Agent)({
+              rejectUnauthorized: false // Ignorer les erreurs SSL en dev
+            })
           })
 
           if (!res.data) {
             logger.error('Réponse vide du serveur')
             throw new Error('Réponse serveur invalide')
           }
+
+          logger.info('Réponse complète du serveur', { 
+            data: res.data,
+            status: res.status,
+            hasUser: !!res.data?.user,
+            hasUserId: !!res.data?.user?.user_id,
+            hasAccessToken: !!res.data?.access_token
+          })
 
           if (res.data?.user?.user_id && res.data?.access_token) {
             logger.info('Authentification réussie', { 
@@ -56,7 +72,9 @@ const authOptions = {
 
           logger.error('Réponse invalide du serveur au login', { 
             response: res.data,
-            status: res.status 
+            status: res.status,
+            userIdExists: !!res.data?.user?.user_id,
+            accessTokenExists: !!res.data?.access_token
           })
           throw new Error('Réponse invalide du serveur')
         } catch (error: unknown) {

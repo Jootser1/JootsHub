@@ -236,4 +236,9 @@ export class UsersService {
     
     return currentLevel ? currentLevel.level : 1;
   }
+
+  async getNbUsers() {
+    const nbUsers = await this.prisma.user.count();
+    return nbUsers;
+  }
 }

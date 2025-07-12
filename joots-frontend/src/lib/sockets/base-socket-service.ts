@@ -34,7 +34,7 @@ export abstract class BaseSocketService {
       this.socket = null
     }
 
-    const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:4000'
+    const BASE_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://localhost'
 
     this.socket = io(`${BASE_URL}/${this.namespace}`, {
       reconnection: true,

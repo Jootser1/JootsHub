@@ -6,11 +6,13 @@ interface CustomAxiosRequestConfig extends InternalAxiosRequestConfig {
 }
 
 const axiosInstance = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://localhost:4000',
   headers: {
     'Content-Type': 'application/json',
   },
 })
+
+console.log('NEXT_PUBLIC_API_URL', process.env.NEXT_PUBLIC_API_URL)
 
 // Intercepteur pour ajouter le token de session Next-Auth
 axiosInstance.interceptors.request.use(
