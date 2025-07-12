@@ -60,7 +60,7 @@ async function bootstrap() {
   app.enableCors({
     origin:
       process.env.NODE_ENV === 'production'
-        ? ['https://joots.app', 'https://www.joots.app']
+        ? ['https://app.joots.com', 'https://www.joots.com', 'https://joots.com']
         : ['https://localhost', 'https://localhost:3000'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,

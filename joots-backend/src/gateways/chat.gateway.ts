@@ -21,7 +21,7 @@ import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
   cors: {
     origin:
       process.env.NODE_ENV === 'production'
-        ? 'https://joots.app'
+        ? ['https://app.joots.com', 'https://www.joots.com', 'https://joots.com']
         : ['https://localhost', 'http://localhost:3000'],
     credentials: true,
   },
