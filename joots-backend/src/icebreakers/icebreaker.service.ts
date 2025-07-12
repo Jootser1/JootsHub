@@ -1,7 +1,7 @@
 import { Injectable, forwardRef, Inject, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RedisService } from '../redis/redis.service';
-import { CurrentPollWithRelations } from '@shared/question.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 import { ChatGateway } from '../gateways/chat.gateway';
 import { MessagesService } from '../messages/messages.service';
 import { ConversationsService } from '../conversations/conversations.service';

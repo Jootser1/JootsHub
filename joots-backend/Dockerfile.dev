@@ -3,7 +3,7 @@ FROM node:20
 
 # Étape 1 — Copier et compiler les types partagés
 WORKDIR /packages
-COPY ./packages .
+COPY ./packages/ .
 
 # Etape Build the types
 WORKDIR /packages/types
@@ -16,7 +16,7 @@ COPY ./joots-backend/package*.json ./
 RUN npm cache clean --force && npm install --verbose
 
 # Étape 3 : copier le schéma et générer le client Prisma
-COPY ./joots-backend/prisma ./prisma
+COPY ./joots-backend/prisma/ ./prisma
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 

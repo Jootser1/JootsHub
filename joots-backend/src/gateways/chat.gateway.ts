@@ -10,10 +10,9 @@ import { BaseGateway } from './base.gateway';
 import { RedisService } from '../redis/redis.service';
 import { QuestionService } from '../questions/question.service';
 import { IcebreakerService } from '../icebreakers/icebreaker.service';
-import { xp_and_level } from '@shared/conversation.types';
+import { xp_and_level, ParticipantIcebreakerStatus } from '@shared/conversation.types';
 import { ConversationsService } from 'src/conversations/conversations.service';
-import { CurrentPollWithRelations } from '@shared/question.types';
-import { ParticipantIcebreakerStatus } from '@shared/conversation.types';
+import { CurrentPollWithRelations } from '@shared/poll.types';
 
 
 

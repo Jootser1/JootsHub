@@ -20,7 +20,7 @@ RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
 COPY --from=builder /joots-frontend/package.json ./
-COPY --from=builder /joots-frontend/node_modules ./node_modules
+#COPY --from=builder /joots-frontend/node_modules ./node_modules
 COPY --from=builder /joots-frontend/.next ./.next
 COPY --from=builder /joots-frontend/public ./public
 COPY --from=builder /joots-frontend/next.config.js ./next.config.js

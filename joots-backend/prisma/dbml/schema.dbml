@@ -1,0 +1,223 @@
+//// ------------------------------------------------------
+//// THIS FILE WAS AUTOMATICALLY GENERATED (DO NOT MODIFY)
+//// ------------------------------------------------------
+
+Table Auth {
+  id String [pk]
+  email String [unique, not null]
+  password String [not null]
+  accessToken String
+  refreshToken String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  user User [not null]
+  userId String [unique, not null]
+}
+
+Table User {
+  id String [pk]
+  avatar String
+  bio String
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [default: `now()`, not null]
+  auth Auth
+  userNumber Int [increment, unique, not null]
+  username String [unique, not null]
+  isOnline Boolean [not null, default: false]
+  isAvailableForChat Boolean [not null, default: true]
+  questionGroups QuestionGroup [not null]
+  sentMessages Message [not null]
+  conversations ConversationParticipant [not null]
+  contacts UserContact [not null]
+  contactOf UserContact [not null]
+  questionPreferences UserQuestionPreference [not null]
+  answers UserAnswer [not null]
+}
+
+Table UserContact {
+  userId String [not null]
+  contactId String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  user User [not null]
+  contact User [not null]
+
+  indexes {
+    (userId, contactId) [pk]
+  }
+}
+
+Table Conversation {
+  id String [pk]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  messages Message [not null]
+  participants ConversationParticipant [not null]
+  UserAnswer UserAnswer [not null]
+}
+
+Table ConversationParticipant {
+  conversationId String [not null]
+  userId String [not null]
+  conversation Conversation [not null]
+  user User [not null]
+  isIcebreakerReady Boolean [not null, default: false]
+  hasGivenAnswer Boolean [not null, default: false]
+  createdAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+
+  indexes {
+    (conversationId, userId) [pk]
+    (conversationId, userId) [unique]
+  }
+}
+
+Table Message {
+  id String [pk]
+  senderId String [not null]
+  content String [not null]
+  createdAt DateTime [default: `now()`, not null]
+  editedAt DateTime
+  isRead Boolean [not null, default: false]
+  isDeleted Boolean [not null, default: false]
+  conversationId String [not null]
+  conversation Conversation [not null]
+  sender User [not null]
+}
+
+Table QuestionGroup {
+  id String [pk]
+  type Int [not null]
+  authorId String [not null]
+  author User [not null]
+  createdAt DateTime [default: `now()`, not null]
+  isModerated Boolean [not null, default: false]
+  moderatedAt DateTime
+  pinned Boolean [not null, default: false]
+  enabled Boolean [not null, default: true]
+  questions Question [not null]
+  options QuestionOption [not null]
+  categories QuestionGroupCategory [not null]
+  answers UserAnswer [not null]
+}
+
+Table Question {
+  id String [pk]
+  groupId String [not null]
+  locale String [not null]
+  question String [not null]
+  group QuestionGroup [not null]
+
+  indexes {
+    (groupId, locale) [unique]
+  }
+}
+
+Table QuestionOption {
+  id String [pk]
+  groupId String [not null]
+  locale String [not null]
+  label String [not null]
+  order Int [not null]
+  answers UserAnswer [not null]
+  group QuestionGroup [not null]
+
+  indexes {
+    (groupId, locale, order) [unique]
+  }
+}
+
+Table Category {
+  id Int [pk]
+  translations CategoryTranslation [not null]
+  groupLinks QuestionGroupCategory [not null]
+  userPreferences UserQuestionPreference [not null]
+}
+
+Table CategoryTranslation {
+  categoryId Int [not null]
+  locale String [not null]
+  label String [not null]
+  category Category [not null]
+
+  indexes {
+    (categoryId, locale) [pk]
+  }
+}
+
+Table QuestionGroupCategory {
+  questionGroupId String [not null]
+  categoryId Int [not null]
+  questionGroup QuestionGroup [not null]
+  category Category [not null]
+
+  indexes {
+    (questionGroupId, categoryId) [pk]
+  }
+}
+
+Table UserQuestionPreference {
+  userId String [not null]
+  categoryId Int [not null]
+  enabled Boolean [not null, default: true]
+  updatedAt DateTime [not null]
+  user User [not null]
+  category Category [not null]
+
+  indexes {
+    (userId, categoryId) [pk]
+  }
+}
+
+Table UserAnswer {
+  id String [pk]
+  userId String [not null]
+  questionGroupId String [not null]
+  questionOptionId String [not null]
+  conversationId String
+  answeredAt DateTime [default: `now()`, not null]
+  updatedAt DateTime [not null]
+  note String
+  isFlagged Boolean [not null, default: false]
+  user User [not null]
+  questionGroup QuestionGroup [not null]
+  questionOption QuestionOption [not null]
+  conversation Conversation
+}
+
+Ref: Auth.userId - User.id
+
+Ref: UserContact.userId > User.id [delete: Cascade]
+
+Ref: UserContact.contactId > User.id [delete: Cascade]
+
+Ref: ConversationParticipant.conversationId > Conversation.id
+
+Ref: ConversationParticipant.userId > User.id
+
+Ref: Message.conversationId > Conversation.id
+
+Ref: Message.senderId > User.id
+
+Ref: QuestionGroup.authorId > User.id
+
+Ref: Question.groupId > QuestionGroup.id
+
+Ref: QuestionOption.groupId > QuestionGroup.id
+
+Ref: CategoryTranslation.categoryId > Category.id
+
+Ref: QuestionGroupCategory.questionGroupId > QuestionGroup.id
+
+Ref: QuestionGroupCategory.categoryId > Category.id
+
+Ref: UserQuestionPreference.userId > User.id [delete: Cascade]
+
+Ref: UserQuestionPreference.categoryId > Category.id [delete: Cascade]
+
+Ref: UserAnswer.userId > User.id [delete: Cascade]
+
+Ref: UserAnswer.questionGroupId > QuestionGroup.id [delete: Cascade]
+
+Ref: UserAnswer.questionOptionId > QuestionOption.id [delete: Cascade]
+
+Ref: UserAnswer.conversationId > Conversation.id [delete: Cascade]
