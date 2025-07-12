@@ -68,6 +68,28 @@ check_prerequisites() {
     log_success "Prérequis validés"
 }
 
+# Fonction pour générer un mot de passe sûr (sans caractères spéciaux pour URL)
+generate_safe_password() {
+    # Générer un mot de passe avec seulement des caractères alphanumériques
+    openssl rand -base64 32 | tr -d "=+/" | cut -c1-25
+}
+
+# Fonction pour encoder les caractères spéciaux dans l'URL
+url_encode() {
+    local string="${1}"
+    local encoded=""
+    local length="${#string}"
+    
+    for (( i=0; i<$length; i++ )); do
+        local char="${string:$i:1}"
+        case $char in
+            [a-zA-Z0-9._-]) encoded="$encoded$char" ;;
+            *) encoded="$encoded$(printf '%%%02X' "'$char")" ;;
+        esac
+    done
+    echo "$encoded"
+}
+
 # Configuration des variables d'environnement
 setup_environment() {
     log_info "Configuration de l'environnement $ENVIRONMENT..."
@@ -78,8 +100,8 @@ setup_environment() {
     
     # Générer un mot de passe unique et persistant
     if [ ! -f ".env" ]; then
-        POSTGRES_PASSWORD=$(openssl rand -base64 32)
-        log_info "Génération d'un nouveau mot de passe PostgreSQL"
+        POSTGRES_PASSWORD=$(generate_safe_password)
+        log_info "Génération d'un nouveau mot de passe PostgreSQL sécurisé"
     else
         # Récupérer le mot de passe existant
         POSTGRES_PASSWORD=$(grep "POSTGRES_PASSWORD=" .env | cut -d'=' -f2)
@@ -126,9 +148,11 @@ EOF
     
     # Backend .env.production avec credentials synchronisés
     log_info "Configuration du fichier .env.production pour le backend"
+    # Encoder le mot de passe pour l'URL
+    POSTGRES_PASSWORD_ENCODED=$(url_encode "$POSTGRES_PASSWORD")
     cat > joots-backend/.env.production << EOF
 # Base de données - Credentials synchronisés
-DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD_ENCODED}@postgres:5432/${POSTGRES_DB}
 
 # Redis
 REDIS_URL=redis://redis:6379
