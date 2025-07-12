@@ -1,15 +1,17 @@
 # 🛠️ Étape 1 : Build
 FROM node:20-alpine AS builder
 
+# Créer la structure de dossiers à la racine
+WORKDIR /
+
 # Étape 1 — Copier et compiler les types partagés
-WORKDIR /packages
-COPY ./packages .
+COPY ./packages ./packages
 
 # Build des types partagés
 WORKDIR /packages/types
 RUN npm install --verbose && npm run build && ls -la dist/
 
-# Étape 2 — Installer les dépendances du backend
+# Étape 2 — Aller dans le dossier backend et installer les dépendances
 WORKDIR /joots-backend
 
 # Copier les fichiers de package en premier pour optimiser le cache Docker
@@ -24,16 +26,20 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 COPY joots-backend/tsconfig*.json ./
 COPY joots-backend/src ./src
 
-# Compiler le projet
+# Compiler le projet (maintenant les types sont disponibles via ../packages/types/dist/*)
 RUN npm run build
 
 # 🔧 Étape 2 : Création de l'image de prod minimale
 FROM node:20-alpine AS runner
 
-WORKDIR /joots-backend
+# Créer la même structure que dans le builder (à la racine)
+WORKDIR /
 
-# Copier les types partagés compilés
-COPY --from=builder /packages/types/dist ./node_modules/@shared/types/dist
+# Copier les types partagés compilés (maintenir la structure)
+COPY --from=builder /packages ./packages
+
+# Aller dans le dossier backend
+WORKDIR /joots-backend
 
 # Copier le build, les dépendances et les fichiers nécessaires
 COPY --from=builder /joots-backend/dist ./dist

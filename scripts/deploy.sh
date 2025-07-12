@@ -74,7 +74,7 @@ diagnose_credentials() {
     fi
     
     # Vérifier si le mot de passe contient des caractères problématiques
-    if [[ "$POSTGRES_PASSWORD" =~ ^[a-z0-9]+$ ]]; then
+    if [[ "$POSTGRES_PASSWORD" =~ ^[a-zA-Z0-9]+$ ]]; then
         log_success "Mot de passe sûr pour URL (caractères alphanumériques seulement)"
     else
         log_warning "Mot de passe contient des caractères spéciaux (peut causer des problèmes d'encodage)"
