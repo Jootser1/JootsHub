@@ -71,16 +71,24 @@ check_prerequisites() {
 # Configuration des variables d'environnement
 setup_environment() {
     log_info "Configuration de l'environnement $ENVIRONMENT..."
-    
+
     # Définir les variables de base de données
     POSTGRES_USER=joots_user
-    POSTGRES_PASSWORD=$(openssl rand -base64 32)
     POSTGRES_DB=joots_db
     
-    # Créer les fichiers .env si ils n'existent pas
+    # Générer un mot de passe unique et persistant
     if [ ! -f ".env" ]; then
-        log_info "Création du fichier .env principal"
-        cat > .env << EOF
+        POSTGRES_PASSWORD=$(openssl rand -base64 32)
+        log_info "Génération d'un nouveau mot de passe PostgreSQL"
+    else
+        # Récupérer le mot de passe existant
+        POSTGRES_PASSWORD=$(grep "POSTGRES_PASSWORD=" .env | cut -d'=' -f2)
+        log_info "Réutilisation du mot de passe PostgreSQL existant"
+    fi
+
+    # Créer le fichier .env principal avec les credentials synchronisés
+    log_info "Configuration du fichier .env principal"
+    cat > .env << EOF
 # Configuration PostgreSQL
 POSTGRES_USER=$POSTGRES_USER
 POSTGRES_PASSWORD=$POSTGRES_PASSWORD
@@ -92,22 +100,16 @@ LANDING_DOMAIN=$LANDING_DOMAIN
 APP_DOMAIN=$APP_DOMAIN
 ENVIRONMENT=$ENVIRONMENT
 EOF
-    else
-        # Charger les variables existantes du fichier .env
-        log_info "Chargement des variables existantes depuis .env"
-        source .env
-    fi
-    
+
     # Frontend .env.production
-    if [ ! -f "joots-frontend/.env.production" ]; then
-        log_info "Création du fichier .env.production pour le frontend"
-        cat > joots-frontend/.env.production << EOF
+    log_info "Configuration du fichier .env.production pour le frontend"
+    cat > joots-frontend/.env.production << EOF
 # URLs Production - Architecture multi-domaines
 NEXT_PUBLIC_API_URL=https://$APP_DOMAIN/api
 NEXT_PUBLIC_APP_URL=https://$APP_DOMAIN
 NEXT_PUBLIC_LANDING_URL=https://$LANDING_DOMAIN
 NEXTAUTH_URL=https://$APP_DOMAIN
-NEXT_PUBLIC_WS_URL=wss://$APP_DOMAIN/socket.io
+NEXT_PUBLIC_SOCKET_URL=https://$APP_DOMAIN
 NEXT_PUBLIC_SW_URL=https://$APP_DOMAIN
 
 # Domaines
@@ -119,15 +121,13 @@ NEXT_PUBLIC_APP_DOMAIN=$APP_DOMAIN
 NEXTAUTH_SECRET=$(openssl rand -base64 32)
 
 # Environnement
-NODE_ENV=production
+NODE_ENV=${ENVIRONMENT}
 EOF
-    fi
     
-    # Backend .env.production
-    if [ ! -f "joots-backend/.env.production" ]; then
-        log_info "Création du fichier .env.production pour le backend"
-        cat > joots-backend/.env.production << EOF
-# Base de données
+    # Backend .env.production avec credentials synchronisés
+    log_info "Configuration du fichier .env.production pour le backend"
+    cat > joots-backend/.env.production << EOF
+# Base de données - Credentials synchronisés
 DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
 
 # Redis
@@ -148,14 +148,17 @@ ALLOWED_ORIGINS=https://$LANDING_DOMAIN,https://$APP_DOMAIN
 # Sécurité
 JWT_SECRET=$(openssl rand -base64 32)
 JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=$(openssl rand -base64 32)
 
 # Environnement
-NODE_ENV=production
+NODE_ENV=${ENVIRONMENT}
 SEED_DB=false
 EOF
-    fi
     
-    log_success "Environnement configuré"
+    log_success "Environnement configuré avec credentials synchronisés"
+    log_info "PostgreSQL User: $POSTGRES_USER"
+    log_info "PostgreSQL Database: $POSTGRES_DB"
 }
 
 # Configuration SSL avec Let's Encrypt
@@ -229,6 +232,27 @@ update_nginx_config() {
     log_info "Test nginx différé au démarrage des services"
 }
 
+# Fonction pour vérifier la santé de PostgreSQL
+check_postgres_health() {
+    log_info "Vérification de la santé de PostgreSQL..."
+    local max_attempts=30
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U joots_user -d joots_db >/dev/null 2>&1; then
+            log_success "PostgreSQL est prêt (tentative $attempt/$max_attempts)"
+            return 0
+        else
+            log_info "PostgreSQL pas encore prêt (tentative $attempt/$max_attempts)..."
+            sleep 2
+            ((attempt++))
+        fi
+    done
+    
+    log_error "PostgreSQL n'est pas prêt après $max_attempts tentatives"
+    return 1
+}
+
 # Build et déploiement
 deploy_application() {
     log_info "Déploiement de l'application..."
@@ -251,12 +275,52 @@ deploy_application() {
     # Démarrer d'abord les services de base
     log_info "Démarrage de PostgreSQL et Redis..."
     docker-compose -f docker-compose.prod.yml up -d postgres redis
-    sleep 10
+    
+    # Attendre que PostgreSQL soit prêt
+    if ! check_postgres_health; then
+        log_error "PostgreSQL ne répond pas - vérification des logs"
+        docker-compose -f docker-compose.prod.yml logs postgres
+        exit 1
+    fi
+    
+    # Vérifier les credentials PostgreSQL
+    log_info "Test de connexion PostgreSQL..."
+    if docker-compose -f docker-compose.prod.yml exec -T postgres psql -U joots_user -d joots_db -c "SELECT 1;" >/dev/null 2>&1; then
+        log_success "Connexion PostgreSQL validée"
+    else
+        log_error "Impossible de se connecter à PostgreSQL avec les credentials"
+        log_info "Vérification des logs PostgreSQL..."
+        docker-compose -f docker-compose.prod.yml logs postgres
+        exit 1
+    fi
     
     # Démarrer le backend
     log_info "Démarrage du backend..."
     docker-compose -f docker-compose.prod.yml up -d backend
-    sleep 15
+    
+    # Attendre que le backend soit prêt
+    log_info "Attente du démarrage du backend..."
+    local backend_ready=false
+    for i in {1..30}; do
+        if docker-compose -f docker-compose.prod.yml ps backend | grep -q "Up"; then
+            sleep 2
+            # Vérifier que le backend ne redémarre pas
+            if docker-compose -f docker-compose.prod.yml ps backend | grep -q "Up" && ! docker-compose -f docker-compose.prod.yml ps backend | grep -q "Restarting"; then
+                backend_ready=true
+                break
+            fi
+        fi
+        log_info "Backend pas encore prêt (tentative $i/30)..."
+        sleep 2
+    done
+    
+    if [ "$backend_ready" = false ]; then
+        log_error "Backend n'est pas prêt - vérification des logs"
+        docker-compose -f docker-compose.prod.yml logs backend
+        exit 1
+    fi
+    
+    log_success "Backend démarré avec succès"
     
     # Démarrer le frontend
     log_info "Démarrage du frontend..."
@@ -268,7 +332,8 @@ deploy_application() {
     docker-compose -f docker-compose.prod.yml up -d nginx
     sleep 10
     
-    # Vérifier que les services sont actifs
+    # Vérifier que tous les services sont actifs
+    log_info "Vérification finale des services..."
     if docker-compose -f docker-compose.prod.yml ps | grep -q "Up"; then
         log_success "Services démarrés avec succès"
         
