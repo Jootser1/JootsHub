@@ -250,9 +250,10 @@ async function main() {
 
       if (['STEP_LABELED', 'MULTIPLE_CHOICE'].includes(type)) {
         for (let j = 1; j <= 10; j++) {
-          const frVal = frRow[`Option${j}`];
-          const enVal = enRow[`Option${j}`];
-          const esVal = esRow[`Option${j}`];
+          const optionKey = `Option${j}` as keyof CsvData;
+          const frVal = frRow[optionKey];
+          const enVal = enRow[optionKey];
+          const esVal = esRow[optionKey];
 
           if (frVal && frVal.trim()) {
             await prisma.pollOption.create({
