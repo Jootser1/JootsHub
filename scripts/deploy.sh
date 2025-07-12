@@ -38,6 +38,184 @@ log_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
+# ======= FONCTIONS DE DIAGNOSTIC ET RÉPARATION CREDENTIALS =======
+
+# Fonction pour diagnostiquer les problèmes de credentials
+diagnose_credentials() {
+    log_info "🔍 Diagnostic des credentials..."
+    
+    # Vérifier la présence des fichiers .env
+    if [ ! -f ".env" ]; then
+        log_error "Fichier .env principal manquant"
+        return 1
+    fi
+    
+    if [ ! -f "joots-backend/.env.production" ]; then
+        log_error "Fichier .env.production backend manquant"
+        return 1
+    fi
+    
+    # Extraire les credentials du fichier .env
+    POSTGRES_USER=$(grep "^POSTGRES_USER=" .env | cut -d'=' -f2)
+    POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" .env | cut -d'=' -f2)
+    POSTGRES_DB=$(grep "^POSTGRES_DB=" .env | cut -d'=' -f2)
+    
+    log_info "Credentials dans .env:"
+    log_info "  - POSTGRES_USER: $POSTGRES_USER"
+    log_info "  - POSTGRES_DB: $POSTGRES_DB"
+    log_info "  - POSTGRES_PASSWORD: [${#POSTGRES_PASSWORD} caractères]"
+    
+    # Vérifier les credentials dans le backend
+    BACKEND_DB_URL=$(grep "^DATABASE_URL=" joots-backend/.env.production | cut -d'=' -f2)
+    log_info "Database URL backend: $BACKEND_DB_URL"
+    
+    # Vérifier si PostgreSQL est démarré
+    if docker-compose -f docker-compose.prod.yml ps postgres | grep -q "Up"; then
+        log_success "PostgreSQL est démarré"
+        
+        # Tester la connexion
+        if docker-compose -f docker-compose.prod.yml exec -T postgres pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" >/dev/null 2>&1; then
+            log_success "PostgreSQL répond aux pings"
+            
+            # Tester la connexion complète
+            if docker-compose -f docker-compose.prod.yml exec -T postgres psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "SELECT 1;" >/dev/null 2>&1; then
+                log_success "Connexion PostgreSQL complète fonctionnelle"
+                return 0
+            else
+                log_error "Connexion PostgreSQL échoue - problème de credentials"
+                return 1
+            fi
+        else
+            log_error "PostgreSQL ne répond pas aux pings"
+            return 1
+        fi
+    else
+        log_warning "PostgreSQL n'est pas démarré"
+        return 1
+    fi
+}
+
+# Fonction pour réparer uniquement les credentials
+fix_credentials() {
+    log_info "🔧 Réparation des credentials..."
+    
+    # Générer un nouveau mot de passe si nécessaire
+    if [ "$1" = "--new-password" ]; then
+        log_info "Génération d'un nouveau mot de passe..."
+        POSTGRES_PASSWORD=$(generate_safe_password)
+    else
+        # Garder le mot de passe existant ou en générer un nouveau
+        if [ -f ".env" ]; then
+            POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" .env | cut -d'=' -f2)
+            log_info "Réutilisation du mot de passe existant"
+        else
+            POSTGRES_PASSWORD=$(generate_safe_password)
+            log_info "Génération d'un nouveau mot de passe"
+        fi
+    fi
+    
+    # Variables fixes
+    POSTGRES_USER=joots_user
+    POSTGRES_DB=joots_db
+    POSTGRES_PASSWORD_ENCODED=$(url_encode "$POSTGRES_PASSWORD")
+    
+    # Recréer uniquement les fichiers .env avec les credentials
+    log_info "Mise à jour du fichier .env principal..."
+    
+    # Préserver les autres variables s'il y en a
+    if [ -f ".env" ]; then
+        # Backup de l'ancien fichier
+        cp .env .env.backup
+        # Supprimer les lignes PostgreSQL
+        sed -i '/^POSTGRES_/d' .env
+    fi
+    
+    # Ajouter les nouvelles variables PostgreSQL
+    cat >> .env << EOF
+POSTGRES_USER=$POSTGRES_USER
+POSTGRES_PASSWORD=$POSTGRES_PASSWORD
+POSTGRES_DB=$POSTGRES_DB
+EOF
+    
+    log_info "Mise à jour du fichier .env.production backend..."
+    
+    # Préserver les autres variables backend
+    if [ -f "joots-backend/.env.production" ]; then
+        cp joots-backend/.env.production joots-backend/.env.production.backup
+        sed -i '/^DATABASE_URL=/d' joots-backend/.env.production
+    fi
+    
+    # Ajouter la nouvelle DATABASE_URL
+    cat >> joots-backend/.env.production << EOF
+DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD_ENCODED}@postgres:5432/${POSTGRES_DB}
+EOF
+    
+    log_success "Credentials mis à jour"
+    log_info "PostgreSQL User: $POSTGRES_USER"
+    log_info "PostgreSQL Database: $POSTGRES_DB"
+    log_info "Nouveau mot de passe généré: ${#POSTGRES_PASSWORD} caractères"
+}
+
+# Fonction pour redémarrer uniquement les services concernés par les credentials
+restart_db_services() {
+    log_info "🔄 Redémarrage des services liés à la base de données..."
+    
+    # Arrêter les services dans l'ordre inverse
+    docker-compose -f docker-compose.prod.yml stop backend
+    docker-compose -f docker-compose.prod.yml stop postgres
+    
+    # Redémarrer PostgreSQL
+    log_info "Redémarrage de PostgreSQL..."
+    docker-compose -f docker-compose.prod.yml up -d postgres
+    
+    # Attendre que PostgreSQL soit prêt
+    if ! check_postgres_health; then
+        log_error "PostgreSQL ne répond pas après redémarrage"
+        return 1
+    fi
+    
+    # Redémarrer le backend
+    log_info "Redémarrage du backend..."
+    docker-compose -f docker-compose.prod.yml up -d backend
+    
+    # Vérifier que le backend démarre correctement
+    sleep 10
+    if docker-compose -f docker-compose.prod.yml ps backend | grep -q "Up"; then
+        log_success "Services redémarrés avec succès"
+        return 0
+    else
+        log_error "Erreur lors du redémarrage du backend"
+        docker-compose -f docker-compose.prod.yml logs backend
+        return 1
+    fi
+}
+
+# Fonction de réparation rapide complète
+quick_fix_credentials() {
+    log_info "🚀 Réparation rapide des credentials..."
+    
+    # Diagnostic
+    if ! diagnose_credentials; then
+        log_info "Problème détecté, réparation en cours..."
+        
+        # Réparer les credentials
+        fix_credentials "$1"
+        
+        # Redémarrer les services
+        if restart_db_services; then
+            log_success "Réparation terminée avec succès!"
+            diagnose_credentials
+        else
+            log_error "Erreur lors du redémarrage des services"
+            return 1
+        fi
+    else
+        log_success "Aucun problème de credentials détecté"
+    fi
+}
+
+# ======= FIN DES FONCTIONS DE DIAGNOSTIC =======
+
 # Vérifications préalables
 check_prerequisites() {
     log_info "Vérification des prérequis..."
@@ -492,6 +670,34 @@ EOF
 
 # Fonction principale
 main() {
+    # Vérifier les options spéciales
+    case "$1" in
+        "check-credentials"|"diag")
+            log_info "🔍 Mode diagnostic des credentials uniquement"
+            diagnose_credentials
+            exit $?
+            ;;
+        "fix-credentials")
+            log_info "🔧 Mode réparation des credentials uniquement"
+            fix_credentials "$2"
+            exit $?
+            ;;
+        "restart-db")
+            log_info "🔄 Mode redémarrage des services DB uniquement"
+            restart_db_services
+            exit $?
+            ;;
+        "quick-fix")
+            log_info "🚀 Mode réparation rapide des credentials"
+            quick_fix_credentials "$2"
+            exit $?
+            ;;
+        "help"|"-h"|"--help")
+            show_help
+            exit 0
+            ;;
+    esac
+    
     echo "🚀 Démarrage du déploiement JootsHub multi-domaines"
     
     check_prerequisites
@@ -511,6 +717,31 @@ main() {
     
     log_info "💡 Conseil: Ajoutez cette ligne au crontab pour le renouvellement automatique SSL:"
     log_info "0 2 * * * /chemin/vers/votre/projet/scripts/renew-ssl.sh >> /var/log/ssl-renewal.log 2>&1"
+}
+
+# Fonction d'aide
+show_help() {
+    echo "🚀 Script de déploiement JootsHub"
+    echo ""
+    echo "Usage: ./scripts/deploy.sh [OPTION] [ENVIRONNEMENT] [DOMAINE]"
+    echo ""
+    echo "OPTIONS RAPIDES (évitent le déploiement complet):"
+    echo "  check-credentials    Diagnostiquer les problèmes de credentials"
+    echo "  diag                 Alias pour check-credentials"
+    echo "  fix-credentials      Réparer les credentials uniquement"
+    echo "  fix-credentials --new-password  Générer un nouveau mot de passe"
+    echo "  restart-db           Redémarrer uniquement PostgreSQL et backend"
+    echo "  quick-fix            Diagnostic + réparation + redémarrage automatique"
+    echo "  quick-fix --new-password  Quick-fix avec nouveau mot de passe"
+    echo ""
+    echo "DÉPLOIEMENT COMPLET:"
+    echo "  ./scripts/deploy.sh [production|staging] [domaine]"
+    echo ""
+    echo "EXEMPLES:"
+    echo "  ./scripts/deploy.sh diag                    # Vérifier les credentials"
+    echo "  ./scripts/deploy.sh quick-fix               # Réparation rapide"
+    echo "  ./scripts/deploy.sh fix-credentials --new-password  # Nouveau mot de passe"
+    echo "  ./scripts/deploy.sh production joots.com    # Déploiement complet"
 }
 
 # Gestion des erreurs
