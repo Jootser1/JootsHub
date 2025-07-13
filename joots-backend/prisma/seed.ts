@@ -6,7 +6,6 @@ import csv from 'csv-parser';
 import { createReadStream } from 'fs';
 import fs from 'fs';
 import path from 'path';
-
 import { v4 as uuidv4 } from 'uuid';
 
 const prisma = new PrismaClient();
